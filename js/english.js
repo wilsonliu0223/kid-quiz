@@ -72,7 +72,7 @@ function speakWithSynth(text) {
 
         u.onend = () => done(true);
         u.onerror = () => done(false);
-        setTimeout(() => done(true), 6000);
+        setTimeout(() => done(false), 2500);
 
         window.speechSynthesis.speak(u);
       } catch (e) {
@@ -136,17 +136,24 @@ function speakWithOnlineAudio(text) {
  * 播放英文（先內建語音，失敗再用線上音檔）
  * @returns {Promise<boolean>}
  */
+function isAndroid() {
+  return /Android/i.test(navigator.userAgent);
+}
+
 export async function speakEnglish(text) {
   const w = String(text || "").trim();
   if (!w) return false;
 
   primeSpeech();
 
-  const synthOk = await speakWithSynth(w);
-  if (synthOk) {
-    return true;
+  if (isAndroid()) {
+    const onlineOk = await speakWithOnlineAudio(w);
+    if (onlineOk) return true;
+    return speakWithSynth(w);
   }
 
+  const synthOk = await speakWithSynth(w);
+  if (synthOk) return true;
   return speakWithOnlineAudio(w);
 }
 
