@@ -28,84 +28,10 @@ function doPost(e) {
     if (data.action === "logScore") {
       return appendScoreRow(data);
     }
-    if (data.action === "handwritingVision") {
-      return recognizeHandwritingVision(data);
-    }
   } catch (err) {
     return jsonOut({ ok: false, error: String(err) });
   }
   return jsonOut({ ok: false, error: "unknown action" });
-}
-
-/**
- * Google Cloud Vision 手寫／文件 OCR（繁體）
- * 請在 Apps Script「專案設定 → 指令碼屬性」新增：
- *   VISION_API_KEY = 你的 API 金鑰
- * 並在 GCP 啟用 Cloud Vision API。每月約 1000 次 Document OCR 免費。
- */
-function recognizeHandwritingVision(data) {
-  const key = PropertiesService.getScriptProperties().getProperty("VISION_API_KEY");
-  if (!key) {
-    return jsonOut({
-      ok: false,
-      error: "未設定 VISION_API_KEY（Apps Script 指令碼屬性）",
-    });
-  }
-
-  let b64 = String(data.imageBase64 || "");
-  const marker = "base64,";
-  const i = b64.indexOf(marker);
-  if (i >= 0) b64 = b64.slice(i + marker.length);
-  b64 = b64.replace(/\s/g, "");
-
-  if (!b64) {
-    return jsonOut({ ok: false, error: "empty image" });
-  }
-
-  const payload = {
-    requests: [
-      {
-        image: { content: b64 },
-        features: [{ type: "DOCUMENT_TEXT_DETECTION", maxResults: 1 }],
-        imageContext: { languageHints: ["zh-TW", "zh-Hant"] },
-      },
-    ],
-  };
-
-  const url =
-    "https://vision.googleapis.com/v1/images:annotate?key=" +
-    encodeURIComponent(key);
-  const resp = UrlFetchApp.fetch(url, {
-    method: "post",
-    contentType: "application/json",
-    muteHttpExceptions: true,
-    payload: JSON.stringify(payload),
-  });
-
-  const code = resp.getResponseCode();
-  const body = resp.getContentText();
-  if (code !== 200) {
-    return jsonOut({ ok: false, error: "Vision HTTP " + code + ": " + body });
-  }
-
-  const json = JSON.parse(body);
-  const first = json.responses && json.responses[0];
-  if (!first) {
-    return jsonOut({ ok: false, error: "empty Vision response" });
-  }
-  if (first.error && first.error.message) {
-    return jsonOut({ ok: false, error: first.error.message });
-  }
-
-  let text = "";
-  if (first.fullTextAnnotation && first.fullTextAnnotation.text) {
-    text = String(first.fullTextAnnotation.text);
-  } else if (first.textAnnotations && first.textAnnotations[0]) {
-    text = String(first.textAnnotations[0].description || "");
-  }
-
-  text = text.replace(/\s/g, "").trim();
-  return jsonOut({ ok: true, text: text });
 }
 
 function appendScoreRow(p) {

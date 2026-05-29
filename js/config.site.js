@@ -32,9 +32,6 @@ export const CONFIG = {
   /** 辨識失敗時顯示同音字四選一（從題庫依注音挑選） */
   HOMOPHONE_PICKER: true,
 
-  /** 筆畫手寫辨識（hanzilookup-js，首次會下載字庫） */
+  /** 筆畫手寫辨識（hanzilookup-js 開源，首次會下載字庫） */
   HANZI_STROKE_ENABLED: true,
-
-  /** Google Vision 手寫 OCR（經 Apps Script，需設定 VISION_API_KEY） */
-  VISION_HANDWRITING: true,
 };

@@ -37,5 +37,4 @@ export const CONFIG = {
   OCR_STROKE_WIDTH: 6,
   HOMOPHONE_PICKER: true,
   HANZI_STROKE_ENABLED: true,
-  VISION_HANDWRITING: true,
 };
