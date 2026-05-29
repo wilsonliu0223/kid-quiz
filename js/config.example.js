@@ -28,6 +28,11 @@ export const CONFIG = {
   /** 是否啟用手寫辨識（需載入 Tesseract，首次較慢） */
   OCR_ENABLED: true,
 
-  /** 辨識與答案完全一致才算自動答對（建議保持 true） */
+  /** 辨識與答案完全一致才算自動答對（false 時較寬鬆） */
   OCR_STRICT: false,
+
+  OCR_PREPROCESS: true,
+  OCR_USE_WHITELIST: true,
+  OCR_MIN_SIDE: 280,
+  OCR_STROKE_WIDTH: 6,
 };

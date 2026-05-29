@@ -1,3 +1,7 @@
+import { CONFIG } from "./config.site.js";
+
+const STROKE_WIDTH = CONFIG.OCR_STROKE_WIDTH ?? 6;
+
 export function createHandwritingCanvas(canvasEl, wrapEl) {
   const ctx = canvasEl.getContext("2d");
   let drawing = false;
@@ -13,7 +17,7 @@ export function createHandwritingCanvas(canvasEl, wrapEl) {
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
-    ctx.lineWidth = 4;
+    ctx.lineWidth = STROKE_WIDTH;
     ctx.strokeStyle = "#1a1a1a";
   }
 

@@ -436,12 +436,14 @@ function renderQuestion() {
   if (hasSentence) {
     zhuyinEl.classList.add("is-compact");
     zhuyinEl.textContent = q.zhuyin;
-    $("#quiz-hint").textContent = "看例句中的注音，在下方寫出國字";
+    $("#quiz-hint").textContent =
+      "看例句寫國字；字寫大一點、寫在格子中間，辨識較準";
   } else {
     zhuyinEl.classList.remove("is-compact");
     zhuyinEl.textContent = q.zhuyin;
     sentenceEl.hidden = true;
-    $("#quiz-hint").textContent = "請在下方寫出國字或詞";
+    $("#quiz-hint").textContent =
+      "請寫出國字或詞；字寫大一點、寫在格子中間，辨識較準";
   }
 
   $("#ocr-status").hidden = true;
@@ -806,7 +808,9 @@ async function submitAnswer() {
 
   const canvas = $("#hand-canvas");
   const imageDataUrl = handwriting.toDataURL();
-  const { text: recognized, skipped, error } = await recognizeCanvas(canvas);
+  const { text: recognized, skipped, error } = await recognizeCanvas(canvas, {
+    expected: q.word,
+  });
 
   statusEl.hidden = true;
   submitBtn.disabled = false;

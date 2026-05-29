@@ -21,4 +21,12 @@ export const CONFIG = {
   },
   OCR_ENABLED: true,
   OCR_STRICT: false,
+  /** 辨識前裁切放大（建議保持 true） */
+  OCR_PREPROCESS: true,
+  /** 只從標準答案的字裡挑（減少辨成別字） */
+  OCR_USE_WHITELIST: true,
+  /** 裁切後最短邊像素（愈大愈準、略慢） */
+  OCR_MIN_SIDE: 280,
+  /** 手寫筆畫粗細 */
+  OCR_STROKE_WIDTH: 6,
 };
