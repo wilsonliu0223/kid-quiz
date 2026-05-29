@@ -76,6 +76,9 @@ export function createHandwritingCanvas(canvasEl, wrapEl) {
   canvasEl.addEventListener("touchend", end, { passive: false });
 
   window.addEventListener("resize", resize);
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener("resize", resize);
+  }
   resize();
 
   return { resize, clear, isBlank, toDataURL };

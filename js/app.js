@@ -197,6 +197,9 @@ function renderQuestion() {
   const sentenceEl = $("#sentence-context");
   const hasSentence = fillSentenceContext(sentenceEl, q.sentence, q.word, q.zhuyin);
 
+  const viewZh = $("#view-quiz-zh");
+  if (viewZh) viewZh.classList.toggle("has-sentence", hasSentence);
+
   if (hasSentence) {
     zhuyinEl.classList.add("is-compact");
     zhuyinEl.textContent = q.zhuyin;
@@ -210,6 +213,7 @@ function renderQuestion() {
 
   $("#ocr-status").hidden = true;
   handwriting.clear();
+  requestAnimationFrame(() => handwriting?.resize());
 }
 
 function setEnMode(mode) {
