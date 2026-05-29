@@ -1,5 +1,7 @@
 /** 依注音從題庫找同音字／詞，組成四選一 */
 
+import { getStrokeTrustTopN } from "./stroke-lenient.js";
+
 export function normalizeZhuyinKey(zhuyin) {
   return String(zhuyin ?? "")
     .replace(/\s+/g, " ")
@@ -123,7 +125,7 @@ export function classifyZhAnswer(expected, zhuyin, bank, { recognized, strokeMat
   const pool = homophonePool(answer, zhuyin, bank);
   const strokes = strokeCandidates(strokeMatches);
   const strokeTop = strokes[0] || "";
-  const trustTop = 5;
+  const trustTop = getStrokeTrustTopN(answer);
 
   /** 筆畫候選含正確答案 → 視為寫對（優先於 OCR 猜錯） */
   if (strokes.slice(0, trustTop).includes(answer)) {

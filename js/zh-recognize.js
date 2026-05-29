@@ -7,6 +7,7 @@ import {
   strokeAnswerInMatches,
   shouldUseStrokeRecognition,
 } from "./hanzi-stroke.js";
+import { getStrokeTrustTopN } from "./stroke-lenient.js";
 
 /**
  * 國語手寫辨識（全開源、不需 API Key）
@@ -28,7 +29,7 @@ export async function recognizeZhHandwriting({
     if (loaded) {
       const matches = await recognizeStrokes(strokes, 10);
       strokeMatches = matches;
-      const topN = CONFIG.STROKE_TRUST_TOP_N ?? 5;
+      const topN = getStrokeTrustTopN(expected);
 
       if (strokeAnswerInMatches(matches, expected, topN)) {
         const text = normalizeAnswer(expected);

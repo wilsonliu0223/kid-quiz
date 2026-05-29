@@ -1,4 +1,5 @@
 import { CONFIG } from "./config.site.js";
+import { shouldSkipOcrWhitelist } from "./stroke-lenient.js";
 
 const ORT_WASM =
   "https://cdn.jsdelivr.net/npm/onnxruntime-web@1.22.0/dist/";
@@ -42,24 +43,44 @@ export async function predictHandwriting(canvas) {
 }
 
 /** 從 Paddle 結果抽出文字，可選依標準答案字元過濾 */
-export function textFromPaddleResult(result, expectedWord) {
+export function textFromPaddleResult(result, expectedWord, options = {}) {
   if (!result?.items?.length) return "";
+
+  const expected = String(options.expected ?? expectedWord ?? "").replace(
+    /\s/g,
+    ""
+  );
+  const expectedLen = [...expected].length;
 
   const sorted = [...result.items].sort(
     (a, b) => (b.score ?? 0) - (a.score ?? 0)
   );
 
-  let text = sorted
-    .map((item) => String(item.text || "").replace(/\s/g, ""))
-    .filter(Boolean)
-    .join("");
+  let text = "";
 
-  if (CONFIG.OCR_USE_WHITELIST !== false && expectedWord) {
-    const allowed = new Set([
-      ...String(expectedWord || "")
-        .replace(/\s/g, "")
-        .split(""),
-    ]);
+  /** 單字：優先採信心最高的「單一字」框，避免雜訊拼成怪字 */
+  if (expectedLen === 1) {
+    const singles = sorted
+      .map((item) => String(item.text || "").replace(/\s/g, ""))
+      .filter((t) => [...t].length === 1);
+    if (singles.length) {
+      text = singles[0];
+    }
+  }
+
+  if (!text) {
+    text = sorted
+      .map((item) => String(item.text || "").replace(/\s/g, ""))
+      .filter(Boolean)
+      .join("");
+  }
+
+  if (
+    expectedWord &&
+    !shouldSkipOcrWhitelist(expected) &&
+    CONFIG.OCR_USE_WHITELIST !== false
+  ) {
+    const allowed = new Set([...expected.split("")]);
     if (allowed.size) {
       text = [...text].filter((c) => allowed.has(c)).join("");
     }

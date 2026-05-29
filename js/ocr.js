@@ -4,9 +4,10 @@ import {
   predictHandwriting,
   textFromPaddleResult,
 } from "./paddle-ocr.js";
+import { getOcrMinSide } from "./stroke-lenient.js";
 
 /** 裁切筆跡、白底、放大，方便 OCR */
-export function prepareHandwritingImage(sourceCanvas) {
+export function prepareHandwritingImage(sourceCanvas, expectedWord = "") {
   const sw = sourceCanvas.width;
   const sh = sourceCanvas.height;
   if (!sw || !sh) return null;
@@ -55,7 +56,7 @@ export function prepareHandwritingImage(sourceCanvas) {
 
   const cw = maxX - minX + 1;
   const ch = maxY - minY + 1;
-  const minSide = CONFIG.OCR_MIN_SIDE ?? 280;
+  const minSide = getOcrMinSide(expectedWord);
   const scale = Math.max(1, minSide / Math.max(cw, ch, 1));
   const dw = Math.ceil(cw * scale);
   const dh = Math.ceil(ch * scale);
@@ -83,11 +84,13 @@ export async function recognizeCanvas(canvas, options = {}) {
     await ensurePaddleOcr();
     const prepared =
       CONFIG.OCR_PREPROCESS !== false
-        ? prepareHandwritingImage(canvas) || canvas
+        ? prepareHandwritingImage(canvas, expected) || canvas
         : canvas;
 
     const result = await predictHandwriting(prepared);
-    const cleaned = normalizeAnswer(textFromPaddleResult(result, expected));
+    const cleaned = normalizeAnswer(
+      textFromPaddleResult(result, expected, { expected })
+    );
     return { text: cleaned, skipped: false };
   } catch (err) {
     console.warn("PaddleOCR failed", err);
