@@ -5,7 +5,7 @@ export const CONFIG = {
 
   /** 成績寫入：同一試算表部署的 Apps Script 網址（見 docs/google-apps-script.gs） */
   SCORE_LOG_URL:
-    "https://script.google.com/macros/s/AKfycbxN6aEpUGLWHY8WaoxWWIqFHqMwDa0RyAmuf_xldWR1/exec",
+    "https://script.google.com/macros/s/AKfycbxo0gTXgN_WEaZjhfgPpvMMG5sONKYAkqJCkVN_JLoZ1iq_eBVmD7cwYXRlHPqn_bkRiw/exec",
   SHEET_ZH: "國語",
   SHEET_EN: "英語",
   QUIZ_TYPES: ["生字"],
