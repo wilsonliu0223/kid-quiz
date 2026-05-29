@@ -1,7 +1,5 @@
 /** 依注音從題庫找同音字／詞，組成四選一 */
 
-import { answersMatch } from "./ocr.js";
-
 export function normalizeZhuyinKey(zhuyin) {
   return String(zhuyin ?? "")
     .replace(/\s+/g, " ")
@@ -89,36 +87,74 @@ export function buildHomophoneChoices(expected, zhuyin, bank, count = 4) {
   return choices.slice(0, count);
 }
 
-/**
- * 是否適合出同音四選一（寫成別的字、但可能是同音混淆時才出）
- * @param {string} recognized 辨識結果（可能為空）
- */
-export function shouldOfferHomophonePicker(expected, recognized, zhuyin, bank) {
-  const answer = String(expected ?? "").trim();
-  if (!answer) return false;
-
-  const rec = String(recognized ?? "")
+function cleanText(s) {
+  return String(s ?? "")
     .replace(/\s/g, "")
     .trim();
+}
 
-  /** 辨識不出字：仍可依注音四選一 */
-  if (!rec) return true;
+function homophonePool(expected, zhuyin, bank, count = 12) {
+  return buildHomophoneChoices(expected, zhuyin, bank, count);
+}
 
-  if (answersMatch(rec, answer)) return false;
+/** 是否為「同音易混」範圍（才值得四選一） */
+export function isHomophoneSimilar(char, expected, zhuyin, bank) {
+  const c = cleanText(char);
+  const answer = cleanText(expected);
+  if (!c || !answer) return false;
+  if (c === answer) return true;
+  return homophonePool(answer, zhuyin, bank).includes(c);
+}
 
-  const answerLen = [...answer].length;
-  const recLen = [...rec].length;
-  if (recLen !== answerLen) return false;
+function strokeCandidates(strokeMatches) {
+  return (strokeMatches || [])
+    .map((m) => cleanText(m.character))
+    .filter(Boolean);
+}
 
-  const choices = buildHomophoneChoices(answer, zhuyin, bank, 8);
-  if (!choices.includes(rec)) return false;
+/**
+ * 國語答題判定：homophone → 四選一；wrong → 直接記錯（進錯題本）
+ * @returns {{ type: 'homophone'|'wrong', recognized: string }}
+ */
+export function classifyZhAnswer(expected, zhuyin, bank, { recognized, strokeMatches }) {
+  const answer = cleanText(expected);
+  const rec = cleanText(recognized);
+  const ansLen = [...answer].length;
+  const pool = homophonePool(answer, zhuyin, bank);
+  const strokes = strokeCandidates(strokeMatches);
+  const strokeTop = strokes[0] || "";
 
-  const expBase = zhuyinBaseKey(zhuyin);
-  const item = (bank || []).find((row) => String(row.word) === rec);
-  if (item?.zhuyin) {
-    const recBase = zhuyinBaseKey(item.zhuyin);
-    if (expBase && recBase && recBase !== expBase) return false;
+  if (rec && [...rec].length !== ansLen) {
+    return { type: "wrong", recognized: rec };
   }
 
-  return true;
+  /** 筆畫辨識：最像的字明顯不是答案、也不是同音易混 → 直接算錯 */
+  if (strokeTop && strokeTop !== answer && !pool.includes(strokeTop)) {
+    return { type: "wrong", recognized: rec || strokeTop };
+  }
+
+  /** 圖像／綜合辨識：很像別的字（非同音）→ 直接算錯 */
+  if (rec && rec !== answer && !pool.includes(rec)) {
+    return { type: "wrong", recognized: rec };
+  }
+
+  /** 辨成同音易混字，或筆畫最像同音字 → 四選一 */
+  if (rec && rec !== answer && pool.includes(rec)) {
+    return { type: "homophone", recognized: rec };
+  }
+
+  if (
+    strokeTop &&
+    strokeTop !== answer &&
+    pool.includes(strokeTop)
+  ) {
+    return { type: "homophone", recognized: rec || strokeTop };
+  }
+
+  /** 寫對了但 OCR 沒對上；或都辨不出 → 依注音四選一（不算直接答錯） */
+  if (!rec || rec === answer) {
+    return { type: "homophone", recognized: rec || strokeTop };
+  }
+
+  return { type: "wrong", recognized: rec || strokeTop || "—" };
 }

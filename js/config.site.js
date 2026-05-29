@@ -30,10 +30,8 @@ export const CONFIG = {
   OCR_MIN_SIDE: 280,
   /** 手寫筆畫粗細 */
   OCR_STROKE_WIDTH: 6,
-  /** 辨識失敗時顯示同音字四選一（從題庫依注音挑選） */
+  /** 同音易混時四選一；明顯寫錯則直接答錯並記入錯題本 */
   HOMOPHONE_PICKER: true,
-  /** true：只有「同音易混」才四選一；明顯寫別的字則請重寫 */
-  HOMOPHONE_ONLY_SIMILAR: true,
 
   /** 筆畫手寫辨識（hanzilookup-js 開源，首次會下載字庫） */
   HANZI_STROKE_ENABLED: true,

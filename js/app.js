@@ -13,7 +13,7 @@ import {
 import { createHandwritingCanvas } from "./canvas-handwriting.js";
 import {
   buildHomophoneChoices,
-  shouldOfferHomophonePicker,
+  classifyZhAnswer,
 } from "./homophones.js";
 import { recognizeZhHandwriting } from "./zh-recognize.js";
 import { ensureHanziStrokeReady } from "./hanzi-stroke.js";
@@ -829,16 +829,31 @@ function onHomophonePick(picked) {
   );
 }
 
-function showObviousWrongFeedback(q, recognized, imageDataUrl) {
-  const rec = recognized ? `電腦看到：「${recognized}」` : "電腦辨識不出這個字";
+/** 明顯答錯：記入本輪錯題（結束後進錯題本），不出四選一 */
+function showZhWrongAnswer(q, recognized, imageDataUrl) {
+  const rec = recognized && recognized !== "—" ? `你寫的像「${recognized}」` : "辨識結果不像這個字";
+
+  quiz.wrong.push({
+    zhuyin: q.zhuyin,
+    expected: q.word,
+    recognized: recognized || "—",
+    pending: false,
+    skipped: false,
+  });
+
   showFeedback(
     "warn",
-    "寫得不太對，請再寫一次",
+    "答錯了",
     [
       {
         label: "再寫一次",
         primary: true,
         onClick: () => handwriting?.clear(),
+      },
+      {
+        label: "下一題",
+        primary: false,
+        onClick: () => goNextQuestion(),
       },
       {
         label: "請家長幫忙",
@@ -1110,15 +1125,22 @@ async function submitAnswer() {
   }
 
   const recognized = result.text || "";
-  const useHomophone =
-    CONFIG.HOMOPHONE_PICKER !== false &&
-    (CONFIG.HOMOPHONE_ONLY_SIMILAR === false ||
-      shouldOfferHomophonePicker(q.word, recognized, q.zhuyin, zhBank));
+  const verdict = classifyZhAnswer(q.word, q.zhuyin, zhBank, {
+    recognized,
+    strokeMatches: result.strokeMatches,
+  });
 
-  if (useHomophone) {
-    showHomophonePicker(q, recognized, imageDataUrl);
+  if (
+    verdict.type === "homophone" &&
+    CONFIG.HOMOPHONE_PICKER !== false
+  ) {
+    showHomophonePicker(
+      q,
+      verdict.recognized || recognized,
+      imageDataUrl
+    );
   } else {
-    showObviousWrongFeedback(q, recognized, imageDataUrl);
+    showZhWrongAnswer(q, verdict.recognized || recognized, imageDataUrl);
   }
 }
 

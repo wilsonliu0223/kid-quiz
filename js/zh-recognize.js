@@ -19,18 +19,26 @@ export async function recognizeZhHandwriting({
 }) {
   const tries = [];
   let lastText = "";
+  let strokeMatches = [];
 
   if (shouldUseStrokeRecognition(expected) && strokes?.length) {
     onStatus?.("筆畫辨識中…");
     const loaded = await ensureHanziStrokeReady();
     if (loaded) {
       const matches = await recognizeStrokes(strokes, 10);
+      strokeMatches = matches;
       const text = pickStrokeAnswer(matches, expected);
       if (text) {
         lastText = text;
         tries.push({ method: "stroke", text });
         if (answersMatch(text, expected)) {
-          return { matched: true, text, method: "stroke", tries };
+          return {
+            matched: true,
+            text,
+            method: "stroke",
+            tries,
+            strokeMatches,
+          };
         }
       }
     }
@@ -43,10 +51,16 @@ export async function recognizeZhHandwriting({
       lastText = text;
       tries.push({ method: "paddle", text });
       if (answersMatch(text, expected)) {
-        return { matched: true, text, method: "paddle", tries };
+        return {
+          matched: true,
+          text,
+          method: "paddle",
+          tries,
+          strokeMatches,
+        };
       }
     }
   }
 
-  return { matched: false, text: lastText, tries };
+  return { matched: false, text: lastText, tries, strokeMatches };
 }
