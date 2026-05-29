@@ -34,6 +34,16 @@ import {
   formatScoreSummary,
   scoresForChild,
 } from "./score-log.js";
+import {
+  addMistake,
+  removeMistake,
+  clearMistakes,
+  countMistakes,
+  listMistakes,
+  recordMistakesFromQuiz,
+  questionsFromMistakeBook,
+  formatMistakeLine,
+} from "./mistake-book.js";
 
 const $ = (sel) => document.querySelector(sel);
 
@@ -46,6 +56,8 @@ let handwriting = null;
 /** @type {{ recognized: string, imageDataUrl: string | null } | null} */
 let pendingReview = null;
 let homeHistoryShowAll = false;
+/** @type {{ subject: string, child: string, questions: object[], mode?: string } | null} */
+let lastWrongRound = null;
 const KEY_QUIZ_COUNT = "kid-quiz-count";
 
 function getQuizCountSetting() {
@@ -127,6 +139,7 @@ function showView(name) {
   if (name === "home") {
     renderHomeScoreHistory();
     renderResumeBanner();
+    renderMistakeBookHome();
   }
   if (name === "quizEn") setupEnQuizKeyboardLift();
 }
@@ -219,6 +232,7 @@ function initChildPicker() {
       setSelectedChild(btn.dataset.child);
       renderChildChips();
       renderHomeScoreHistory();
+      renderMistakeBookHome();
     });
   });
 }
@@ -395,31 +409,138 @@ function blockIfShouldResumeInstead() {
   return false;
 }
 
-function startZhQuiz() {
+function clearMistakeOnCorrect(q) {
+  if (!quiz || !q) return;
+  const expected = quiz.subject === "en" ? q.english : q.word;
+  removeMistake(quiz.child, quiz.subject, expected);
+  renderMistakeBookHome();
+}
+
+function renderMistakeBookHome() {
+  const section = $("#mistake-book-home");
+  if (!section) return;
+
+  const child = getSelectedChild();
+  const zhN = countMistakes(child, "zh");
+  const enN = countMistakes(child, "en");
+  const name = getChildName(child);
+
+  section.hidden = zhN + enN === 0;
+  const meta = $("#mistake-book-meta");
+  if (meta) {
+    meta.textContent =
+      zhN + enN === 0 ? "" : `${name}：國語 ${zhN} · 英語 ${enN}`;
+  }
+
+  const btnZh = $("#btn-review-zh-mistakes");
+  const btnEn = $("#btn-review-en-mistakes");
+  if (btnZh) {
+    btnZh.hidden = zhN === 0;
+    btnZh.textContent = `複習國語錯題（${zhN}）`;
+  }
+  if (btnEn) {
+    btnEn.hidden = enN === 0;
+    btnEn.textContent = `複習英語錯題（${enN}）`;
+  }
+}
+
+function renderParentMistakeList() {
+  const listEl = $("#parent-mistake-list");
+  const countEl = $("#parent-mistake-count");
+  if (!listEl) return;
+
+  const child = getSelectedChild();
+  const all = [
+    ...listMistakes(child, "zh").map((m) => ({ ...m, subject: "zh" })),
+    ...listMistakes(child, "en").map((m) => ({ ...m, subject: "en" })),
+  ].sort((a, b) => new Date(b.lastWrongAt) - new Date(a.lastWrongAt));
+
+  if (countEl) countEl.textContent = String(all.length);
+  listEl.innerHTML = "";
+
+  if (!all.length) {
+    listEl.innerHTML =
+      "<li class=\"parent-note\" style=\"border:none\">目前沒有錯題（或請先選對小孩 A/B）</li>";
+    return;
+  }
+
+  all.forEach((m) => {
+    const li = document.createElement("li");
+    const label = document.createElement("span");
+    const subj = m.subject === "en" ? "英" : "國";
+    label.textContent = `${subj} · ${formatMistakeLine(m)}`;
+
+    const del = document.createElement("button");
+    del.type = "button";
+    del.className = "btn-text btn-text-sm";
+    del.textContent = "刪除";
+    del.addEventListener("click", () => {
+      removeMistake(child, m.subject, m.expected);
+      renderParentMistakeList();
+      renderMistakeBookHome();
+    });
+
+    li.append(label, del);
+    listEl.appendChild(li);
+  });
+}
+
+function questionsFromQuizWrong(quiz) {
+  const out = [];
+  const seen = new Set();
+  for (const w of quiz.wrong) {
+    if (w.skipped) continue;
+    const q = quiz.questions.find((item) =>
+      quiz.subject === "en"
+        ? item.english === w.expected
+        : item.word === w.expected
+    );
+    if (!q) continue;
+    const key =
+      quiz.subject === "en"
+        ? String(q.english).toLowerCase()
+        : String(q.word);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(q);
+  }
+  return out;
+}
+
+function startZhQuiz(options = {}) {
   if (CONFIG.OCR_ENABLED) {
     ensurePaddleOcr().catch(() => {});
   }
-  if (blockIfShouldResumeInstead()) return;
+  if (!options.mistakeReview && blockIfShouldResumeInstead()) return;
   if (CONFIG.HANZI_STROKE_ENABLED !== false) {
     ensureHanziStrokeReady().catch(() => {});
   }
   clearQuizDraft();
   const countSetting = getQuizCountSetting();
-  const questions = pickRandomQuestions(zhBank, countSetting, lessonFilter);
+  const child = getSelectedChild();
+  const questions = options.mistakeReview
+    ? questionsFromMistakeBook(zhBank, child, "zh", countSetting)
+    : pickRandomQuestions(zhBank, countSetting, lessonFilter);
+
   if (!questions.length) {
-    alert("沒有題目！請檢查試算表或課次篩選。");
+    alert(
+      options.mistakeReview
+        ? "錯題本裡沒有國語題目（或題庫已刪除該字）。"
+        : "沒有題目！請檢查試算表或課次篩選。"
+    );
     return;
   }
 
   quiz = {
     subject: "zh",
-    child: getSelectedChild(),
+    child,
     questions,
     index: 0,
     autoCorrect: 0,
     pending: 0,
     wrong: [],
     startedAt: Date.now(),
+    fromMistakeBook: Boolean(options.mistakeReview),
   };
 
   showView("quizZh");
@@ -501,15 +622,20 @@ async function playEnglishAudio() {
   }
 }
 
-function startEnQuiz() {
-  if (blockIfShouldResumeInstead()) return;
+function startEnQuiz(options = {}) {
+  if (!options.mistakeReview && blockIfShouldResumeInstead()) return;
   clearQuizDraft();
-  buildLessonChips(enBank);
+  if (!options.mistakeReview) buildLessonChips(enBank);
   const countSetting = getQuizCountSetting();
-  const questions = pickRandomQuestions(enBank, countSetting, lessonFilter);
+  const child = getSelectedChild();
+  const questions = options.mistakeReview
+    ? questionsFromMistakeBook(enBank, child, "en", countSetting)
+    : pickRandomQuestions(enBank, countSetting, lessonFilter);
+
   if (!questions.length) {
-    const hint =
-      lessonFilter !== "全部"
+    const hint = options.mistakeReview
+      ? "錯題本裡沒有英語題目。"
+      : lessonFilter !== "全部"
         ? `目前課次「${lessonFilter}」在英語題庫沒有題目，請改選「全部」或「測試」等英語課次。`
         : "請在試算表新增「英語」工作表，並確認「類型」欄為「單字」。";
     alert(`沒有英語題目！${hint}`);
@@ -519,13 +645,14 @@ function startEnQuiz() {
   quiz = {
     subject: "en",
     mode: enMode,
-    child: getSelectedChild(),
+    child,
     questions,
     index: 0,
     autoCorrect: 0,
     pending: 0,
     wrong: [],
     startedAt: Date.now(),
+    fromMistakeBook: Boolean(options.mistakeReview),
   };
 
   showView("quizEn");
@@ -666,6 +793,7 @@ function onHomophonePick(picked) {
   const q = quiz.questions[quiz.index];
   if (picked === q.word) {
     quiz.autoCorrect += 1;
+    clearMistakeOnCorrect(q);
     showFeedback("ok", "答對了！", [], { simple: true });
     setTimeout(goNextQuestion, 900);
     return;
@@ -830,6 +958,7 @@ function resolveParentReview(isCorrect) {
 
   if (isCorrect) {
     quiz.autoCorrect += 1;
+    clearMistakeOnCorrect(q);
     closeFeedbackOverlay();
     showFeedback("ok", "家長確認：答對！", [], { simple: true });
     setTimeout(goNextQuestion, 800);
@@ -894,6 +1023,7 @@ function submitEnAnswer() {
 
   if (englishAnswersMatch(typed, q.english)) {
     quiz.autoCorrect += 1;
+    clearMistakeOnCorrect(q);
     showFeedback("ok", "答對了！", [], { simple: true });
     setTimeout(goNextQuestion, 900);
     return;
@@ -947,6 +1077,7 @@ async function submitAnswer() {
 
   if (result.matched) {
     quiz.autoCorrect += 1;
+    clearMistakeOnCorrect(q);
     showFeedback("ok", "答對了！", [], { simple: true });
     setTimeout(goNextQuestion, 950);
     return;
@@ -971,13 +1102,66 @@ function goNextQuestion() {
   else renderQuestion();
 }
 
+function retryWrongRound() {
+  if (!lastWrongRound?.questions?.length) return;
+  const { subject, child, questions, mode } = lastWrongRound;
+  clearQuizDraft();
+  quiz = {
+    subject,
+    child,
+    questions: [...questions],
+    index: 0,
+    autoCorrect: 0,
+    pending: 0,
+    wrong: [],
+    startedAt: Date.now(),
+    mode,
+    fromMistakeBook: true,
+  };
+
+  if (subject === "en") {
+    enMode = mode || enMode;
+    setEnMode(enMode);
+    showView("quizEn");
+    renderEnQuestion();
+  } else {
+    if (CONFIG.OCR_ENABLED) ensurePaddleOcr().catch(() => {});
+    showView("quizZh");
+    const canvas = $("#hand-canvas");
+    const wrap = canvas.parentElement;
+    if (!handwriting) {
+      handwriting = createHandwritingCanvas(canvas, wrap);
+    } else {
+      handwriting.resize();
+    }
+    renderQuestion();
+  }
+  persistQuizDraft();
+}
+
 function showResult() {
   clearQuizDraft();
+  recordMistakesFromQuiz(quiz);
+
+  const retryQs = questionsFromQuizWrong(quiz);
+  lastWrongRound = retryQs.length
+    ? {
+        subject: quiz.subject,
+        child: quiz.child,
+        questions: retryQs,
+        mode: quiz.mode || enMode,
+      }
+    : null;
+
+  const retryBtn = $("#btn-retry-wrong");
+  if (retryBtn) retryBtn.hidden = !lastWrongRound;
+
   showView("result");
   const total = quiz.questions.length;
   const scored = quiz.autoCorrect;
   const subj = quiz.subject === "en" ? "英語" : "國語";
-  $("#result-title").textContent = `${getChildName(quiz.child)} 完成 · ${subj}`;
+  const bookTag = quiz.fromMistakeBook ? " · 錯題複習" : "";
+  $("#result-title").textContent = `${getChildName(quiz.child)} 完成 · ${subj}${bookTag}`;
   $("#score-big").textContent = `${scored} / ${total}`;
 
   const pendingEl = $("#score-pending");
@@ -1018,6 +1202,8 @@ function showResult() {
       list.appendChild(li);
     });
   }
+
+  renderMistakeBookHome();
 }
 
 function openParentGate() {
@@ -1041,6 +1227,7 @@ function unlockParent() {
   fillParentNameInputs();
   renderPendingList();
   renderScoreHistory();
+  renderParentMistakeList();
 }
 
 function renderHomeScoreHistory() {
@@ -1182,8 +1369,36 @@ function renderPendingList() {
     noBtn.className = "btn btn-no";
     noBtn.textContent = "算錯";
     noBtn.addEventListener("click", () => {
+      const childId = p.childId || p.child;
+      if (p.subject === "en" || p.chinese) {
+        addMistake(
+          childId,
+          "en",
+          {
+            lesson: p.lesson,
+            chinese: p.chinese,
+            english: p.expected,
+            hint: p.hint || "",
+          },
+          p.recognized
+        );
+      } else {
+        addMistake(
+          childId,
+          "zh",
+          {
+            lesson: p.lesson,
+            word: p.expected,
+            zhuyin: p.zhuyin,
+            sentence: p.sentence || "",
+          },
+          p.recognized
+        );
+      }
       removePending(p.id);
       renderPendingList();
+      renderParentMistakeList();
+      renderMistakeBookHome();
     });
 
     actions.append(okBtn, noBtn);
@@ -1215,6 +1430,29 @@ function bindEvents() {
       "meaning";
     buildLessonChips(enBank);
     startEnQuiz();
+  });
+
+  $("#btn-review-zh-mistakes")?.addEventListener("click", () => {
+    startZhQuiz({ mistakeReview: true });
+  });
+  $("#btn-review-en-mistakes")?.addEventListener("click", () => {
+    primeSpeech();
+    startEnQuiz({ mistakeReview: true });
+  });
+  $("#btn-retry-wrong")?.addEventListener("click", retryWrongRound);
+  $("#btn-clear-zh-mistakes")?.addEventListener("click", () => {
+    if (confirm("確定清空目前小孩的國語錯題本？")) {
+      clearMistakes(getSelectedChild(), "zh");
+      renderParentMistakeList();
+      renderMistakeBookHome();
+    }
+  });
+  $("#btn-clear-en-mistakes")?.addEventListener("click", () => {
+    if (confirm("確定清空目前小孩的英語錯題本？")) {
+      clearMistakes(getSelectedChild(), "en");
+      renderParentMistakeList();
+      renderMistakeBookHome();
+    }
   });
 
   document.querySelectorAll(".en-mode-picker .chip").forEach((btn) => {
@@ -1302,6 +1540,7 @@ async function init() {
   await refreshBank();
   renderHomeScoreHistory();
   renderResumeBanner();
+  renderMistakeBookHome();
 }
 
 window.startZhQuiz = startZhQuiz;

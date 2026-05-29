@@ -658,6 +658,67 @@ body {
   line-height: 1.4;
 }
 
+.mistake-book-home {
+  margin: 12px 0 4px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: #fff8f3;
+  border: 1px solid #ffd4c2;
+}
+
+.mistake-book-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.mistake-book-meta {
+  font-size: 0.88rem;
+  color: var(--muted);
+}
+
+.mistake-book-hint {
+  font-size: 0.78rem;
+  color: var(--muted);
+  margin: 6px 0 10px;
+  line-height: 1.4;
+}
+
+.mistake-book-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.mistake-parent-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 12px;
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.mistake-parent-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.9rem;
+}
+
+.mistake-parent-list li:last-child {
+  border-bottom: none;
+}
+
+.parent-mistake-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
 .score-history-list {
   list-style: none;
   padding: 0;

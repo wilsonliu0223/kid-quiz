@@ -77,6 +77,32 @@
           <p class="quiz-count-hint" id="quiz-count-hint">題數少於題庫時，隨機抽題不重複</p>
         </div>
 
+        <section class="mistake-book-home" id="mistake-book-home" hidden>
+          <div class="mistake-book-head">
+            <span class="label">錯題本</span>
+            <span class="mistake-book-meta" id="mistake-book-meta"></span>
+          </div>
+          <p class="mistake-book-hint">存在這支手機瀏覽器，依 A/B 分開；答對會自動移除</p>
+          <div class="mistake-book-actions">
+            <button
+              type="button"
+              class="btn btn-secondary btn-block"
+              id="btn-review-zh-mistakes"
+              hidden
+            >
+              複習國語錯題
+            </button>
+            <button
+              type="button"
+              class="btn btn-secondary btn-block"
+              id="btn-review-en-mistakes"
+              hidden
+            >
+              複習英語錯題
+            </button>
+          </div>
+        </section>
+
         <div class="subject-cards">
           <button
             type="button"
@@ -201,6 +227,14 @@
         <ul class="mistake-list" id="mistake-list"></ul>
 
         <footer class="result-footer">
+          <button
+            type="button"
+            class="btn btn-primary btn-block"
+            id="btn-retry-wrong"
+            hidden
+          >
+            再考本輪錯題
+          </button>
           <button type="button" class="btn btn-secondary" id="btn-retry">再練一次</button>
           <button type="button" class="btn btn-primary" id="btn-home">回首頁</button>
         </footer>
@@ -253,6 +287,21 @@
 
             <h3 class="parent-heading">待確認 <span id="pending-count">0</span></h3>
             <div id="pending-list" class="pending-list"></div>
+
+            <h3 class="parent-heading">
+              錯題本
+              <span id="parent-mistake-count">0</span>
+            </h3>
+            <p class="parent-note">存在此手機瀏覽器，換手機不會同步</p>
+            <ul class="mistake-parent-list" id="parent-mistake-list"></ul>
+            <div class="parent-mistake-actions">
+              <button type="button" class="btn btn-secondary" id="btn-clear-zh-mistakes">
+                清空國語錯題
+              </button>
+              <button type="button" class="btn btn-secondary" id="btn-clear-en-mistakes">
+                清空英語錯題
+              </button>
+            </div>
             <p class="parent-note">
               設定試算表請編輯 <code>js/config.js</code>，詳見 README。
             </p>
