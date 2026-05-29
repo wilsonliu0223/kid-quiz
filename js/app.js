@@ -89,6 +89,10 @@ function buildLessonChips(bank) {
     return;
   }
 
+  if (!lessons.includes(lessonFilter)) {
+    lessonFilter = "全部";
+  }
+
   wrap.hidden = false;
   lessons.forEach((name) => {
     const btn = document.createElement("button");
@@ -211,7 +215,11 @@ function startEnQuiz() {
   buildLessonChips(enBank);
   const questions = pickRandomQuestions(enBank, 10, lessonFilter);
   if (!questions.length) {
-    alert("沒有英語題目！請在試算表新增「英語」工作表或檢查課次。");
+    const hint =
+      lessonFilter !== "全部"
+        ? `目前課次「${lessonFilter}」在英語題庫沒有題目，請改選「全部」或「測試」等英語課次。`
+        : "請在試算表新增「英語」工作表，並確認「類型」欄為「單字」。";
+    alert(`沒有英語題目！${hint}`);
     return;
   }
 
