@@ -1,5 +1,6 @@
 const KEY_PENDING = "kid-quiz-pending";
 const KEY_CHILD = "kid-quiz-child";
+const KEY_QUIZ_DRAFT = "kid-quiz-draft";
 
 export function getSelectedChild() {
   return sessionStorage.getItem(KEY_CHILD) || "A";
@@ -37,4 +38,25 @@ export function removePending(id) {
   const list = loadPending().filter((p) => p.id !== id);
   savePending(list);
   return list;
+}
+
+export function saveQuizDraft(draft) {
+  try {
+    sessionStorage.setItem(KEY_QUIZ_DRAFT, JSON.stringify(draft));
+  } catch (e) {
+    console.warn("saveQuizDraft", e);
+  }
+}
+
+export function loadQuizDraft() {
+  try {
+    const raw = sessionStorage.getItem(KEY_QUIZ_DRAFT);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+export function clearQuizDraft() {
+  sessionStorage.removeItem(KEY_QUIZ_DRAFT);
 }

@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta
       name="viewport"
-      content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"
+      content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content"
     />
     <meta name="theme-color" content="#e85d2a" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -57,6 +57,16 @@
             <button type="button" class="chip" data-quiz-count="all">全部</button>
           </div>
           <p class="quiz-count-hint" id="quiz-count-hint">題數少於題庫時，隨機抽題不重複</p>
+        </div>
+
+        <div class="resume-quiz-banner" id="resume-quiz-banner" hidden>
+          <p class="resume-quiz-text" id="resume-quiz-text"></p>
+          <button type="button" class="btn btn-primary btn-block" id="btn-resume-quiz">
+            繼續上次測驗
+          </button>
+          <button type="button" class="btn btn-secondary btn-block" id="btn-discard-draft">
+            放棄暫存，重新選擇
+          </button>
         </div>
 
         <div class="subject-cards">
@@ -162,7 +172,7 @@
           </button>
         </div>
 
-        <footer class="quiz-footer">
+        <footer class="quiz-footer quiz-footer-en" id="quiz-footer-en">
           <button type="button" class="btn btn-secondary" id="btn-clear-en">清除</button>
           <button type="button" class="btn btn-primary btn-primary-en" id="btn-submit-en">送出</button>
         </footer>

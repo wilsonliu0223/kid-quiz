@@ -18,6 +18,9 @@ import {
   addPending,
   loadPending,
   removePending,
+  saveQuizDraft,
+  loadQuizDraft,
+  clearQuizDraft,
 } from "./store.js";
 import { fillSentenceContext } from "./sentence.js";
 import { getChildName, getChildNames, setChildNames } from "./children.js";
@@ -104,6 +107,11 @@ const views = {
 };
 
 function showView(name) {
+  if (name !== "quizEn" && enKeyboardLiftCleanup) {
+    enKeyboardLiftCleanup();
+    enKeyboardLiftCleanup = null;
+  }
+
   Object.entries(views).forEach(([key, el]) => {
     if (!el) return;
     const on = key === name;
@@ -113,7 +121,11 @@ function showView(name) {
   if (name === "quizZh") {
     requestAnimationFrame(() => handwriting?.resize());
   }
-  if (name === "home") renderHomeScoreHistory();
+  if (name === "home") {
+    renderHomeScoreHistory();
+    renderResumeBanner();
+  }
+  if (name === "quizEn") setupEnQuizKeyboardLift();
 }
 
 function showBootError(msg) {
@@ -225,7 +237,123 @@ function saveParentNames() {
   }, 2000);
 }
 
+function persistQuizDraft() {
+  if (!quiz) return;
+  saveQuizDraft({
+    subject: quiz.subject,
+    mode: quiz.mode,
+    child: quiz.child,
+    lessonFilter,
+    enMode,
+    questions: quiz.questions,
+    index: quiz.index,
+    autoCorrect: quiz.autoCorrect,
+    pending: quiz.pending,
+    wrong: quiz.wrong,
+    startedAt: quiz.startedAt,
+  });
+}
+
+function renderResumeBanner() {
+  const banner = $("#resume-quiz-banner");
+  const text = $("#resume-quiz-text");
+  if (!banner) return;
+
+  const draft = loadQuizDraft();
+  if (!draft?.questions?.length) {
+    banner.hidden = true;
+    return;
+  }
+
+  const subj = draft.subject === "en" ? "英語" : "國語";
+  const at = draft.index + 1;
+  const total = draft.questions.length;
+  text.textContent = `${subj} 測驗進行中：第 ${at} / ${total} 題（已暫存）`;
+  banner.hidden = false;
+}
+
+function resumeQuiz() {
+  const draft = loadQuizDraft();
+  if (!draft?.questions?.length) return;
+
+  lessonFilter = draft.lessonFilter || "全部";
+  if (draft.subject === "en") enMode = draft.mode || draft.enMode || "meaning";
+
+  quiz = {
+    subject: draft.subject,
+    mode: draft.mode,
+    child: draft.child || getSelectedChild(),
+    questions: draft.questions,
+    index: draft.index,
+    autoCorrect: draft.autoCorrect,
+    pending: draft.pending,
+    wrong: draft.wrong || [],
+    startedAt: draft.startedAt,
+  };
+
+  if (draft.subject === "en") {
+    document.querySelectorAll(".en-mode-picker .chip").forEach((btn) => {
+      btn.classList.toggle("chip-active", btn.dataset.enMode === (quiz.mode || enMode));
+    });
+    showView("quizEn");
+    renderEnQuestion();
+    return;
+  }
+
+  showView("quizZh");
+  const canvas = $("#hand-canvas");
+  const wrap = canvas.parentElement;
+  if (!handwriting) {
+    handwriting = createHandwritingCanvas(canvas, wrap);
+  } else {
+    handwriting.resize();
+  }
+  renderQuestion();
+}
+
+function leaveQuizToHome() {
+  if (!quiz) {
+    showView("home");
+    return;
+  }
+  const at = quiz.index + 1;
+  const total = quiz.questions.length;
+  const ok = confirm(
+    `離開測驗？\n\n目前第 ${at} / ${total} 題。\n進度會暫存，回首頁可點「繼續上次測驗」。`
+  );
+  if (!ok) return;
+  persistQuizDraft();
+  showView("home");
+}
+
+let enKeyboardLiftCleanup = null;
+
+function setupEnQuizKeyboardLift() {
+  enKeyboardLiftCleanup?.();
+  enKeyboardLiftCleanup = null;
+
+  const footer = $("#quiz-footer-en");
+  if (!footer || !window.visualViewport) return;
+
+  const onResize = () => {
+    const gap = Math.max(0, window.innerHeight - window.visualViewport.height);
+    footer.style.paddingBottom =
+      gap > 0 ? `${gap + 8 + parseInt(getComputedStyle(document.documentElement).getPropertyValue("--safe-bottom") || "0", 10)}px` : "";
+  };
+
+  window.visualViewport.addEventListener("resize", onResize);
+  window.visualViewport.addEventListener("scroll", onResize);
+  onResize();
+
+  enKeyboardLiftCleanup = () => {
+    window.visualViewport.removeEventListener("resize", onResize);
+    window.visualViewport.removeEventListener("scroll", onResize);
+    footer.style.paddingBottom = "";
+  };
+}
+
 function startZhQuiz() {
+  clearQuizDraft();
   const countSetting = getQuizCountSetting();
   const questions = pickRandomQuestions(zhBank, countSetting, lessonFilter);
   if (!questions.length) {
@@ -321,6 +449,7 @@ async function playEnglishAudio() {
 }
 
 function startEnQuiz() {
+  clearQuizDraft();
   buildLessonChips(enBank);
   const countSetting = getQuizCountSetting();
   const questions = pickRandomQuestions(enBank, countSetting, lessonFilter);
@@ -659,11 +788,13 @@ function goNextQuestion() {
     showResult();
     return;
   }
+  persistQuizDraft();
   if (quiz.subject === "en") renderEnQuestion();
   else renderQuestion();
 }
 
 function showResult() {
+  clearQuizDraft();
   showView("result");
   const total = quiz.questions.length;
   const scored = quiz.autoCorrect;
@@ -915,11 +1046,15 @@ function bindEvents() {
     });
   });
 
-  $("#btn-quiz-back").addEventListener("click", () => {
-    if (confirm("確定要離開測驗嗎？")) showView("home");
-  });
-  $("#btn-quiz-back-en").addEventListener("click", () => {
-    if (confirm("確定要離開測驗嗎？")) showView("home");
+  $("#btn-quiz-back").addEventListener("click", leaveQuizToHome);
+  $("#btn-quiz-back-en").addEventListener("click", leaveQuizToHome);
+
+  $("#btn-resume-quiz")?.addEventListener("click", resumeQuiz);
+  $("#btn-discard-draft")?.addEventListener("click", () => {
+    if (confirm("確定放棄暫存的測驗進度嗎？")) {
+      clearQuizDraft();
+      renderResumeBanner();
+    }
   });
   $("#btn-clear-canvas").addEventListener("click", () => handwriting?.clear());
   $("#btn-submit-answer").addEventListener("click", submitAnswer);
@@ -987,6 +1122,7 @@ async function init() {
   initQuizCountPicker();
   await refreshBank();
   renderHomeScoreHistory();
+  renderResumeBanner();
 }
 
 window.startZhQuiz = startZhQuiz;
