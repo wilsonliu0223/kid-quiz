@@ -3,7 +3,10 @@ export const CONFIG = {
   SPREADSHEET_ID: "1CIkz0vH-Dp3xj9K3OUvXO_mfaFwq2-qzEJbQcIyWvPg",
   SHEETS_JSON_URL: "",
   SHEET_ZH: "國語",
+  SHEET_EN: "英語",
   QUIZ_TYPES: ["生字"],
+  QUIZ_TYPES_ZH: ["生字"],
+  QUIZ_TYPES_EN: ["單字"],
   PARENT_PIN: "1234",
   CHILD_NAMES: {
     A: "思妘",

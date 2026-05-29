@@ -214,6 +214,68 @@ body {
   padding-bottom: 8px;
 }
 
+.quiz-header-en {
+  border-bottom: 3px solid var(--en);
+  padding-bottom: 8px;
+}
+
+.quiz-header-en .quiz-subject {
+  color: #1a5bb8;
+}
+
+.btn-text-en {
+  color: var(--en);
+}
+
+.en-mode-picker {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.en-mode-picker .chip-active {
+  border-color: var(--en);
+  background: #f0f4ff;
+  color: #1a5bb8;
+}
+
+.en-chinese-display {
+  text-align: center;
+  font-size: clamp(2rem, 10vw, 2.75rem);
+  font-weight: 700;
+  margin: 8px 0 4px;
+}
+
+.en-hint-display {
+  text-align: center;
+  font-size: 1.1rem;
+  color: var(--muted);
+  margin: 0 0 12px;
+}
+
+.en-answer-input {
+  width: 100%;
+  min-height: 56px;
+  font-size: 1.35rem;
+  padding: 12px 16px;
+  border: 2px solid var(--border);
+  border-radius: 12px;
+  margin-bottom: 10px;
+  text-align: center;
+}
+
+.btn-primary-en {
+  background: var(--en);
+}
+
+.btn-primary-en:active {
+  background: #1a5bb8;
+}
+
+#btn-speak-en {
+  margin-bottom: 8px;
+}
+
 .quiz-subject {
   font-weight: 700;
   color: var(--zh-dark);

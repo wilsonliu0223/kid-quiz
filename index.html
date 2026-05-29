@@ -57,9 +57,14 @@
             <span class="card-title">國語</span>
             <span class="card-desc">看注音 · 手寫國字</span>
           </button>
-          <button type="button" class="card card-en card-disabled" disabled>
+          <button
+            type="button"
+            class="card card-en"
+            id="btn-start-en"
+            data-action="start-en"
+          >
             <span class="card-title">英語</span>
-            <span class="card-desc">準備中</span>
+            <span class="card-desc">看中拼英 · 聽音拼字</span>
           </button>
         </div>
 
@@ -89,6 +94,48 @@
         <footer class="quiz-footer">
           <button type="button" class="btn btn-secondary" id="btn-clear-canvas">清除</button>
           <button type="button" class="btn btn-primary" id="btn-submit-answer">送出</button>
+        </footer>
+      </section>
+
+      <!-- 英語測驗 -->
+      <section id="view-quiz-en" class="view view-hidden" aria-label="英語測驗">
+        <header class="quiz-header quiz-header-en">
+          <button type="button" class="btn-text btn-text-en" id="btn-quiz-back-en">← 返回</button>
+          <span class="quiz-subject">英語</span>
+          <span class="quiz-progress" id="quiz-progress-en">第 1 / 10 題</span>
+        </header>
+
+        <div class="en-mode-picker" role="group" aria-label="測驗模式">
+          <button type="button" class="chip chip-active" data-en-mode="meaning">看中拼英</button>
+          <button type="button" class="chip" data-en-mode="listen">聽音拼字</button>
+        </div>
+
+        <div class="quiz-body">
+          <div id="en-prompt-meaning">
+            <p class="en-chinese-display" id="en-chinese-display">貓</p>
+            <p class="en-hint-display" id="en-hint-display" hidden></p>
+          </div>
+          <p class="quiz-hint" id="en-quiz-hint">請輸入英文單字</p>
+
+          <input
+            id="en-answer-input"
+            class="en-answer-input"
+            type="text"
+            inputmode="latin"
+            autocomplete="off"
+            autocapitalize="off"
+            spellcheck="false"
+            placeholder="輸入英文"
+          />
+
+          <button type="button" class="btn btn-secondary btn-block" id="btn-speak-en" hidden>
+            🔊 再聽一次
+          </button>
+        </div>
+
+        <footer class="quiz-footer">
+          <button type="button" class="btn btn-secondary" id="btn-clear-en">清除</button>
+          <button type="button" class="btn btn-primary btn-primary-en" id="btn-submit-en">送出</button>
         </footer>
       </section>
 
