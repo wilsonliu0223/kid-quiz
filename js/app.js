@@ -21,6 +21,8 @@ import {
   logQuizResult,
   loadLocalScores,
   formatScoreLine,
+  formatScoreSummary,
+  scoresForChild,
 } from "./score-log.js";
 
 const $ = (sel) => document.querySelector(sel);
@@ -33,6 +35,7 @@ let quiz = null;
 let handwriting = null;
 /** @type {{ recognized: string, imageDataUrl: string | null } | null} */
 let pendingReview = null;
+let homeHistoryShowAll = false;
 
 const views = {
   home: $("#view-home"),
@@ -52,6 +55,7 @@ function showView(name) {
   if (name === "quizZh") {
     requestAnimationFrame(() => handwriting?.resize());
   }
+  if (name === "home") renderHomeScoreHistory();
 }
 
 function showBootError(msg) {
@@ -131,6 +135,7 @@ function initChildPicker() {
     btn.addEventListener("click", () => {
       setSelectedChild(btn.dataset.child);
       renderChildChips();
+      renderHomeScoreHistory();
     });
   });
 }
@@ -570,6 +575,7 @@ function showResult() {
   saveStatus.textContent = "正在記錄成績…";
   void logQuizResult(quiz, lessonFilter).then((r) => {
     saveStatus.textContent = r.message;
+    renderHomeScoreHistory();
   });
 
   const list = $("#mistake-list");
@@ -617,6 +623,55 @@ function unlockParent() {
   fillParentNameInputs();
   renderPendingList();
   renderScoreHistory();
+}
+
+function renderHomeScoreHistory() {
+  const listEl = $("#home-history-list");
+  const emptyEl = $("#home-history-empty");
+  const toggleBtn = $("#btn-home-history-toggle");
+  if (!listEl) return;
+
+  const all = loadLocalScores();
+  const childId = getSelectedChild();
+  const childName = getChildName(childId);
+  const scores = homeHistoryShowAll
+    ? all
+    : scoresForChild(all, childId, childName);
+  const shown = scores.slice(0, 8);
+
+  listEl.innerHTML = "";
+  if (emptyEl) emptyEl.hidden = shown.length > 0;
+
+  if (!shown.length) {
+    if (emptyEl) {
+      emptyEl.hidden = false;
+      emptyEl.textContent = homeHistoryShowAll
+        ? "尚無紀錄，完成測驗後會顯示"
+        : `${childName} 尚無紀錄`;
+    }
+  } else {
+    shown.forEach((s) => {
+      const { score, meta } = formatScoreSummary(s);
+      const li = document.createElement("li");
+      const scoreSpan = document.createElement("span");
+      scoreSpan.className = "home-history-score";
+      scoreSpan.textContent = score;
+      if (s.subject === "英語") scoreSpan.style.color = "var(--en)";
+      const metaSpan = document.createElement("span");
+      metaSpan.className = "home-history-meta";
+      const who =
+        homeHistoryShowAll && s.child && s.child !== childName
+          ? `${s.child} · `
+          : "";
+      metaSpan.textContent = who + meta;
+      li.append(scoreSpan, metaSpan);
+      listEl.appendChild(li);
+    });
+  }
+
+  if (toggleBtn) {
+    toggleBtn.textContent = homeHistoryShowAll ? "只看此人" : "看全部";
+  }
 }
 
 function renderScoreHistory() {
@@ -763,6 +818,11 @@ function bindEvents() {
     else startZhQuiz();
   });
   $("#btn-home").addEventListener("click", () => showView("home"));
+
+  $("#btn-home-history-toggle")?.addEventListener("click", () => {
+    homeHistoryShowAll = !homeHistoryShowAll;
+    renderHomeScoreHistory();
+  });
   $("#btn-parent-back").addEventListener("click", () => showView("home"));
   $("#btn-pin-submit").addEventListener("click", unlockParent);
   $("#btn-reload-sheet").addEventListener("click", async () => {
@@ -803,6 +863,7 @@ async function init() {
   bindEvents();
   initChildPicker();
   await refreshBank();
+  renderHomeScoreHistory();
 }
 
 window.startZhQuiz = startZhQuiz;

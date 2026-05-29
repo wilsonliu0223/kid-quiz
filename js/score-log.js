@@ -105,9 +105,38 @@ export async function logQuizResult(quiz, lessonFilter) {
   };
 }
 
+export function scoresForChild(scores, childId, childName) {
+  return scores.filter(
+    (s) => s.childId === childId || s.child === childName
+  );
+}
+
 export function formatScoreLine(s) {
   const t = s.savedAt || s.at || "";
   const when = t ? new Date(t).toLocaleString("zh-TW", { hour12: false }) : "";
   const mode = s.mode ? ` · ${s.mode}` : "";
-  return `${when} · ${s.child} · ${s.subject}${mode} · ${s.correct}/${s.total}（待確認 ${s.pending}）· ${s.lesson || "全部"}`;
+  const pending = Number(s.pending) || 0;
+  const pendingStr = pending > 0 ? `（待確認 ${pending}）` : "";
+  return `${when} · ${s.child} · ${s.subject}${mode} · ${s.correct}/${s.total}${pendingStr} · ${s.lesson || "全部"}`;
+}
+
+/** @returns {{ score: string, meta: string }} */
+export function formatScoreSummary(s) {
+  const t = s.savedAt || s.at || "";
+  const when = t
+    ? new Date(t).toLocaleString("zh-TW", {
+        month: "numeric",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false,
+      })
+    : "";
+  const mode = s.mode ? ` · ${s.mode}` : "";
+  const pending = Number(s.pending) || 0;
+  const extra = pending > 0 ? ` · 待確認 ${pending}` : "";
+  return {
+    score: `${s.correct} / ${s.total}`,
+    meta: `${s.subject}${mode} · ${when}${extra}`,
+  };
 }
