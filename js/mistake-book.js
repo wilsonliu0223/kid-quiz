@@ -108,7 +108,7 @@ export function recordMistakesFromQuiz(quiz) {
 
   const childId = quiz.child || "A";
   for (const w of quiz.wrong) {
-    if (w.skipped) continue;
+    if (w.skipped || w.mistakeBookSaved) continue;
 
     const q = quiz.questions.find((item) => {
       if (quiz.subject === "en") return item.english === w.expected;
