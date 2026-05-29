@@ -370,16 +370,26 @@ body {
 }
 
 .resume-quiz-banner {
-  margin-bottom: 12px;
-  padding: 12px;
-  background: #fff8f0;
-  border: 2px solid #f0c4a8;
+  margin-bottom: 14px;
+  padding: 14px;
+  background: #fff3eb;
+  border: 2px solid var(--zh);
   border-radius: 12px;
+  box-shadow: 0 2px 10px rgba(232, 93, 42, 0.15);
+}
+
+.resume-quiz-label {
+  margin: 0 0 4px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--zh-dark);
+  letter-spacing: 0.05em;
 }
 
 .resume-quiz-text {
-  margin: 0 0 10px;
-  font-size: 0.9rem;
+  margin: 0 0 12px;
+  font-size: 1rem;
+  font-weight: 600;
   line-height: 1.4;
   color: var(--text);
 }

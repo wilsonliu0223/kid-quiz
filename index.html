@@ -34,6 +34,17 @@
           <p class="app-subtitle">長按標題可進入家長區</p>
         </header>
 
+        <div class="resume-quiz-banner" id="resume-quiz-banner" hidden>
+          <p class="resume-quiz-label">未完成測驗</p>
+          <p class="resume-quiz-text" id="resume-quiz-text"></p>
+          <button type="button" class="btn btn-primary btn-block" id="btn-resume-quiz">
+            繼續上次測驗
+          </button>
+          <button type="button" class="btn btn-secondary btn-block" id="btn-discard-draft">
+            放棄暫存
+          </button>
+        </div>
+
         <div class="child-picker" role="group" aria-label="選擇小孩">
           <span class="label">誰在練習？</span>
           <div class="child-btns">
@@ -57,16 +68,6 @@
             <button type="button" class="chip" data-quiz-count="all">全部</button>
           </div>
           <p class="quiz-count-hint" id="quiz-count-hint">題數少於題庫時，隨機抽題不重複</p>
-        </div>
-
-        <div class="resume-quiz-banner" id="resume-quiz-banner" hidden>
-          <p class="resume-quiz-text" id="resume-quiz-text"></p>
-          <button type="button" class="btn btn-primary btn-block" id="btn-resume-quiz">
-            繼續上次測驗
-          </button>
-          <button type="button" class="btn btn-secondary btn-block" id="btn-discard-draft">
-            放棄暫存，重新選擇
-          </button>
         </div>
 
         <div class="subject-cards">

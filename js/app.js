@@ -238,8 +238,8 @@ function saveParentNames() {
 }
 
 function persistQuizDraft() {
-  if (!quiz) return;
-  saveQuizDraft({
+  if (!quiz) return false;
+  return saveQuizDraft({
     subject: quiz.subject,
     mode: quiz.mode,
     child: quiz.child,
@@ -326,6 +326,24 @@ function leaveQuizToHome() {
   showView("home");
 }
 
+function setupQuizAutoSave() {
+  const saveIfInQuiz = () => {
+    const active = document.querySelector(".view-active");
+    if (
+      quiz &&
+      active &&
+      (active.id === "view-quiz-zh" || active.id === "view-quiz-en")
+    ) {
+      persistQuizDraft();
+    }
+  };
+
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "hidden") saveIfInQuiz();
+  });
+  window.addEventListener("pagehide", saveIfInQuiz);
+}
+
 let enKeyboardLiftCleanup = null;
 
 function setupEnQuizKeyboardLift() {
@@ -352,7 +370,27 @@ function setupEnQuizKeyboardLift() {
   };
 }
 
+function blockIfShouldResumeInstead() {
+  const existing = loadQuizDraft();
+  if (!existing?.questions?.length) return false;
+
+  const subj = existing.subject === "en" ? "英語" : "國語";
+  const at = existing.index + 1;
+  const total = existing.questions.length;
+  const restart = confirm(
+    `你有未完成的${subj}測驗（第 ${at}/${total} 題）。\n\n按「確定」= 放棄暫存、重新測驗\n按「取消」= 回首頁點「繼續上次測驗」`
+  );
+  if (!restart) {
+    showView("home");
+    renderResumeBanner();
+    return true;
+  }
+  clearQuizDraft();
+  return false;
+}
+
 function startZhQuiz() {
+  if (blockIfShouldResumeInstead()) return;
   clearQuizDraft();
   const countSetting = getQuizCountSetting();
   const questions = pickRandomQuestions(zhBank, countSetting, lessonFilter);
@@ -381,6 +419,7 @@ function startZhQuiz() {
     handwriting.resize();
   }
   renderQuestion();
+  persistQuizDraft();
 }
 
 function renderQuestion() {
@@ -449,6 +488,7 @@ async function playEnglishAudio() {
 }
 
 function startEnQuiz() {
+  if (blockIfShouldResumeInstead()) return;
   clearQuizDraft();
   buildLessonChips(enBank);
   const countSetting = getQuizCountSetting();
@@ -476,6 +516,7 @@ function startEnQuiz() {
 
   showView("quizEn");
   renderEnQuestion();
+  persistQuizDraft();
 }
 
 function renderEnQuestion() {
@@ -1118,6 +1159,7 @@ async function init() {
   }
 
   bindEvents();
+  setupQuizAutoSave();
   initChildPicker();
   initQuizCountPicker();
   await refreshBank();

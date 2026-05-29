@@ -43,8 +43,10 @@ export function removePending(id) {
 export function saveQuizDraft(draft) {
   try {
     sessionStorage.setItem(KEY_QUIZ_DRAFT, JSON.stringify(draft));
+    return true;
   } catch (e) {
     console.warn("saveQuizDraft", e);
+    return false;
   }
 }
 
