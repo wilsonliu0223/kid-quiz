@@ -283,14 +283,32 @@ function setEnMode(mode) {
     btn.classList.toggle("chip-active", btn.dataset.enMode === mode);
   });
   if (quiz?.subject === "en") {
-    if (mode === "listen") {
-      primeSpeech();
-      renderEnQuestion();
-      const q = quiz.questions[quiz.index];
-      if (q?.english) void speakEnglish(q.english);
-    } else {
-      renderEnQuestion();
-    }
+    renderEnQuestion();
+    if (mode === "listen") void playEnglishAudio();
+  }
+}
+
+async function playEnglishAudio() {
+  const q = quiz?.questions[quiz.index];
+  if (!q?.english) return;
+
+  const btn = $("#btn-speak-en");
+  const hint = $("#en-quiz-hint");
+  primeSpeech();
+
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = "播放中…";
+  }
+
+  const ok = await speakEnglish(q.english);
+
+  if (btn) {
+    btn.disabled = false;
+    btn.textContent = "🔊 播放發音";
+  }
+  if (!ok && hint) {
+    hint.textContent = "無法播音：請調大音量，或改「看中拼英」";
   }
 }
 
@@ -903,9 +921,7 @@ function bindEvents() {
   });
   $("#btn-submit-en").addEventListener("click", submitEnAnswer);
   $("#btn-speak-en").addEventListener("click", () => {
-    primeSpeech();
-    const q = quiz?.questions[quiz.index];
-    if (q?.english) void speakEnglish(q.english);
+    void playEnglishAudio();
   });
   $("#en-answer-input").addEventListener("keydown", (e) => {
     if (e.key === "Enter") submitEnAnswer();
