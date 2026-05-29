@@ -6,6 +6,9 @@ export const CONFIG = {
   /** 若已部署 Apps Script Web App，填完整網址（優先於 SPREADSHEET_ID） */
   SHEETS_JSON_URL: "",
 
+  /** 成績寫入（與試算表綁定的 Apps Script 部署 URL，見 docs/google-apps-script.gs） */
+  SCORE_LOG_URL: "",
+
   /** 國語工作表名稱 */
   SHEET_ZH: "國語",
 

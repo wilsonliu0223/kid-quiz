@@ -437,6 +437,29 @@ body {
   color: var(--zh-dark);
 }
 
+.score-save-status {
+  font-size: 0.9rem;
+  color: var(--muted);
+  margin: 8px 0 0;
+  line-height: 1.4;
+}
+
+.score-history-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 16px;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.score-history-list li {
+  font-size: 0.85rem;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+  color: var(--text);
+  line-height: 1.35;
+}
+
 .score-pending {
   color: var(--warn);
   font-size: 1rem;

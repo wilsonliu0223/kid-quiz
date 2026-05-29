@@ -17,6 +17,11 @@ import {
 } from "./store.js";
 import { fillSentenceContext } from "./sentence.js";
 import { getChildName, getChildNames, setChildNames } from "./children.js";
+import {
+  logQuizResult,
+  loadLocalScores,
+  formatScoreLine,
+} from "./score-log.js";
 
 const $ = (sel) => document.querySelector(sel);
 
@@ -560,6 +565,13 @@ function showResult() {
     pendingEl.hidden = true;
   }
 
+  const saveStatus = $("#score-save-status");
+  saveStatus.hidden = false;
+  saveStatus.textContent = "正在記錄成績…";
+  void logQuizResult(quiz, lessonFilter).then((r) => {
+    saveStatus.textContent = r.message;
+  });
+
   const list = $("#mistake-list");
   list.innerHTML = "";
   if (!quiz.wrong.length && scored === total) {
@@ -604,6 +616,35 @@ function unlockParent() {
   $("#parent-names").hidden = false;
   fillParentNameInputs();
   renderPendingList();
+  renderScoreHistory();
+}
+
+function renderScoreHistory() {
+  const listEl = $("#score-history-list");
+  const hintEl = $("#score-history-hint");
+  if (!listEl) return;
+
+  const scores = loadLocalScores();
+  listEl.innerHTML = "";
+
+  if (!scores.length) {
+    const li = document.createElement("li");
+    li.textContent = "尚無紀錄（完成一次測驗後會出現）";
+    listEl.appendChild(li);
+  } else {
+    scores.slice(0, 15).forEach((s) => {
+      const li = document.createElement("li");
+      li.textContent = formatScoreLine(s);
+      listEl.appendChild(li);
+    });
+  }
+
+  if (hintEl) {
+    const hasUrl = Boolean((CONFIG.SCORE_LOG_URL || "").trim());
+    hintEl.textContent = hasUrl
+      ? "本機保留最近紀錄；完整歷史請看試算表「成績」工作表。"
+      : "若要寫入 Google 試算表，請部署 Apps Script 並在 config.site.js 設定 SCORE_LOG_URL。";
+  }
 }
 
 function renderPendingList() {

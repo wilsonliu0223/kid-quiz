@@ -148,6 +148,7 @@
         <div class="score-block">
           <p class="score-big" id="score-big">0 / 10</p>
           <p class="score-pending" id="score-pending" hidden></p>
+          <p class="score-save-status" id="score-save-status" hidden></p>
         </div>
 
         <ul class="mistake-list" id="mistake-list"></ul>
@@ -199,6 +200,10 @@
             <button type="button" class="btn btn-secondary btn-block" id="btn-reload-sheet">
               重新載入試算表
             </button>
+            <h3 class="parent-heading">最近成績</h3>
+            <ul class="score-history-list" id="score-history-list"></ul>
+            <p class="parent-note" id="score-history-hint"></p>
+
             <h3 class="parent-heading">待確認 <span id="pending-count">0</span></h3>
             <div id="pending-list" class="pending-list"></div>
             <p class="parent-note">

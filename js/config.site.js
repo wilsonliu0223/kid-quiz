@@ -2,6 +2,9 @@
 export const CONFIG = {
   SPREADSHEET_ID: "1CIkz0vH-Dp3xj9K3OUvXO_mfaFwq2-qzEJbQcIyWvPg",
   SHEETS_JSON_URL: "",
+
+  /** 成績寫入：同一試算表部署的 Apps Script 網址（見 docs/google-apps-script.gs） */
+  SCORE_LOG_URL: "",
   SHEET_ZH: "國語",
   SHEET_EN: "英語",
   QUIZ_TYPES: ["生字"],
