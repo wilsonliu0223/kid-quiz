@@ -6,8 +6,21 @@ export function createHandwritingCanvas(canvasEl, wrapEl) {
   const ctx = canvasEl.getContext("2d");
   let drawing = false;
   let last = null;
+  /** @type {number[][][]} */
+  let strokes = [];
+  /** @type {{ x: number, y: number }[]} */
+  let currentStroke = [];
+
+  function getStrokes() {
+    if (currentStroke.length >= 2) {
+      commitStroke();
+    }
+    return strokes.map((s) => s.map(([x, y]) => [x, y]));
+  }
 
   function resize() {
+    strokes = [];
+    currentStroke = [];
     const rect = wrapEl.getBoundingClientRect();
     const dpr = window.devicePixelRatio || 1;
     canvasEl.width = Math.floor(rect.width * dpr);
@@ -27,10 +40,28 @@ export function createHandwritingCanvas(canvasEl, wrapEl) {
     return { x: t.clientX - rect.left, y: t.clientY - rect.top };
   }
 
+  function pushPoint(p) {
+    currentStroke.push({ x: p.x, y: p.y });
+  }
+
+  function commitStroke() {
+    if (currentStroke.length < 2) {
+      currentStroke = [];
+      return;
+    }
+    const stroke = currentStroke.map((p) => [
+      Math.round(p.x),
+      Math.round(p.y),
+    ]);
+    strokes.push(stroke);
+    currentStroke = [];
+  }
+
   function start(e) {
     e.preventDefault();
     drawing = true;
     last = pointFromEvent(e);
+    currentStroke = [last];
   }
 
   function move(e) {
@@ -41,6 +72,7 @@ export function createHandwritingCanvas(canvasEl, wrapEl) {
     ctx.moveTo(last.x, last.y);
     ctx.lineTo(p.x, p.y);
     ctx.stroke();
+    pushPoint(p);
     last = p;
   }
 
@@ -48,12 +80,15 @@ export function createHandwritingCanvas(canvasEl, wrapEl) {
     if (!drawing) return;
     e.preventDefault();
     drawing = false;
+    commitStroke();
     last = null;
   }
 
   function clear() {
     const rect = wrapEl.getBoundingClientRect();
     ctx.clearRect(0, 0, rect.width, rect.height);
+    strokes = [];
+    currentStroke = [];
   }
 
   function isBlank() {
@@ -85,5 +120,5 @@ export function createHandwritingCanvas(canvasEl, wrapEl) {
   }
   resize();
 
-  return { resize, clear, isBlank, toDataURL };
+  return { resize, clear, isBlank, toDataURL, getStrokes };
 }

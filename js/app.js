@@ -11,8 +11,9 @@ import {
   primeSpeech,
 } from "./english.js";
 import { createHandwritingCanvas } from "./canvas-handwriting.js";
-import { recognizeCanvas, answersMatch } from "./ocr.js";
 import { buildHomophoneChoices } from "./homophones.js";
+import { recognizeZhHandwriting } from "./zh-recognize.js";
+import { ensureHanziStrokeReady } from "./hanzi-stroke.js";
 import {
   getSelectedChild,
   setSelectedChild,
@@ -157,6 +158,9 @@ async function refreshBank() {
       `國語 ${zhBank.length} 題 · 英語 ${enBank.length} 題（${src}）${enNote}`
     );
     buildLessonChips(zhBank);
+    if (CONFIG.HANZI_STROKE_ENABLED !== false) {
+      ensureHanziStrokeReady().catch(() => {});
+    }
   } catch (e) {
     console.error(e);
     setSheetStatus(`載入失敗：${e.message}`, true);
@@ -696,10 +700,10 @@ function showHomophonePicker(q, recognized, imageDataUrl) {
 
   pendingReview = { recognized, imageDataUrl };
 
-  const ocrNote = recognized ? `（電腦看到：${recognized}）` : "";
+  const ocrNote = recognized ? `（辨識猜：${recognized}）` : "";
   showFeedback(
     "warn",
-    "電腦認不太清楚",
+    "請選出正確的字",
     [
       {
         label: "再寫一次",
@@ -910,30 +914,39 @@ async function submitAnswer() {
   statusEl.hidden = false;
   statusEl.textContent = "辨識中…";
 
-  await ensureOcrReady();
+  if (CONFIG.OCR_ENABLED) {
+    await ensureOcrReady();
+  }
 
   const canvas = $("#hand-canvas");
   const imageDataUrl = handwriting.toDataURL();
-  const { text: recognized, skipped, error } = await recognizeCanvas(canvas, {
+  const strokes = handwriting.getStrokes ? handwriting.getStrokes() : [];
+
+  const result = await recognizeZhHandwriting({
+    canvas,
+    strokes,
+    imageDataUrl,
     expected: q.word,
+    onStatus: (msg) => {
+      statusEl.textContent = msg;
+    },
   });
 
   statusEl.hidden = true;
   submitBtn.disabled = false;
 
-  const match = !skipped && !error && answersMatch(recognized, q.word);
-
-  if (match) {
+  if (result.matched) {
     quiz.autoCorrect += 1;
     showFeedback("ok", "答對了！", [], { simple: true });
     setTimeout(goNextQuestion, 950);
     return;
   }
 
+  const recognized = result.text || "";
   if (CONFIG.HOMOPHONE_PICKER !== false) {
-    showHomophonePicker(q, recognized || "", imageDataUrl);
+    showHomophonePicker(q, recognized, imageDataUrl);
   } else {
-    showParentReviewOverlay(recognized || "", imageDataUrl);
+    showParentReviewOverlay(recognized, imageDataUrl);
   }
 }
 
