@@ -107,6 +107,41 @@ function resolveZhColIdx(headerRow, dataRows) {
   return idx;
 }
 
+/** 第 1 列標題貼到同一格時，從欄位標題救回前面幾個單字 */
+function recoverEnItemsFromBrokenColLabels(table) {
+  const cols = table.cols || [];
+  if (cols.length < 5) return [];
+
+  const labels = cols.map((c) => cellNorm(c.label));
+  const broken = labels.some((h) => h.split(/\s+/).length > 3);
+  if (!broken) return [];
+
+  const splitField = (text, skipFirst) => {
+    const parts = cellNorm(text).split(/\s+/).filter(Boolean);
+    return skipFirst && parts[0]?.length <= 4 ? parts.slice(1) : parts;
+  };
+
+  const chinese = splitField(labels[2], true);
+  const english = splitField(labels[4], true);
+  const hintsRaw = splitField(labels[3], labels[3]?.startsWith("提示"));
+  const lesson =
+    splitField(labels[0], labels[0]?.startsWith("課次"))[0] || "Unit21考試";
+
+  const n = Math.min(chinese.length, english.length);
+  const items = [];
+  for (let i = 0; i < n; i++) {
+    if (!chinese[i] || !english[i]) continue;
+    items.push({
+      lesson,
+      type: "單字",
+      chinese: chinese[i],
+      hint: hintsRaw[i] || english[i],
+      english: english[i],
+    });
+  }
+  return items;
+}
+
 function resolveEnColIdx(headerRow, dataRows) {
   const idx = {
     lesson: pickCol(COL_EN.lesson, headerRow),
@@ -225,13 +260,19 @@ export async function loadEnItems() {
 
     const items = [];
     const seen = new Set();
-    for (const row of dataRows) {
-      const item = rowToEnItem(rowCells(row), idx);
-      if (!item) continue;
+    const addItem = (item) => {
+      if (!item) return;
       const key = item.english.toLowerCase();
-      if (seen.has(key)) continue;
+      if (seen.has(key)) return;
       seen.add(key);
       items.push(item);
+    };
+
+    for (const row of recoverEnItemsFromBrokenColLabels(table)) {
+      addItem(row);
+    }
+    for (const row of dataRows) {
+      addItem(rowToEnItem(rowCells(row), idx));
     }
     if (!items.length) {
       console.warn("英語工作表無有效列，使用示範題庫");
