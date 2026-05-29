@@ -1,0 +1,640 @@
+/* 手機優先 · 國語測驗 */
+:root {
+  color-scheme: light;
+  --zh: #e85d2a;
+  --zh-dark: #c94e22;
+  --en: #2a7ae8;
+  --bg: #faf8f5;
+  --card: #ffffff;
+  --text: #1a1a1a;
+  --muted: #666;
+  --border: #e8e4de;
+  --ok: #2d8a4e;
+  --warn: #d97706;
+  --err: #c0392b;
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-top: env(safe-area-inset-top, 0px);
+  --font: "PingFang TC", "Microsoft JhengHei", "Noto Sans TC", sans-serif;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  font-family: var(--font);
+  background: var(--bg);
+  color: var(--text);
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior: none;
+}
+
+#app {
+  min-height: 100%;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+
+.view {
+  display: none;
+  flex: 1;
+  flex-direction: column;
+  padding: calc(12px + var(--safe-top)) 16px calc(16px + var(--safe-bottom));
+  max-width: 480px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.view-active {
+  display: flex !important;
+}
+
+.view-hidden {
+  display: none !important;
+  pointer-events: none !important;
+  visibility: hidden !important;
+}
+
+#view-home.view-active {
+  position: relative;
+  z-index: 2;
+}
+
+.boot-error {
+  margin: 16px;
+  padding: 14px;
+  background: #fde8e8;
+  color: var(--err);
+  border-radius: 10px;
+  font-size: 0.95rem;
+  max-width: 480px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.app-header {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.app-title {
+  font-size: 1.5rem;
+  margin: 0 0 4px;
+  font-weight: 700;
+}
+
+.app-subtitle {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.label {
+  display: block;
+  font-size: 0.9rem;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+
+.child-picker {
+  margin-bottom: 16px;
+}
+
+.child-btns,
+.lesson-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.chip {
+  min-height: 44px;
+  min-width: 56px;
+  padding: 10px 18px;
+  border: 2px solid var(--border);
+  border-radius: 999px;
+  background: var(--card);
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.chip-active {
+  border-color: var(--zh);
+  background: #fff5f0;
+  color: var(--zh-dark);
+}
+
+.lesson-picker {
+  margin-bottom: 20px;
+}
+
+.subject-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  flex: 1;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  min-height: 88px;
+  padding: 20px;
+  border: none;
+  border-radius: 16px;
+  text-align: left;
+  cursor: pointer;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+  touch-action: manipulation;
+  position: relative;
+  z-index: 5;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.card-zh {
+  background: linear-gradient(135deg, #fff5f0 0%, #ffe8dc 100%);
+  border: 2px solid #f0c4a8;
+}
+
+.card-en {
+  background: #f0f4ff;
+  border: 2px solid #c5d4f5;
+}
+
+.card-disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.card-title {
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: var(--zh-dark);
+}
+
+.card-en .card-title {
+  color: #1a5bb8;
+}
+
+.card-desc {
+  font-size: 0.95rem;
+  color: var(--muted);
+}
+
+.sheet-status {
+  text-align: center;
+  font-size: 0.85rem;
+  color: var(--muted);
+  margin-top: 16px;
+}
+
+/* 測驗頂部 */
+.quiz-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+  flex-shrink: 0;
+}
+
+.quiz-header-zh {
+  border-bottom: 3px solid var(--zh);
+  padding-bottom: 8px;
+}
+
+.quiz-subject {
+  font-weight: 700;
+  color: var(--zh-dark);
+}
+
+.quiz-progress {
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+.btn-text {
+  border: none;
+  background: none;
+  color: var(--zh);
+  font-size: 1rem;
+  padding: 8px 4px;
+  cursor: pointer;
+  min-height: 44px;
+}
+
+.quiz-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.zhuyin-display {
+  text-align: center;
+  font-size: clamp(2rem, 10vw, 2.75rem);
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  margin: 8px 0 4px;
+  color: var(--text);
+  line-height: 1.3;
+}
+
+.zhuyin-display.is-compact {
+  font-size: clamp(1.35rem, 6vw, 1.75rem);
+  margin-bottom: 2px;
+  color: var(--zh-dark);
+}
+
+.sentence-context {
+  text-align: center;
+  font-size: clamp(1.15rem, 4.8vw, 1.45rem);
+  line-height: 1.65;
+  margin: 0 4px 10px;
+  padding: 12px 14px;
+  background: var(--card);
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  color: var(--text);
+}
+
+.sentence-context .zhuyin-in-sentence {
+  display: inline;
+  font-size: clamp(1.35rem, 5.5vw, 1.65rem);
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  color: var(--zh-dark);
+  padding: 0 2px;
+  border-bottom: 3px solid #f0c4a8;
+}
+
+.quiz-hint {
+  text-align: center;
+  font-size: 0.9rem;
+  color: var(--muted);
+  margin: 0 0 12px;
+}
+
+.canvas-wrap {
+  flex: 1;
+  width: 100%;
+  height: 42vh;
+  min-height: 220px;
+  max-height: 420px;
+  background: var(--card);
+  border: 2px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  touch-action: none;
+}
+
+#hand-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+  background: #fff;
+}
+
+.ocr-status {
+  text-align: center;
+  font-size: 0.85rem;
+  color: var(--muted);
+  margin-top: 8px;
+}
+
+.quiz-footer,
+.result-footer {
+  display: flex;
+  gap: 12px;
+  padding-top: 12px;
+  flex-shrink: 0;
+}
+
+.btn {
+  flex: 1;
+  min-height: 52px;
+  border: none;
+  border-radius: 12px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn-primary {
+  background: var(--zh);
+  color: #fff;
+}
+
+.btn-primary:active {
+  background: var(--zh-dark);
+}
+
+.btn-secondary {
+  background: var(--card);
+  color: var(--text);
+  border: 2px solid var(--border);
+}
+
+.btn-block {
+  width: 100%;
+  flex: none;
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* 成績 */
+.result-title {
+  text-align: center;
+  margin: 0 0 16px;
+}
+
+.score-block {
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.score-big {
+  font-size: 3rem;
+  font-weight: 800;
+  margin: 0;
+  color: var(--zh-dark);
+}
+
+.score-pending {
+  color: var(--warn);
+  font-size: 1rem;
+  margin: 8px 0 0;
+}
+
+.mistake-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 24px;
+  flex: 1;
+  overflow-y: auto;
+}
+
+.mistake-list li {
+  background: var(--card);
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin-bottom: 8px;
+  font-size: 0.95rem;
+  border-left: 4px solid var(--warn);
+}
+
+.mistake-list li.ok-item {
+  border-left-color: var(--ok);
+}
+
+/* 家長區 */
+.parent-body {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.pin-gate {
+  max-width: 280px;
+  margin: 24px auto;
+}
+
+.pin-gate label {
+  display: block;
+  margin-bottom: 8px;
+}
+
+.pin-gate input {
+  width: 100%;
+  min-height: 48px;
+  font-size: 1.25rem;
+  text-align: center;
+  letter-spacing: 0.3em;
+  border: 2px solid var(--border);
+  border-radius: 10px;
+  margin-bottom: 12px;
+}
+
+.pin-error {
+  color: var(--err);
+  text-align: center;
+  font-size: 0.9rem;
+}
+
+.parent-heading {
+  font-size: 1.1rem;
+  margin: 16px 0 12px;
+}
+
+.parent-names {
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.name-field {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+  font-weight: 600;
+}
+
+.name-field input {
+  flex: 1;
+  min-height: 44px;
+  font-size: 1.05rem;
+  border: 2px solid var(--border);
+  border-radius: 10px;
+  padding: 0 12px;
+}
+
+.parent-note {
+  font-size: 0.8rem;
+  color: var(--muted);
+  margin-top: 24px;
+}
+
+.parent-note code {
+  font-size: 0.85em;
+  background: #eee;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.pending-card {
+  background: var(--card);
+  border-radius: 12px;
+  padding: 14px;
+  margin-bottom: 12px;
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.06);
+}
+
+.pending-card img {
+  max-width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin: 8px 0;
+  background: #fff;
+}
+
+.pending-meta {
+  font-size: 0.9rem;
+  color: var(--muted);
+  margin: 4px 0;
+}
+
+.pending-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.pending-actions .btn {
+  flex: 1;
+  min-height: 44px;
+  font-size: 1rem;
+}
+
+.btn-ok {
+  background: var(--ok);
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+}
+
+.btn-no {
+  background: var(--card);
+  border: 2px solid var(--err);
+  color: var(--err);
+  border-radius: 10px;
+}
+
+/* 回饋遮罩（關閉時絕不擋點擊） */
+.feedback-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 24px;
+  display: none;
+  pointer-events: none;
+  visibility: hidden;
+}
+
+.feedback-overlay.is-open {
+  display: flex;
+  pointer-events: auto;
+  visibility: visible;
+}
+
+.feedback-overlay[hidden] {
+  display: none !important;
+  pointer-events: none !important;
+  visibility: hidden !important;
+}
+
+.feedback-card {
+  background: var(--card);
+  border-radius: 16px;
+  padding: 28px 24px;
+  max-width: 320px;
+  width: 100%;
+  text-align: center;
+}
+
+.feedback-text {
+  font-size: 1.35rem;
+  font-weight: 700;
+  margin: 0 0 16px;
+}
+
+.feedback-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.feedback-actions .btn {
+  width: 100%;
+}
+
+.feedback-overlay.feedback-ok .feedback-text {
+  color: var(--ok);
+}
+
+.feedback-overlay.feedback-warn .feedback-text {
+  color: var(--warn);
+}
+
+.feedback-sub {
+  font-size: 0.9rem;
+  color: var(--muted);
+  margin: -8px 0 12px;
+}
+
+.feedback-parent {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 2px dashed var(--border);
+  text-align: left;
+}
+
+.feedback-parent-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  margin: 0 0 8px;
+  color: var(--zh-dark);
+}
+
+.feedback-ocr-line {
+  font-size: 0.85rem;
+  color: var(--muted);
+  margin: 0 0 10px;
+  line-height: 1.5;
+}
+
+.feedback-pin-input {
+  width: 100%;
+  min-height: 44px;
+  font-size: 1.1rem;
+  text-align: center;
+  letter-spacing: 0.2em;
+  border: 2px solid var(--border);
+  border-radius: 10px;
+  margin-bottom: 10px;
+}
+
+.feedback-parent-btns {
+  display: flex;
+  gap: 10px;
+}
+
+.feedback-parent-btns .btn-ok,
+.feedback-parent-btns .btn-no {
+  flex: 1;
+  min-height: 48px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.feedback-overlay.feedback-simple .feedback-parent {
+  display: none;
+}

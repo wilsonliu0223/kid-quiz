@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"
+    />
+    <meta name="theme-color" content="#e85d2a" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <title>家裡練習 10 題</title>
+    <link rel="manifest" href="manifest.json" />
+    <link rel="stylesheet" href="css/app.css" />
+    <script>
+      if (location.protocol === "file:") {
+        document.addEventListener("DOMContentLoaded", function () {
+          document.body.innerHTML =
+            '<div style="padding:24px;font-family:sans-serif;max-width:360px;margin:0 auto">' +
+            "<h2>請用網址開啟</h2>" +
+            "<p>不可直接雙擊檔案。請在專案資料夾執行 <code>start.bat</code>，再用瀏覽器開：</p>" +
+            "<p><strong>http://localhost:8787</strong></p></div>";
+        });
+      }
+    </script>
+  </head>
+  <body>
+    <div id="boot-error" class="boot-error" hidden></div>
+    <div id="app">
+      <!-- 首頁 -->
+      <section id="view-home" class="view view-active" aria-label="首頁">
+        <header class="app-header">
+          <h1 class="app-title" id="home-title">家裡練習 10 題</h1>
+          <p class="app-subtitle">長按標題可進入家長區</p>
+        </header>
+
+        <div class="child-picker" role="group" aria-label="選擇小孩">
+          <span class="label">誰在練習？</span>
+          <div class="child-btns">
+            <button type="button" class="chip chip-active" data-child="A">A</button>
+            <button type="button" class="chip" data-child="B">B</button>
+          </div>
+        </div>
+
+        <div class="lesson-picker" id="lesson-picker" hidden>
+          <span class="label">本週課次</span>
+          <div class="lesson-chips" id="lesson-chips"></div>
+        </div>
+
+        <div class="subject-cards">
+          <button
+            type="button"
+            class="card card-zh"
+            id="btn-start-zh"
+            data-action="start-zh"
+          >
+            <span class="card-title">國語</span>
+            <span class="card-desc">看注音 · 手寫國字</span>
+          </button>
+          <button type="button" class="card card-en card-disabled" disabled>
+            <span class="card-title">英語</span>
+            <span class="card-desc">準備中</span>
+          </button>
+        </div>
+
+        <p class="sheet-status" id="sheet-status">正在載入題庫…</p>
+      </section>
+
+      <!-- 國語測驗 -->
+      <section id="view-quiz-zh" class="view view-hidden" aria-label="國語測驗">
+        <header class="quiz-header quiz-header-zh">
+          <button type="button" class="btn-text" id="btn-quiz-back">← 返回</button>
+          <span class="quiz-subject">國語</span>
+          <span class="quiz-progress" id="quiz-progress">第 1 / 10 題</span>
+        </header>
+
+        <div class="quiz-body">
+          <p class="zhuyin-display" id="zhuyin-display">ㄓㄨˋ ㄧㄣ</p>
+          <p class="sentence-context" id="sentence-context" hidden></p>
+          <p class="quiz-hint" id="quiz-hint">請在下方寫出國字或詞</p>
+
+          <div class="canvas-wrap">
+            <canvas id="hand-canvas" aria-label="手寫區"></canvas>
+          </div>
+
+          <p class="ocr-status" id="ocr-status" hidden></p>
+        </div>
+
+        <footer class="quiz-footer">
+          <button type="button" class="btn btn-secondary" id="btn-clear-canvas">清除</button>
+          <button type="button" class="btn btn-primary" id="btn-submit-answer">送出</button>
+        </footer>
+      </section>
+
+      <!-- 成績 -->
+      <section id="view-result" class="view view-hidden" aria-label="成績">
+        <header class="app-header">
+          <h2 class="result-title" id="result-title">完成</h2>
+        </header>
+
+        <div class="score-block">
+          <p class="score-big" id="score-big">0 / 10</p>
+          <p class="score-pending" id="score-pending" hidden></p>
+        </div>
+
+        <ul class="mistake-list" id="mistake-list"></ul>
+
+        <footer class="result-footer">
+          <button type="button" class="btn btn-secondary" id="btn-retry">再練一次</button>
+          <button type="button" class="btn btn-primary" id="btn-home">回首頁</button>
+        </footer>
+      </section>
+
+      <!-- 家長區 -->
+      <section id="view-parent" class="view view-hidden" aria-label="家長區">
+        <header class="quiz-header">
+          <button type="button" class="btn-text" id="btn-parent-back">← 返回</button>
+          <span class="quiz-subject">家長確認</span>
+        </header>
+
+        <div class="parent-body">
+          <div id="parent-names" class="parent-names" hidden>
+          <h3 class="parent-heading">小孩名字</h3>
+          <label class="name-field"
+            >A <input id="name-child-a" type="text" maxlength="8" autocomplete="off"
+          /></label>
+          <label class="name-field"
+            >B <input id="name-child-b" type="text" maxlength="8" autocomplete="off"
+          /></label>
+          <button type="button" class="btn btn-secondary btn-block" id="btn-save-names">
+            儲存名字
+          </button>
+          <p class="parent-note" id="name-save-msg" hidden>已儲存</p>
+        </div>
+
+        <div id="pin-gate" class="pin-gate">
+            <label for="pin-input">請輸入家長 PIN</label>
+            <input
+              id="pin-input"
+              type="password"
+              inputmode="numeric"
+              maxlength="8"
+              autocomplete="off"
+            />
+            <button type="button" class="btn btn-primary btn-block" id="btn-pin-submit">
+              進入
+            </button>
+            <p class="pin-error" id="pin-error" hidden>PIN 錯誤</p>
+          </div>
+
+          <div id="parent-panel" class="parent-panel" hidden>
+            <button type="button" class="btn btn-secondary btn-block" id="btn-reload-sheet">
+              重新載入試算表
+            </button>
+            <h3 class="parent-heading">待確認 <span id="pending-count">0</span></h3>
+            <div id="pending-list" class="pending-list"></div>
+            <p class="parent-note">
+              設定試算表請編輯 <code>js/config.js</code>，詳見 README。
+            </p>
+          </div>
+        </div>
+      </section>
+
+    </div>
+
+    <!-- 遮罩放在 app 外，避免擋住首頁按鈕 -->
+    <div id="feedback-overlay" class="feedback-overlay" hidden aria-hidden="true">
+      <div class="feedback-card" id="feedback-card">
+        <p class="feedback-text" id="feedback-text"></p>
+        <p class="feedback-sub" id="feedback-sub" hidden></p>
+        <div class="feedback-actions" id="feedback-actions"></div>
+        <div id="feedback-parent" class="feedback-parent" hidden>
+          <p class="feedback-parent-title">家長判定（需 PIN）</p>
+          <p class="feedback-ocr-line" id="feedback-ocr-line"></p>
+          <input
+            id="feedback-pin"
+            class="feedback-pin-input"
+            type="password"
+            inputmode="numeric"
+            maxlength="8"
+            placeholder="輸入家長 PIN"
+            autocomplete="off"
+          />
+          <div class="feedback-parent-btns">
+            <button type="button" class="btn btn-ok" id="feedback-mark-correct">算對</button>
+            <button type="button" class="btn btn-no" id="feedback-mark-wrong">算錯</button>
+          </div>
+          <p class="pin-error" id="feedback-pin-error" hidden>PIN 錯誤</p>
+        </div>
+      </div>
+    </div>
+
+    <script type="module" src="js/app.js"></script>
+  </body>
+</html>

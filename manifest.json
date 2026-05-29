@@ -1,0 +1,11 @@
+{
+  "name": "家裡練習 10 題",
+  "short_name": "練習10題",
+  "description": "國語注音手寫測驗",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#faf8f5",
+  "theme_color": "#e85d2a",
+  "lang": "zh-TW",
+  "orientation": "portrait"
+}

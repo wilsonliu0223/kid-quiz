@@ -1,0 +1,6 @@
+.DS_Store
+Thumbs.db
+*.log
+
+# 含 PIN、試算表 ID、小孩名字 — 勿上傳公開倉庫
+js/config.js
