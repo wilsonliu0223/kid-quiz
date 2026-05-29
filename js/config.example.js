@@ -25,7 +25,7 @@ export const CONFIG = {
     B: "思妤",
   },
 
-  /** 是否啟用手寫辨識（需載入 Tesseract，首次較慢） */
+  /** PaddleOCR.js 圖像辨識（首次載入約 40～60 MB，會快取） */
   OCR_ENABLED: true,
 
   /** 辨識與答案完全一致才算自動答對（false 時較寬鬆） */

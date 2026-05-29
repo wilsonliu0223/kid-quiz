@@ -14,6 +14,7 @@ import { createHandwritingCanvas } from "./canvas-handwriting.js";
 import { buildHomophoneChoices } from "./homophones.js";
 import { recognizeZhHandwriting } from "./zh-recognize.js";
 import { ensureHanziStrokeReady } from "./hanzi-stroke.js";
+import { ensurePaddleOcr } from "./paddle-ocr.js";
 import {
   getSelectedChild,
   setSelectedChild,
@@ -395,6 +396,9 @@ function blockIfShouldResumeInstead() {
 }
 
 function startZhQuiz() {
+  if (CONFIG.OCR_ENABLED) {
+    ensurePaddleOcr().catch(() => {});
+  }
   if (blockIfShouldResumeInstead()) return;
   if (CONFIG.HANZI_STROKE_ENABLED !== false) {
     ensureHanziStrokeReady().catch(() => {});
@@ -915,10 +919,13 @@ async function submitAnswer() {
 
   const statusEl = $("#ocr-status");
   statusEl.hidden = false;
-  statusEl.textContent = "辨識中…";
+  statusEl.textContent = CONFIG.OCR_ENABLED
+    ? "載入／辨識中…（首次載入引擎較久）"
+    : "辨識中…";
 
   if (CONFIG.OCR_ENABLED) {
     await ensureOcrReady();
+    statusEl.textContent = "辨識中…";
   }
 
   const canvas = $("#hand-canvas");
@@ -1305,24 +1312,10 @@ init().catch((e) => {
   showBootError(`程式錯誤：${e.message}。請用 http://localhost:8787 開啟。`);
 });
 
-function loadTesseractScript() {
-  return new Promise((resolve, reject) => {
-    if (window.Tesseract) {
-      resolve();
-      return;
-    }
-    const s = document.createElement("script");
-    s.src = "https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js";
-    s.onload = resolve;
-    s.onerror = () => reject(new Error("無法載入辨識程式"));
-    document.head.appendChild(s);
-  });
-}
-
 async function ensureOcrReady() {
   if (!CONFIG.OCR_ENABLED) return false;
   try {
-    await loadTesseractScript();
+    await ensurePaddleOcr();
     return true;
   } catch (e) {
     console.warn(e);

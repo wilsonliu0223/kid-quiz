@@ -1,20 +1,11 @@
 import { CONFIG } from "./config.site.js";
+import {
+  ensurePaddleOcr,
+  predictHandwriting,
+  textFromPaddleResult,
+} from "./paddle-ocr.js";
 
-let workerPromise = null;
-
-function loadTesseract() {
-  if (!window.Tesseract) {
-    throw new Error("Tesseract 尚未載入");
-  }
-  if (!workerPromise) {
-    workerPromise = window.Tesseract.createWorker("chi_tra", 1, {
-      logger: () => {},
-    });
-  }
-  return workerPromise;
-}
-
-/** 裁切筆跡、白底、放大，讓 Tesseract 較容易辨識 */
+/** 裁切筆跡、白底、放大，方便 OCR */
 export function prepareHandwritingImage(sourceCanvas) {
   const sw = sourceCanvas.width;
   const sh = sourceCanvas.height;
@@ -81,22 +72,6 @@ export function prepareHandwritingImage(sourceCanvas) {
   return out;
 }
 
-function getOcrParams(expectedWord) {
-  const word = normalizeAnswer(expectedWord);
-  const len = [...word].length;
-  const whitelist = word ? [...new Set([...word])].join("") : "";
-
-  let psm = "7";
-  if (len === 1) psm = "10";
-  else if (len === 2) psm = "8";
-
-  const params = { tessedit_pageseg_mode: psm };
-  if (whitelist && CONFIG.OCR_USE_WHITELIST !== false) {
-    params.tessedit_char_whitelist = whitelist;
-  }
-  return params;
-}
-
 export async function recognizeCanvas(canvas, options = {}) {
   if (!CONFIG.OCR_ENABLED) {
     return { text: "", skipped: true };
@@ -105,28 +80,17 @@ export async function recognizeCanvas(canvas, options = {}) {
   const expected = options.expected ?? "";
 
   try {
-    const worker = await loadTesseract();
+    await ensurePaddleOcr();
     const prepared =
       CONFIG.OCR_PREPROCESS !== false
         ? prepareHandwritingImage(canvas) || canvas
         : canvas;
 
-    const params = getOcrParams(expected);
-    await worker.setParameters(params);
-
-    const {
-      data: { text },
-    } = await worker.recognize(prepared);
-
-    await worker.setParameters({
-      tessedit_char_whitelist: "",
-      tessedit_pageseg_mode: "3",
-    });
-
-    const cleaned = normalizeAnswer(text);
+    const result = await predictHandwriting(prepared);
+    const cleaned = normalizeAnswer(textFromPaddleResult(result, expected));
     return { text: cleaned, skipped: false };
   } catch (err) {
-    console.warn("OCR failed", err);
+    console.warn("PaddleOCR failed", err);
     return { text: "", error: true };
   }
 }

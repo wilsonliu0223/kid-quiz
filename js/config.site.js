@@ -19,11 +19,12 @@ export const CONFIG = {
     A: "思妘",
     B: "思妤",
   },
+  /** PaddleOCR.js 圖像辨識（首次載入模型較久） */
   OCR_ENABLED: true,
   OCR_STRICT: false,
   /** 辨識前裁切放大（建議保持 true） */
   OCR_PREPROCESS: true,
-  /** 只從標準答案的字裡挑（減少辨成別字） */
+  /** 只保留標準答案內的字元（減少辨成別字） */
   OCR_USE_WHITELIST: true,
   /** 裁切後最短邊像素（愈大愈準、略慢） */
   OCR_MIN_SIDE: 280,

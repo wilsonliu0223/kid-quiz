@@ -12,6 +12,13 @@
     <title>家裡練習</title>
     <link rel="manifest" href="manifest.json" />
     <link rel="stylesheet" href="css/app.css" />
+    <script type="importmap">
+      {
+        "imports": {
+          "@paddleocr/paddleocr-js": "https://cdn.jsdelivr.net/npm/@paddleocr/paddleocr-js@0.3.2/dist/index.mjs"
+        }
+      }
+    </script>
     <script>
       if (location.protocol === "file:") {
         document.addEventListener("DOMContentLoaded", function () {

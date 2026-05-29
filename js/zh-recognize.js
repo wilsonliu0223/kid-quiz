@@ -9,7 +9,7 @@ import {
 
 /**
  * 國語手寫辨識（全開源、不需 API Key）
- * ① hanzilookup 筆畫 ② Tesseract 圖像（輔助）→ 失敗則同音四選一
+ * ① hanzilookup 筆畫 ② PaddleOCR.js 圖像 → 失敗則同音四選一
  */
 export async function recognizeZhHandwriting({
   canvas,
@@ -41,9 +41,9 @@ export async function recognizeZhHandwriting({
     const { text, skipped, error } = await recognizeCanvas(canvas, { expected });
     if (!skipped && !error && text) {
       lastText = text;
-      tries.push({ method: "tesseract", text });
+      tries.push({ method: "paddle", text });
       if (answersMatch(text, expected)) {
-        return { matched: true, text, method: "tesseract", tries };
+        return { matched: true, text, method: "paddle", tries };
       }
     }
   }
