@@ -5,7 +5,11 @@ import {
   uniqueLessons,
   pickRandomQuestions,
 } from "./sheets.js";
-import { englishAnswersMatch, speakEnglish } from "./english.js";
+import {
+  englishAnswersMatch,
+  speakEnglish,
+  primeSpeech,
+} from "./english.js";
 import { createHandwritingCanvas } from "./canvas-handwriting.js";
 import { recognizeCanvas, answersMatch } from "./ocr.js";
 import {
@@ -278,7 +282,16 @@ function setEnMode(mode) {
   document.querySelectorAll(".en-mode-picker .chip").forEach((btn) => {
     btn.classList.toggle("chip-active", btn.dataset.enMode === mode);
   });
-  if (quiz?.subject === "en") renderEnQuestion();
+  if (quiz?.subject === "en") {
+    if (mode === "listen") {
+      primeSpeech();
+      renderEnQuestion();
+      const q = quiz.questions[quiz.index];
+      if (q?.english) void speakEnglish(q.english);
+    } else {
+      renderEnQuestion();
+    }
+  }
 }
 
 function startEnQuiz() {
@@ -319,12 +332,21 @@ function renderEnQuestion() {
   const hintEl = $("#en-hint-display");
   const speakBtn = $("#btn-speak-en");
 
+  let listenPrompt = $("#en-listen-prompt");
   if (mode === "listen") {
     meaningBlock.hidden = true;
     speakBtn.hidden = false;
-    $("#en-quiz-hint").textContent = "聽發音，輸入英文單字";
-    setTimeout(() => speakEnglish(q.english), 200);
+    if (!listenPrompt) {
+      listenPrompt = document.createElement("p");
+      listenPrompt.id = "en-listen-prompt";
+      listenPrompt.className = "en-listen-prompt";
+      speakBtn.before(listenPrompt);
+    }
+    listenPrompt.hidden = false;
+    listenPrompt.textContent = "請按下方「播放發音」";
+    $("#en-quiz-hint").textContent = "聽清楚後輸入英文（沒聽到就再按一次）";
   } else {
+    if (listenPrompt) listenPrompt.hidden = true;
     meaningBlock.hidden = false;
     speakBtn.hidden = true;
     $("#en-chinese-display").textContent = q.chinese;
@@ -852,6 +874,7 @@ function bindEvents() {
     startZhQuiz();
   });
   bindStart($("#btn-start-en"), () => {
+    primeSpeech();
     enMode =
       document.querySelector(".en-mode-picker .chip-active")?.dataset.enMode ||
       "meaning";
@@ -860,7 +883,10 @@ function bindEvents() {
   });
 
   document.querySelectorAll(".en-mode-picker .chip").forEach((btn) => {
-    btn.addEventListener("click", () => setEnMode(btn.dataset.enMode));
+    btn.addEventListener("click", () => {
+      primeSpeech();
+      setEnMode(btn.dataset.enMode);
+    });
   });
 
   $("#btn-quiz-back").addEventListener("click", () => {
@@ -877,8 +903,9 @@ function bindEvents() {
   });
   $("#btn-submit-en").addEventListener("click", submitEnAnswer);
   $("#btn-speak-en").addEventListener("click", () => {
+    primeSpeech();
     const q = quiz?.questions[quiz.index];
-    if (q?.english) speakEnglish(q.english);
+    if (q?.english) void speakEnglish(q.english);
   });
   $("#en-answer-input").addEventListener("keydown", (e) => {
     if (e.key === "Enter") submitEnAnswer();

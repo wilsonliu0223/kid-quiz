@@ -272,8 +272,25 @@ body {
   background: #1a5bb8;
 }
 
-#btn-speak-en {
-  margin-bottom: 8px;
+.btn-speak-en {
+  margin-bottom: 10px;
+  min-height: 56px;
+  font-size: 1.15rem;
+  border: 2px solid var(--en);
+  color: #1a5bb8;
+  background: #f0f4ff;
+}
+
+.btn-speak-en:active {
+  background: #dce8ff;
+}
+
+#view-quiz-en .en-listen-prompt {
+  text-align: center;
+  font-size: 1.05rem;
+  color: #1a5bb8;
+  font-weight: 600;
+  margin: 12px 0 4px;
 }
 
 .quiz-subject {
