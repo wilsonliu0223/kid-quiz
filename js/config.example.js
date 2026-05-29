@@ -35,4 +35,5 @@ export const CONFIG = {
   OCR_USE_WHITELIST: true,
   OCR_MIN_SIDE: 280,
   OCR_STROKE_WIDTH: 6,
+  HOMOPHONE_PICKER: true,
 };

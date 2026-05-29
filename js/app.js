@@ -12,6 +12,7 @@ import {
 } from "./english.js";
 import { createHandwritingCanvas } from "./canvas-handwriting.js";
 import { recognizeCanvas, answersMatch } from "./ocr.js";
+import { buildHomophoneChoices } from "./homophones.js";
 import {
   getSelectedChild,
   setSelectedChild,
@@ -584,9 +585,33 @@ function showFeedback(type, text, actions = [], options = {}) {
   }
 
   const parentBlock = $("#feedback-parent");
+  const homophoneBlock = $("#feedback-homophone");
+  const choicesEl = $("#homophone-choices");
+
+  if (options.homophonePicker && options.choices?.length) {
+    homophoneBlock.hidden = false;
+    parentBlock.hidden = true;
+    $("#feedback-homophone-zhuyin").textContent = options.zhuyin || "";
+    choicesEl.innerHTML = "";
+    options.choices.forEach((word) => {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "homophone-choice";
+      btn.textContent = word;
+      btn.addEventListener("click", () => {
+        closeFeedbackOverlay();
+        onHomophonePick(word);
+      });
+      choicesEl.appendChild(btn);
+    });
+  } else {
+    homophoneBlock.hidden = true;
+    if (choicesEl) choicesEl.innerHTML = "";
+  }
+
   if (options.parentReview) {
     parentBlock.hidden = false;
-  } else {
+  } else if (!options.homophonePicker) {
     parentBlock.hidden = true;
   }
 
@@ -617,7 +642,88 @@ function closeFeedbackOverlay() {
   overlay.setAttribute("aria-hidden", "true");
   $("#feedback-pin").value = "";
   $("#feedback-pin-error").hidden = true;
+  const homophoneBlock = $("#feedback-homophone");
+  if (homophoneBlock) homophoneBlock.hidden = true;
+  const choicesEl = $("#homophone-choices");
+  if (choicesEl) choicesEl.innerHTML = "";
   pendingReview = null;
+}
+
+function onHomophonePick(picked) {
+  if (!quiz || quiz.subject !== "zh") return;
+
+  const q = quiz.questions[quiz.index];
+  if (picked === q.word) {
+    quiz.autoCorrect += 1;
+    showFeedback("ok", "答對了！", [], { simple: true });
+    setTimeout(goNextQuestion, 900);
+    return;
+  }
+
+  quiz.wrong.push({
+    zhuyin: q.zhuyin,
+    expected: q.word,
+    recognized: picked,
+    pending: false,
+    skipped: false,
+  });
+
+  showFeedback(
+    "warn",
+    `你選了「${picked}」`,
+    [
+      {
+        label: "再寫一次",
+        primary: true,
+        onClick: () => handwriting?.clear(),
+      },
+      {
+        label: "下一題",
+        primary: false,
+        onClick: () => goNextQuestion(),
+      },
+    ],
+    { sub: `正確答案是「${q.word}」（${q.zhuyin}）` }
+  );
+}
+
+function showHomophonePicker(q, recognized, imageDataUrl) {
+  const choices = buildHomophoneChoices(q.word, q.zhuyin, zhBank, 4);
+  if (choices.length < 2) {
+    showParentReviewOverlay(recognized, imageDataUrl);
+    return;
+  }
+
+  pendingReview = { recognized, imageDataUrl };
+
+  const ocrNote = recognized ? `（電腦看到：${recognized}）` : "";
+  showFeedback(
+    "warn",
+    "電腦認不太清楚",
+    [
+      {
+        label: "再寫一次",
+        primary: false,
+        onClick: () => {
+          pendingReview = null;
+          handwriting?.clear();
+        },
+      },
+      {
+        label: "請家長幫忙",
+        primary: false,
+        onClick: () => {
+          showParentReviewOverlay(recognized, imageDataUrl);
+        },
+      },
+    ],
+    {
+      homophonePicker: true,
+      choices,
+      zhuyin: q.zhuyin,
+      sub: `請看注音，點選正確的字${ocrNote}`,
+    }
+  );
 }
 
 function showParentReviewOverlay(recognized, imageDataUrl = null) {
@@ -824,7 +930,11 @@ async function submitAnswer() {
     return;
   }
 
-  showParentReviewOverlay(recognized || "", imageDataUrl);
+  if (CONFIG.HOMOPHONE_PICKER !== false) {
+    showHomophonePicker(q, recognized || "", imageDataUrl);
+  } else {
+    showParentReviewOverlay(recognized || "", imageDataUrl);
+  }
 }
 
 function goNextQuestion() {

@@ -29,4 +29,6 @@ export const CONFIG = {
   OCR_MIN_SIDE: 280,
   /** 手寫筆畫粗細 */
   OCR_STROKE_WIDTH: 6,
+  /** 辨識失敗時顯示同音字四選一（從題庫依注音挑選） */
+  HOMOPHONE_PICKER: true,
 };

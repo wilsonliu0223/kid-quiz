@@ -937,3 +937,48 @@ body {
 .feedback-overlay.feedback-simple .feedback-parent {
   display: none;
 }
+
+.feedback-homophone {
+  margin-top: 4px;
+  text-align: center;
+}
+
+.feedback-homophone-zhuyin {
+  font-size: clamp(1.4rem, 7vw, 1.85rem);
+  font-weight: 700;
+  color: var(--zh-dark);
+  letter-spacing: 0.12em;
+  margin: 0 0 14px;
+}
+
+.homophone-choices {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.homophone-choice {
+  min-height: 56px;
+  font-size: clamp(1.5rem, 8vw, 2rem);
+  font-weight: 700;
+  border: 2px solid var(--border);
+  border-radius: 12px;
+  background: #fff;
+  color: var(--text);
+  cursor: pointer;
+  padding: 8px;
+  line-height: 1.2;
+}
+
+.homophone-choice:active {
+  transform: scale(0.97);
+}
+
+.homophone-choice.is-wrong-flash {
+  border-color: var(--warn);
+  background: #fff8f0;
+}
+
+.feedback-card:has(#feedback-homophone:not([hidden])) {
+  max-width: 360px;
+}
