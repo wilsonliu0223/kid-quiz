@@ -501,6 +501,13 @@ body {
   padding: 8px 0;
 }
 
+.home-history-cloud {
+  font-size: 0.82rem;
+  color: var(--warn);
+  margin: 4px 0 0;
+  line-height: 1.4;
+}
+
 .score-history-list {
   list-style: none;
   padding: 0;

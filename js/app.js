@@ -672,6 +672,16 @@ function renderHomeScoreHistory() {
   if (toggleBtn) {
     toggleBtn.textContent = homeHistoryShowAll ? "只看此人" : "看全部";
   }
+
+  const cloudEl = $("#home-history-cloud");
+  if (cloudEl) {
+    const hasUrl = Boolean((CONFIG.SCORE_LOG_URL || "").trim());
+    cloudEl.hidden = hasUrl;
+    if (!hasUrl) {
+      cloudEl.textContent =
+        "目前成績只存在此手機。要寫入 Google 雲端試算表，請完成 Apps Script 設定（見 docs/成績寫入試算表.md）。";
+    }
+  }
 }
 
 function renderScoreHistory() {

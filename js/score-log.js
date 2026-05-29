@@ -45,34 +45,49 @@ function appendLocalScore(entry) {
   localStorage.setItem(KEY_SCORES, JSON.stringify(list.slice(0, MAX_LOCAL)));
 }
 
+function parseScriptResponse(text) {
+  const trimmed = String(text || "").trim();
+  if (trimmed.startsWith("{")) return JSON.parse(trimmed);
+  const start = trimmed.indexOf("{");
+  const end = trimmed.lastIndexOf("}");
+  if (start >= 0 && end > start) {
+    return JSON.parse(trimmed.slice(start, end + 1));
+  }
+  throw new Error("回應不是 JSON");
+}
+
 async function postToScript(payload) {
   const url = (CONFIG.SCORE_LOG_URL || "").trim();
   if (!url) return { ok: false, reason: "no_url" };
 
-  try {
+  const tryGet = async () => {
+    const params = new URLSearchParams(payload);
+    const res = await fetch(`${url}?${params.toString()}`, { redirect: "follow" });
+    return parseScriptResponse(await res.text());
+  };
+
+  const tryPost = async () => {
     const res = await fetch(url, {
       method: "POST",
+      redirect: "follow",
       headers: { "Content-Type": "text/plain;charset=utf-8" },
       body: JSON.stringify(payload),
     });
-    const text = await res.text();
-    const data = JSON.parse(text);
-    if (data.ok) return { ok: true };
-    return { ok: false, reason: data.error || "remote_error" };
-  } catch (e) {
-    console.warn("POST 記錄失敗，改試 GET", e);
-  }
+    return parseScriptResponse(await res.text());
+  };
 
-  try {
-    const params = new URLSearchParams(payload);
-    const res = await fetch(`${url}?${params.toString()}`);
-    const text = await res.text();
-    const data = JSON.parse(text);
-    if (data.ok) return { ok: true };
-    return { ok: false, reason: data.error || "remote_error" };
-  } catch (e) {
-    return { ok: false, reason: e.message };
+  let lastError = "network";
+  for (const fn of [tryGet, tryPost]) {
+    try {
+      const data = await fn();
+      if (data.ok) return { ok: true };
+      lastError = data.error || "remote_error";
+    } catch (e) {
+      lastError = e.message;
+      console.warn("寫入試算表失敗，嘗試下一種方式", e);
+    }
   }
+  return { ok: false, reason: lastError };
 }
 
 /**
