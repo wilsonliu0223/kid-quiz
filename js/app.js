@@ -396,6 +396,9 @@ function blockIfShouldResumeInstead() {
 
 function startZhQuiz() {
   if (blockIfShouldResumeInstead()) return;
+  if (CONFIG.HANZI_STROKE_ENABLED !== false) {
+    ensureHanziStrokeReady().catch(() => {});
+  }
   clearQuizDraft();
   const countSetting = getQuizCountSetting();
   const questions = pickRandomQuestions(zhBank, countSetting, lessonFilter);
