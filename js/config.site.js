@@ -11,6 +11,9 @@ export const CONFIG = {
   QUIZ_TYPES: ["生字"],
   QUIZ_TYPES_ZH: ["生字"],
   QUIZ_TYPES_EN: ["單字"],
+
+  /** 首頁預設「本次題數」（可被使用者改過的選擇覆蓋） */
+  QUIZ_COUNT_DEFAULT: 10,
   PARENT_PIN: "1234",
   CHILD_NAMES: {
     A: "思妘",

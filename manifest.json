@@ -1,6 +1,6 @@
 {
-  "name": "家裡練習 10 題",
-  "short_name": "練習10題",
+  "name": "家裡練習",
+  "short_name": "家裡練習",
   "description": "國語注音手寫測驗",
   "start_url": "./",
   "display": "standalone",

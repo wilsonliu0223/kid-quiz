@@ -15,6 +15,8 @@ export const CONFIG = {
   /** 只抽取「類型」欄為以下值的列 */
   QUIZ_TYPES: ["生字"],
 
+  QUIZ_COUNT_DEFAULT: 10,
+
   /** 家長 PIN（請改掉預設） */
   PARENT_PIN: "1234",
 

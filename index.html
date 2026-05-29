@@ -9,7 +9,7 @@
     <meta name="theme-color" content="#e85d2a" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-    <title>家裡練習 10 題</title>
+    <title>家裡練習</title>
     <link rel="manifest" href="manifest.json" />
     <link rel="stylesheet" href="css/app.css" />
     <script>
@@ -30,7 +30,7 @@
       <!-- 首頁 -->
       <section id="view-home" class="view view-active" aria-label="首頁">
         <header class="app-header">
-          <h1 class="app-title" id="home-title">家裡練習 10 題</h1>
+          <h1 class="app-title" id="home-title">家裡練習</h1>
           <p class="app-subtitle">長按標題可進入家長區</p>
         </header>
 
@@ -45,6 +45,18 @@
         <div class="lesson-picker" id="lesson-picker" hidden>
           <span class="label">本週課次</span>
           <div class="lesson-chips" id="lesson-chips"></div>
+        </div>
+
+        <div class="quiz-count-picker" role="group" aria-label="本次題數">
+          <span class="label">本次題數</span>
+          <div class="lesson-chips" id="quiz-count-chips">
+            <button type="button" class="chip" data-quiz-count="5">5</button>
+            <button type="button" class="chip chip-active" data-quiz-count="10">10</button>
+            <button type="button" class="chip" data-quiz-count="15">15</button>
+            <button type="button" class="chip" data-quiz-count="20">20</button>
+            <button type="button" class="chip" data-quiz-count="all">全部</button>
+          </div>
+          <p class="quiz-count-hint" id="quiz-count-hint">題數少於題庫時，隨機抽題不重複</p>
         </div>
 
         <div class="subject-cards">

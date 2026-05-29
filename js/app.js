@@ -36,6 +36,60 @@ let handwriting = null;
 /** @type {{ recognized: string, imageDataUrl: string | null } | null} */
 let pendingReview = null;
 let homeHistoryShowAll = false;
+const KEY_QUIZ_COUNT = "kid-quiz-count";
+
+function getQuizCountSetting() {
+  const raw = localStorage.getItem(KEY_QUIZ_COUNT);
+  if (raw === "all") return 0;
+  if (raw) {
+    const n = parseInt(raw, 10);
+    if (n > 0) return n;
+  }
+  return CONFIG.QUIZ_COUNT_DEFAULT || 10;
+}
+
+function setQuizCountSetting(value) {
+  localStorage.setItem(KEY_QUIZ_COUNT, String(value));
+}
+
+function syncQuizCountChips() {
+  const container = $("#quiz-count-chips");
+  if (!container) return;
+  const current =
+    localStorage.getItem(KEY_QUIZ_COUNT) || String(CONFIG.QUIZ_COUNT_DEFAULT || 10);
+  container.querySelectorAll(".chip").forEach((btn) => {
+    const val = btn.dataset.quizCount;
+    const active = val === "all" ? current === "all" : val === current;
+    btn.classList.toggle("chip-active", active);
+  });
+  updateQuizCountHint();
+}
+
+function initQuizCountPicker() {
+  const container = $("#quiz-count-chips");
+  if (!container) return;
+
+  container.querySelectorAll(".chip").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const val = btn.dataset.quizCount;
+      setQuizCountSetting(val === "all" ? "all" : val);
+      syncQuizCountChips();
+    });
+  });
+
+  syncQuizCountChips();
+}
+
+function updateQuizCountHint() {
+  const hint = $("#quiz-count-hint");
+  if (!hint) return;
+  const setting = getQuizCountSetting();
+  if (!setting) {
+    hint.textContent = "「全部」：目前課次有幾題就考幾題，隨機一輪、不重複";
+    return;
+  }
+  hint.textContent = `最多 ${setting} 題；題庫較少時會考完全部（不重複）`;
+}
 
 const views = {
   home: $("#view-home"),
@@ -114,6 +168,7 @@ function buildLessonChips(bank) {
       container.querySelectorAll(".chip").forEach((c) => {
         c.classList.toggle("chip-active", c.dataset.lesson === name);
       });
+      updateQuizCountHint();
     });
     container.appendChild(btn);
   });
@@ -161,7 +216,8 @@ function saveParentNames() {
 }
 
 function startZhQuiz() {
-  const questions = pickRandomQuestions(zhBank, 10, lessonFilter);
+  const countSetting = getQuizCountSetting();
+  const questions = pickRandomQuestions(zhBank, countSetting, lessonFilter);
   if (!questions.length) {
     alert("沒有題目！請檢查試算表或課次篩選。");
     return;
@@ -227,7 +283,8 @@ function setEnMode(mode) {
 
 function startEnQuiz() {
   buildLessonChips(enBank);
-  const questions = pickRandomQuestions(enBank, 10, lessonFilter);
+  const countSetting = getQuizCountSetting();
+  const questions = pickRandomQuestions(enBank, countSetting, lessonFilter);
   if (!questions.length) {
     const hint =
       lessonFilter !== "全部"
@@ -876,6 +933,7 @@ async function init() {
 
   bindEvents();
   initChildPicker();
+  initQuizCountPicker();
   await refreshBank();
   renderHomeScoreHistory();
 }

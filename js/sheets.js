@@ -172,6 +172,17 @@ export function uniqueLessons(items) {
   return ["全部", ...[...set].sort()];
 }
 
+function shuffleArray(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+/**
+ * @param {number} count 目標題數；0 或 ≥ 題庫數 → 該範圍內全部題目隨機一輪（不重複）
+ */
 export function pickRandomQuestions(items, count = 10, lessonFilter = "全部") {
   let pool = items;
   if (lessonFilter && lessonFilter !== "全部") {
@@ -179,7 +190,8 @@ export function pickRandomQuestions(items, count = 10, lessonFilter = "全部") 
   }
   if (!pool.length) return [];
 
-  const shuffled = [...pool].sort(() => Math.random() - 0.5);
-  if (shuffled.length <= count) return shuffled;
-  return shuffled.slice(0, count);
+  const shuffled = shuffleArray([...pool]);
+  const wantAll = !count || count <= 0 || count >= pool.length;
+  const n = wantAll ? pool.length : count;
+  return shuffled.slice(0, n);
 }
