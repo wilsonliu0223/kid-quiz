@@ -790,19 +790,32 @@ function closeFeedbackOverlay() {
   pendingReview = null;
 }
 
-function undoZhWrongForQuestion(q) {
+function getQuestionExpected(q) {
+  if (!q) return "";
+  return quiz?.subject === "en" ? q.english : q.word;
+}
+
+function undoWrongForQuestion(q) {
   if (!quiz || !q) return;
-  quiz.wrong = quiz.wrong.filter((w) => w.expected !== q.word);
-  removeMistake(quiz.child, "zh", q.word);
+  const expected = getQuestionExpected(q);
+  quiz.wrong = quiz.wrong.filter((w) => w.expected !== expected);
+  removeMistake(quiz.child, quiz.subject, expected);
   renderMistakeBookHome();
 }
 
-/** 家長確認：孩子其實寫對了（辨識誤判） */
+/** 家長確認：孩子其實寫對了（辨識誤判／拼字爭議） */
 function showParentConfirmWrittenCorrect(q, recognized, imageDataUrl) {
   pendingReview = { recognized, imageDataUrl, writtenCorrectClaim: true };
-  $("#feedback-ocr-line").textContent = recognized
-    ? `辨識結果：「${recognized}」　｜　標準：${q.word}`
-    : `標準答案：${q.word}`;
+  const expected = getQuestionExpected(q);
+  if (quiz.subject === "en") {
+    $("#feedback-ocr-line").textContent = recognized
+      ? `孩子輸入：「${recognized}」　｜　標準：${expected}`
+      : `標準答案：${expected}`;
+  } else {
+    $("#feedback-ocr-line").textContent = recognized
+      ? `辨識結果：「${recognized}」　｜　標準：${expected}`
+      : `標準答案：${expected}`;
+  }
 
   showFeedback(
     "warn",
@@ -825,21 +838,37 @@ function showParentConfirmWrittenCorrect(q, recognized, imageDataUrl) {
   setTimeout(() => $("#feedback-pin").focus(), 100);
 }
 
-/** 記本輪錯題並立刻寫入錯題本（同題只記一次） */
-function recordZhWrong(q, recognized) {
+/** 記本輪錯題並立刻寫入錯題本（同題只記一次，國語／英語） */
+function recordWrongAnswer(q, recognized) {
   if (!quiz || !q) return;
-  const exists = quiz.wrong.some((w) => w.expected === q.word);
+  const expected = getQuestionExpected(q);
+  const exists = quiz.wrong.some((w) => w.expected === expected);
   if (exists) return;
 
-  quiz.wrong.push({
-    zhuyin: q.zhuyin,
-    expected: q.word,
-    recognized: recognized || "—",
-    pending: false,
-    skipped: false,
-    mistakeBookSaved: true,
-  });
-  addMistake(quiz.child, "zh", q, recognized || "—");
+  if (quiz.subject === "en") {
+    quiz.wrong.push({
+      chinese: q.chinese,
+      expected: q.english,
+      recognized: recognized || "—",
+      pending: false,
+      skipped: false,
+      mistakeBookSaved: true,
+    });
+  } else {
+    quiz.wrong.push({
+      zhuyin: q.zhuyin,
+      expected: q.word,
+      recognized: recognized || "—",
+      pending: false,
+      skipped: false,
+      mistakeBookSaved: true,
+    });
+  }
+  addMistake(quiz.child, quiz.subject, q, recognized || "—");
+}
+
+function recordZhWrong(q, recognized) {
+  recordWrongAnswer(q, recognized);
 }
 
 function onHomophonePick(picked) {
@@ -1055,7 +1084,7 @@ function resolveParentReview(isCorrect) {
 
   if (isCorrect) {
     if (pendingReview.writtenCorrectClaim) {
-      undoZhWrongForQuestion(q);
+      undoWrongForQuestion(q);
     }
     quiz.autoCorrect += 1;
     clearMistakeOnCorrect(q);
@@ -1069,6 +1098,9 @@ function resolveParentReview(isCorrect) {
   }
 
   if (quiz.subject === "en") {
+    if (!quiz.wrong.some((w) => w.expected === q.english)) {
+      recordWrongAnswer(q, recognized || "—");
+    }
     addPending({
       subject: "en",
       child: quiz.child,
@@ -1080,12 +1112,8 @@ function resolveParentReview(isCorrect) {
       at: new Date().toISOString(),
       questionIndex: quiz.index + 1,
     });
-    quiz.wrong.push({
-      chinese: q.chinese,
-      expected: q.english,
-      recognized: recognized || "—",
-      pending: true,
-    });
+    const row = quiz.wrong.find((w) => w.expected === q.english);
+    if (row) row.pending = true;
   } else {
     addPending({
       subject: "zh",
@@ -1111,6 +1139,43 @@ function resolveParentReview(isCorrect) {
   goNextQuestion();
 }
 
+function showEnWrongAnswer(q, recognized) {
+  recordWrongAnswer(q, recognized);
+
+  showFeedback(
+    "warn",
+    "答錯了",
+    [
+      {
+        label: "再答一次",
+        primary: true,
+        onClick: () => {
+          $("#en-answer-input").value = "";
+          $("#en-answer-input").focus();
+        },
+      },
+      {
+        label: "下一題",
+        primary: false,
+        onClick: () => goNextQuestion(),
+      },
+      {
+        label: "請家長幫忙",
+        primary: false,
+        onClick: () => showParentReviewOverlay(recognized, null),
+      },
+      {
+        label: "其實拼對了（家長確認）",
+        primary: false,
+        onClick: () => showParentConfirmWrittenCorrect(q, recognized, null),
+      },
+    ],
+    {
+      sub: `你輸入：「${recognized}」· 正確：${q.english}（${q.chinese}）· 已記入錯題本`,
+    }
+  );
+}
+
 function submitEnAnswer() {
   if (!quiz || quiz.subject !== "en") return;
 
@@ -1132,7 +1197,7 @@ function submitEnAnswer() {
     return;
   }
 
-  showParentReviewOverlay(typed.trim(), null);
+  showEnWrongAnswer(q, typed.trim());
 }
 
 async function submitAnswer() {
