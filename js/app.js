@@ -11,7 +11,10 @@ import {
   primeSpeech,
 } from "./english.js";
 import { createHandwritingCanvas } from "./canvas-handwriting.js";
-import { buildHomophoneChoices } from "./homophones.js";
+import {
+  buildHomophoneChoices,
+  shouldOfferHomophonePicker,
+} from "./homophones.js";
 import { recognizeZhHandwriting } from "./zh-recognize.js";
 import { ensureHanziStrokeReady } from "./hanzi-stroke.js";
 import { ensurePaddleOcr } from "./paddle-ocr.js";
@@ -826,6 +829,29 @@ function onHomophonePick(picked) {
   );
 }
 
+function showObviousWrongFeedback(q, recognized, imageDataUrl) {
+  const rec = recognized ? `電腦看到：「${recognized}」` : "電腦辨識不出這個字";
+  showFeedback(
+    "warn",
+    "寫得不太對，請再寫一次",
+    [
+      {
+        label: "再寫一次",
+        primary: true,
+        onClick: () => handwriting?.clear(),
+      },
+      {
+        label: "請家長幫忙",
+        primary: false,
+        onClick: () => showParentReviewOverlay(recognized, imageDataUrl),
+      },
+    ],
+    {
+      sub: `${rec} · 正確：${q.word}（${q.zhuyin}）`,
+    }
+  );
+}
+
 function showHomophonePicker(q, recognized, imageDataUrl) {
   const choices = buildHomophoneChoices(q.word, q.zhuyin, zhBank, 4);
   if (choices.length < 2) {
@@ -1084,10 +1110,15 @@ async function submitAnswer() {
   }
 
   const recognized = result.text || "";
-  if (CONFIG.HOMOPHONE_PICKER !== false) {
+  const useHomophone =
+    CONFIG.HOMOPHONE_PICKER !== false &&
+    (CONFIG.HOMOPHONE_ONLY_SIMILAR === false ||
+      shouldOfferHomophonePicker(q.word, recognized, q.zhuyin, zhBank));
+
+  if (useHomophone) {
     showHomophonePicker(q, recognized, imageDataUrl);
   } else {
-    showParentReviewOverlay(recognized, imageDataUrl);
+    showObviousWrongFeedback(q, recognized, imageDataUrl);
   }
 }
 

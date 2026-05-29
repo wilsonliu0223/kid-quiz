@@ -1,5 +1,7 @@
 /** 依注音從題庫找同音字／詞，組成四選一 */
 
+import { answersMatch } from "./ocr.js";
+
 export function normalizeZhuyinKey(zhuyin) {
   return String(zhuyin ?? "")
     .replace(/\s+/g, " ")
@@ -85,4 +87,38 @@ export function buildHomophoneChoices(expected, zhuyin, bank, count = 4) {
   const choices = shuffleArray([answer, ...picked]);
 
   return choices.slice(0, count);
+}
+
+/**
+ * 是否適合出同音四選一（寫成別的字、但可能是同音混淆時才出）
+ * @param {string} recognized 辨識結果（可能為空）
+ */
+export function shouldOfferHomophonePicker(expected, recognized, zhuyin, bank) {
+  const answer = String(expected ?? "").trim();
+  if (!answer) return false;
+
+  const rec = String(recognized ?? "")
+    .replace(/\s/g, "")
+    .trim();
+
+  /** 辨識不出字：仍可依注音四選一 */
+  if (!rec) return true;
+
+  if (answersMatch(rec, answer)) return false;
+
+  const answerLen = [...answer].length;
+  const recLen = [...rec].length;
+  if (recLen !== answerLen) return false;
+
+  const choices = buildHomophoneChoices(answer, zhuyin, bank, 8);
+  if (!choices.includes(rec)) return false;
+
+  const expBase = zhuyinBaseKey(zhuyin);
+  const item = (bank || []).find((row) => String(row.word) === rec);
+  if (item?.zhuyin) {
+    const recBase = zhuyinBaseKey(item.zhuyin);
+    if (expBase && recBase && recBase !== expBase) return false;
+  }
+
+  return true;
 }
