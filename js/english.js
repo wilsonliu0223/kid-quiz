@@ -15,24 +15,121 @@ export function englishAnswersMatch(typed, expected) {
 }
 
 let speechPrimed = false;
-let fallbackAudio = null;
+let activeAudio = null;
+const dictAudioCache = new Map();
+
+function normalizeAudioUrl(url) {
+  if (!url) return "";
+  const u = String(url).trim();
+  if (u.startsWith("//")) return `https:${u}`;
+  return u;
+}
+
+function stopAudio() {
+  if (activeAudio) {
+    activeAudio.pause();
+    activeAudio.src = "";
+    activeAudio = null;
+  }
+  window.speechSynthesis?.cancel();
+}
+
+function playAudioUrl(url) {
+  return new Promise((resolve) => {
+    const src = normalizeAudioUrl(url);
+    if (!src) {
+      resolve(false);
+      return;
+    }
+    try {
+      stopAudio();
+      const audio = new Audio(src);
+      activeAudio = audio;
+      let settled = false;
+      const done = (ok) => {
+        if (settled) return;
+        settled = true;
+        resolve(ok);
+      };
+      audio.onended = () => done(true);
+      audio.onerror = () => done(false);
+      audio.play().then(() => {}).catch(() => done(false));
+    } catch (e) {
+      console.warn("playAudioUrl", e);
+      resolve(false);
+    }
+  });
+}
+
+function pickAudioFromEntry(entry) {
+  const list = entry.phonetics || [];
+  const withAudio = list
+    .map((p) => normalizeAudioUrl(p.audio))
+    .filter(Boolean);
+  if (!withAudio.length) return "";
+
+  const us =
+    withAudio.find((u) => /-us\.|american|en-us/i.test(u)) ||
+    withAudio.find((u) => /us\b/i.test(u));
+  return us || withAudio[0];
+}
+
+async function fetchDictionaryAudioUrl(query) {
+  const key = String(query || "").trim().toLowerCase();
+  if (!key) return "";
+  if (dictAudioCache.has(key)) return dictAudioCache.get(key);
+
+  try {
+    const res = await fetch(
+      `https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(query)}`
+    );
+    if (!res.ok) return "";
+    const data = await res.json();
+    for (const entry of data) {
+      const url = pickAudioFromEntry(entry);
+      if (url) {
+        dictAudioCache.set(key, url);
+        return url;
+      }
+    }
+  } catch (e) {
+    console.warn("fetchDictionaryAudioUrl", query, e);
+  }
+  return "";
+}
+
+async function speakWithDictionary(text) {
+  const tries = [
+    text,
+    text.replace(/\s+/g, "-"),
+    text.replace(/\s+/g, ""),
+    text.replace(/-/g, " "),
+  ];
+  const seen = new Set();
+  for (const q of tries) {
+    const key = q.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    const url = await fetchDictionaryAudioUrl(q);
+    if (url) return playAudioUrl(url);
+  }
+  return false;
+}
 
 function pickEnglishVoice() {
   const voices = window.speechSynthesis?.getVoices() || [];
+  const en = voices.filter((v) => v.lang?.toLowerCase().startsWith("en"));
   return (
-    voices.find((v) => v.lang === "en-US" && v.localService) ||
-    voices.find((v) => v.lang === "en-US") ||
-    voices.find((v) => v.lang?.startsWith("en")) ||
+    en.find((v) => /google.*english.*united states/i.test(v.name)) ||
+    en.find((v) => /google/i.test(v.name) && v.lang === "en-US") ||
+    en.find((v) => v.lang === "en-US" && !v.localService) ||
+    en.find((v) => v.lang === "en-US") ||
+    en[0] ||
     null
   );
 }
 
-/** 在按鈕點擊時呼叫，喚醒語音（Android / iPhone） */
 export function primeSpeech() {
-  if (speechPrimed) {
-    window.speechSynthesis?.resume();
-    return;
-  }
   speechPrimed = true;
   try {
     window.speechSynthesis?.resume();
@@ -51,28 +148,31 @@ function speakWithSynth(text) {
 
     const start = () => {
       try {
-        if (window.speechSynthesis.speaking) {
-          window.speechSynthesis.cancel();
-        }
+        window.speechSynthesis.cancel();
         window.speechSynthesis.resume();
 
         const u = new SpeechSynthesisUtterance(text);
         u.lang = "en-US";
-        u.rate = 0.85;
+        u.rate = 0.82;
+        u.pitch = 1;
         u.volume = 1;
         const voice = pickEnglishVoice();
         if (voice) u.voice = voice;
 
         let settled = false;
+        let spoke = false;
         const done = (ok) => {
           if (settled) return;
           settled = true;
           resolve(ok);
         };
 
-        u.onend = () => done(true);
+        u.onstart = () => {
+          spoke = true;
+        };
+        u.onend = () => done(spoke);
         u.onerror = () => done(false);
-        setTimeout(() => done(false), 2500);
+        setTimeout(() => done(spoke), 5000);
 
         window.speechSynthesis.speak(u);
       } catch (e) {
@@ -98,63 +198,20 @@ function speakWithSynth(text) {
   });
 }
 
-/** Android 部分機型內建語音無聲時的備援 */
-function speakWithOnlineAudio(text) {
-  return new Promise((resolve) => {
-    try {
-      if (fallbackAudio) {
-        fallbackAudio.pause();
-        fallbackAudio.src = "";
-        fallbackAudio = null;
-      }
-      const url = `https://translate.googleapis.com/translate_tts?ie=UTF-8&client=tw-ob&tl=en&q=${encodeURIComponent(text)}`;
-      const audio = new Audio(url);
-      fallbackAudio = audio;
-      audio.preload = "auto";
-
-      const finish = (ok) => {
-        audio.onended = null;
-        audio.onerror = null;
-        resolve(ok);
-      };
-
-      audio.onended = () => finish(true);
-      audio.onerror = () => finish(false);
-
-      const playPromise = audio.play();
-      if (playPromise?.catch) {
-        playPromise.then(() => {}).catch(() => finish(false));
-      }
-    } catch (e) {
-      console.warn("speakWithOnlineAudio", e);
-      resolve(false);
-    }
-  });
-}
-
 /**
- * 播放英文（先內建語音，失敗再用線上音檔）
+ * 播放英文：優先詞典真人發音 MP3，其次手機內建語音
  * @returns {Promise<boolean>}
  */
-function isAndroid() {
-  return /Android/i.test(navigator.userAgent);
-}
-
 export async function speakEnglish(text) {
   const w = String(text || "").trim();
   if (!w) return false;
 
   primeSpeech();
 
-  if (isAndroid()) {
-    const onlineOk = await speakWithOnlineAudio(w);
-    if (onlineOk) return true;
-    return speakWithSynth(w);
-  }
+  const dictOk = await speakWithDictionary(w);
+  if (dictOk) return true;
 
-  const synthOk = await speakWithSynth(w);
-  if (synthOk) return true;
-  return speakWithOnlineAudio(w);
+  return speakWithSynth(w);
 }
 
 if (typeof window !== "undefined" && window.speechSynthesis) {

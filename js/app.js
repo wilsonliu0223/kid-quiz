@@ -308,7 +308,9 @@ async function playEnglishAudio() {
     btn.textContent = "🔊 播放發音";
   }
   if (!ok && hint) {
-    hint.textContent = "無法播音：請調大音量，或改「看中拼英」";
+    hint.textContent = "無法播音：請確認有網路並調大音量，或改「看中拼英」";
+  } else if (hint && quiz?.mode === "listen") {
+    hint.textContent = "聽清楚後輸入英文（沒聽到就再按一次）";
   }
 }
 
