@@ -114,7 +114,7 @@ function strokeCandidates(strokeMatches) {
 
 /**
  * 國語答題判定：homophone → 四選一；wrong → 直接記錯（進錯題本）
- * @returns {{ type: 'homophone'|'wrong', recognized: string }}
+ * @returns {{ type: 'correct'|'homophone'|'wrong', recognized: string }}
  */
 export function classifyZhAnswer(expected, zhuyin, bank, { recognized, strokeMatches }) {
   const answer = cleanText(expected);
@@ -123,6 +123,12 @@ export function classifyZhAnswer(expected, zhuyin, bank, { recognized, strokeMat
   const pool = homophonePool(answer, zhuyin, bank);
   const strokes = strokeCandidates(strokeMatches);
   const strokeTop = strokes[0] || "";
+  const trustTop = 5;
+
+  /** 筆畫候選含正確答案 → 視為寫對（優先於 OCR 猜錯） */
+  if (strokes.slice(0, trustTop).includes(answer)) {
+    return { type: "correct", recognized: answer };
+  }
 
   if (rec && [...rec].length !== ansLen) {
     return { type: "wrong", recognized: rec };

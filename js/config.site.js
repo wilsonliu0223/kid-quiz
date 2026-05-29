@@ -35,4 +35,6 @@ export const CONFIG = {
 
   /** 筆畫手寫辨識（hanzilookup-js 開源，首次會下載字庫） */
   HANZI_STROKE_ENABLED: true,
+  /** 筆畫候選前幾名內有標準答案即算寫對（減少 OCR 誤判） */
+  STROKE_TRUST_TOP_N: 5,
 };

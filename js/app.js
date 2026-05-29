@@ -790,6 +790,41 @@ function closeFeedbackOverlay() {
   pendingReview = null;
 }
 
+function undoZhWrongForQuestion(q) {
+  if (!quiz || !q) return;
+  quiz.wrong = quiz.wrong.filter((w) => w.expected !== q.word);
+  removeMistake(quiz.child, "zh", q.word);
+  renderMistakeBookHome();
+}
+
+/** 家長確認：孩子其實寫對了（辨識誤判） */
+function showParentConfirmWrittenCorrect(q, recognized, imageDataUrl) {
+  pendingReview = { recognized, imageDataUrl, writtenCorrectClaim: true };
+  $("#feedback-ocr-line").textContent = recognized
+    ? `辨識結果：「${recognized}」　｜　標準：${q.word}`
+    : `標準答案：${q.word}`;
+
+  showFeedback(
+    "warn",
+    "家長確認：其實寫對了？",
+    [
+      {
+        label: "取消",
+        primary: false,
+        onClick: () => {
+          pendingReview = null;
+          closeFeedbackOverlay();
+        },
+      },
+    ],
+    {
+      parentReview: true,
+      sub: "輸入 PIN 後按「算對」；會取消本題錯題紀錄。",
+    }
+  );
+  setTimeout(() => $("#feedback-pin").focus(), 100);
+}
+
 /** 記本輪錯題並立刻寫入錯題本（同題只記一次） */
 function recordZhWrong(q, recognized) {
   if (!quiz || !q) return;
@@ -864,6 +899,11 @@ function showZhWrongAnswer(q, recognized, imageDataUrl) {
         primary: false,
         onClick: () => showParentReviewOverlay(recognized, imageDataUrl),
       },
+      {
+        label: "我寫對了（家長確認）",
+        primary: false,
+        onClick: () => showParentConfirmWrittenCorrect(q, recognized, imageDataUrl),
+      },
     ],
     {
       sub: `${rec} · 正確：${q.word}（${q.zhuyin}）· 已記入錯題本`,
@@ -906,6 +946,11 @@ function showHomophonePicker(q, recognized, imageDataUrl) {
         onClick: () => {
           showParentReviewOverlay(recognized, imageDataUrl);
         },
+      },
+      {
+        label: "我寫對了（家長確認）",
+        primary: false,
+        onClick: () => showParentConfirmWrittenCorrect(q, recognized, imageDataUrl),
       },
     ],
     {
@@ -1009,10 +1054,16 @@ function resolveParentReview(isCorrect) {
   const { recognized, imageDataUrl } = pendingReview;
 
   if (isCorrect) {
+    if (pendingReview.writtenCorrectClaim) {
+      undoZhWrongForQuestion(q);
+    }
     quiz.autoCorrect += 1;
     clearMistakeOnCorrect(q);
     closeFeedbackOverlay();
-    showFeedback("ok", "家長確認：答對！", [], { simple: true });
+    const msg = pendingReview.writtenCorrectClaim
+      ? "家長確認：寫對了！"
+      : "家長確認：答對！";
+    showFeedback("ok", msg, [], { simple: true });
     setTimeout(goNextQuestion, 800);
     return;
   }
@@ -1140,6 +1191,14 @@ async function submitAnswer() {
     recognized,
     strokeMatches: result.strokeMatches,
   });
+
+  if (verdict.type === "correct") {
+    quiz.autoCorrect += 1;
+    clearMistakeOnCorrect(q);
+    showFeedback("ok", "答對了！", [], { simple: true });
+    setTimeout(goNextQuestion, 950);
+    return;
+  }
 
   if (
     verdict.type === "homophone" &&

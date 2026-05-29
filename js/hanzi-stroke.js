@@ -71,7 +71,14 @@ export function recognizeStrokes(rawStrokes, limit = 8) {
   });
 }
 
-/** 從筆畫候選挑最可能答案 */
+/** 筆畫候選前 N 名是否含標準答案（寫對但 OCR 猜錯時仍可信） */
+export function strokeAnswerInMatches(matches, expected, topN = 5) {
+  const exp = normalizeAnswer(expected);
+  if (!exp || !matches?.length) return false;
+  return matches.slice(0, topN).some((m) => normalizeAnswer(m.character) === exp);
+}
+
+/** 從筆畫候選挑字（僅在候選中出現才回傳，避免亂猜第一候選） */
 export function pickStrokeAnswer(matches, expected) {
   const exp = normalizeAnswer(expected);
   if (!exp || !matches?.length) return "";
@@ -81,16 +88,14 @@ export function pickStrokeAnswer(matches, expected) {
     if (c === exp) return c;
   }
 
-  if ([...exp].length === 1) {
-    return normalizeAnswer(matches[0].character);
+  if ([...exp].length > 1) {
+    for (const m of matches) {
+      const c = normalizeAnswer(m.character);
+      if (c && exp.includes(c)) return c;
+    }
   }
 
-  for (const m of matches) {
-    const c = normalizeAnswer(m.character);
-    if (c && exp.includes(c)) return c;
-  }
-
-  return normalizeAnswer(matches[0].character);
+  return "";
 }
 
 export function shouldUseStrokeRecognition(word) {

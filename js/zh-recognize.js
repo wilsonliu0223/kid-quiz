@@ -1,9 +1,10 @@
 import { CONFIG } from "./config.site.js";
-import { recognizeCanvas, answersMatch } from "./ocr.js";
+import { recognizeCanvas, answersMatch, normalizeAnswer } from "./ocr.js";
 import {
   ensureHanziStrokeReady,
   recognizeStrokes,
   pickStrokeAnswer,
+  strokeAnswerInMatches,
   shouldUseStrokeRecognition,
 } from "./hanzi-stroke.js";
 
@@ -27,6 +28,19 @@ export async function recognizeZhHandwriting({
     if (loaded) {
       const matches = await recognizeStrokes(strokes, 10);
       strokeMatches = matches;
+      const topN = CONFIG.STROKE_TRUST_TOP_N ?? 5;
+
+      if (strokeAnswerInMatches(matches, expected, topN)) {
+        const text = normalizeAnswer(expected);
+        return {
+          matched: true,
+          text,
+          method: "stroke",
+          tries: [{ method: "stroke", text }],
+          strokeMatches,
+        };
+      }
+
       const text = pickStrokeAnswer(matches, expected);
       if (text) {
         lastText = text;
