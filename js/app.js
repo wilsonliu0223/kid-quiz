@@ -136,7 +136,13 @@ async function refreshBank() {
     zhBank = zh;
     enBank = en;
     const src = CONFIG.SPREADSHEET_ID || CONFIG.SHEETS_JSON_URL ? "試算表" : "示範題庫";
-    setSheetStatus(`國語 ${zhBank.length} 題 · 英語 ${enBank.length} 題（${src}）`);
+    const enNote =
+      enBank.length === 12 && CONFIG.SPREADSHEET_ID
+        ? "（若應有更多題，請重新載入或檢查試算表）"
+        : "";
+    setSheetStatus(
+      `國語 ${zhBank.length} 題 · 英語 ${enBank.length} 題（${src}）${enNote}`
+    );
     buildLessonChips(zhBank);
   } catch (e) {
     console.error(e);

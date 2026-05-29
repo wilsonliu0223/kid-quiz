@@ -18,10 +18,16 @@ const COL_EN = {
   english: ["英文", "英語", "答案", "單字"],
 };
 
+function cellNorm(s) {
+  return String(s ?? "").trim();
+}
+
 function pickCol(labels, headerRow) {
-  const norm = (s) => String(s || "").trim();
   for (const label of labels) {
-    const i = headerRow.findIndex((h) => norm(h) === label);
+    const i = headerRow.findIndex((h) => {
+      const t = cellNorm(h);
+      return t === label || t.split(/\s+/)[0] === label;
+    });
     if (i >= 0) return i;
   }
   return -1;
@@ -34,15 +40,88 @@ function parseGvizRaw(text) {
   return JSON.parse(text.slice(start, end + 1));
 }
 
+function rowLooksLikeEnData(cells) {
+  if (!cells || cells.length < 5) return false;
+  const t = cellNorm(cells[1]);
+  return (t === "單字" || t === "生字") && cellNorm(cells[2]) && cellNorm(cells[4]);
+}
+
+function rowLooksLikeZhData(cells) {
+  if (!cells || cells.length < 4) return false;
+  const t = cellNorm(cells[1]);
+  return (t === "生字" || t === "單字") && cellNorm(cells[2]) && cellNorm(cells[3]);
+}
+
 function getHeaderAndRows(table) {
-  const headerCells = table.cols?.map((c) => c.label) ?? [];
-  const firstRow = table.rows[0]?.c?.map((c) => c?.v ?? "") ?? [];
+  const rows = table.rows || [];
+  if (!rows.length) return { headerRow: [], dataRows: [] };
+
+  const first = rowCells(rows[0]);
+  if (cellNorm(first[0]) === "課次" && cellNorm(first[1]) === "類型") {
+    return { headerRow: first, dataRows: rows.slice(1) };
+  }
+
+  if (rowLooksLikeEnData(first) || rowLooksLikeZhData(first)) {
+    return {
+      headerRow: ["課次", "類型", "中文", "提示", "英文"],
+      dataRows: rows,
+    };
+  }
+
+  const headerCells = table.cols?.map((c) => String(c.label ?? "")) ?? [];
+  const headerIsBroken = headerCells.some((h) => cellNorm(h).split(/\s+/).length > 3);
+  if (headerIsBroken && rows.some((r) => rowLooksLikeEnData(rowCells(r)))) {
+    return {
+      headerRow: ["課次", "類型", "中文", "提示", "英文"],
+      dataRows: rows.filter((r) => rowLooksLikeEnData(rowCells(r))),
+    };
+  }
+
   const headerRow =
-    headerCells.length > 0 && headerCells.some(Boolean) ? headerCells : firstRow;
-  const dataRows = table.rows.slice(
-    headerCells.length > 0 && headerCells.some(Boolean) ? 0 : 1
-  );
+    headerCells.length > 0 && headerCells.some(Boolean) ? headerCells : first;
+  const dataRows =
+    cellNorm(first[0]) === "課次" ? rows.slice(1) : rows;
   return { headerRow, dataRows };
+}
+
+function resolveZhColIdx(headerRow, dataRows) {
+  const idx = {
+    lesson: pickCol(COL_ZH.lesson, headerRow),
+    type: pickCol(COL_ZH.type, headerRow),
+    word: pickCol(COL_ZH.word, headerRow),
+    zhuyin: pickCol(COL_ZH.zhuyin, headerRow),
+    sentence: pickCol(COL_ZH.sentence, headerRow),
+  };
+  if (idx.word >= 0 && idx.zhuyin >= 0) return idx;
+
+  const sample = dataRows[0] ? rowCells(dataRows[0]) : [];
+  if (rowLooksLikeZhData(sample) || (cellNorm(sample[1]) === "生字" && sample.length >= 4)) {
+    return {
+      lesson: 0,
+      type: 1,
+      word: 2,
+      zhuyin: 3,
+      sentence: sample.length > 4 ? 4 : -1,
+    };
+  }
+  return idx;
+}
+
+function resolveEnColIdx(headerRow, dataRows) {
+  const idx = {
+    lesson: pickCol(COL_EN.lesson, headerRow),
+    type: pickCol(COL_EN.type, headerRow),
+    chinese: pickCol(COL_EN.chinese, headerRow),
+    hint: pickCol(COL_EN.hint, headerRow),
+    english: pickCol(COL_EN.english, headerRow),
+  };
+  if (idx.chinese >= 0 && idx.english >= 0) return idx;
+
+  const sample = dataRows[0] ? rowCells(dataRows[0]) : [];
+  if (rowLooksLikeEnData(sample)) {
+    return { lesson: 0, type: 1, chinese: 2, hint: 3, english: 4 };
+  }
+  return idx;
 }
 
 function rowCells(row) {
@@ -109,13 +188,7 @@ export async function loadZhItems() {
   if (!table?.rows?.length) return filterByTypes([...DEMO_ZH_ITEMS], types);
 
   const { headerRow, dataRows } = getHeaderAndRows(table);
-  const idx = {
-    lesson: pickCol(COL_ZH.lesson, headerRow),
-    type: pickCol(COL_ZH.type, headerRow),
-    word: pickCol(COL_ZH.word, headerRow),
-    zhuyin: pickCol(COL_ZH.zhuyin, headerRow),
-    sentence: pickCol(COL_ZH.sentence, headerRow),
-  };
+  const idx = resolveZhColIdx(headerRow, dataRows);
   if (idx.word < 0 || idx.zhuyin < 0) {
     throw new Error("國語：找不到「國字或詞」或「注音」欄");
   }
@@ -144,23 +217,27 @@ export async function loadEnItems() {
     if (!table?.rows?.length) return filterByTypes([...DEMO_EN_ITEMS], types);
 
     const { headerRow, dataRows } = getHeaderAndRows(table);
-    const idx = {
-      lesson: pickCol(COL_EN.lesson, headerRow),
-      type: pickCol(COL_EN.type, headerRow),
-      chinese: pickCol(COL_EN.chinese, headerRow),
-      hint: pickCol(COL_EN.hint, headerRow),
-      english: pickCol(COL_EN.english, headerRow),
-    };
+    const idx = resolveEnColIdx(headerRow, dataRows);
     if (idx.english < 0 || idx.chinese < 0) {
+      console.warn("英語欄位無法辨識，使用示範題庫");
       return filterByTypes([...DEMO_EN_ITEMS], types);
     }
 
     const items = [];
+    const seen = new Set();
     for (const row of dataRows) {
       const item = rowToEnItem(rowCells(row), idx);
-      if (item) items.push(item);
+      if (!item) continue;
+      const key = item.english.toLowerCase();
+      if (seen.has(key)) continue;
+      seen.add(key);
+      items.push(item);
     }
-    return filterByTypes(items.length ? items : [...DEMO_EN_ITEMS], types);
+    if (!items.length) {
+      console.warn("英語工作表無有效列，使用示範題庫");
+      return filterByTypes([...DEMO_EN_ITEMS], types);
+    }
+    return filterByTypes(items, types);
   } catch (e) {
     console.warn("英語工作表讀取失敗，使用示範題庫", e);
     return filterByTypes([...DEMO_EN_ITEMS], types);
