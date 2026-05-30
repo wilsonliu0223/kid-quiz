@@ -876,11 +876,10 @@ function onHomophonePick(picked) {
 
   const q = quiz.questions[quiz.index];
   if (picked === q.word) {
-    showFeedback("warn", "這題算答錯", [], {
-      simple: true,
-      sub: `正確是「${q.word}」（${q.zhuyin}），已記入錯題本`,
-    });
-    setTimeout(goNextQuestion, 1400);
+    quiz.autoCorrect += 1;
+    undoWrongForQuestion(q);
+    showFeedback("ok", "答對了！", [], { simple: true });
+    setTimeout(goNextQuestion, 900);
     return;
   }
 
@@ -899,11 +898,38 @@ function onHomophonePick(picked) {
         onClick: () => goNextQuestion(),
       },
     ],
-    { sub: `正確答案是「${q.word}」（${q.zhuyin}）· 已記入錯題本` }
+    { sub: `正確答案是「${q.word}」（${q.zhuyin}）` }
   );
 }
 
-/** 明顯答錯：不出四選一 */
+/** 答錯後按「下一題」→ 四選一，選對可得分 */
+function showHomophoneRecovery(q, recognized, imageDataUrl) {
+  const choices = buildHomophoneChoices(q.word, q.zhuyin, zhBank, 4);
+  if (choices.length < 2 || CONFIG.HOMOPHONE_PICKER === false) {
+    goNextQuestion();
+    return;
+  }
+
+  pendingReview = { recognized, imageDataUrl };
+
+  const note =
+    recognized && recognized !== q.word
+      ? `你寫的像「${recognized}」· `
+      : "";
+  showFeedback(
+    "warn",
+    "請選出正確的字",
+    [],
+    {
+      homophonePicker: true,
+      choices,
+      zhuyin: q.zhuyin,
+      sub: `${note}看注音點選 · 選對可以得分`,
+    }
+  );
+}
+
+/** 答錯：先記錯題本，按「下一題」才四選一 */
 function showZhWrongAnswer(q, recognized, imageDataUrl) {
   const rec = recognized && recognized !== "—" ? `你寫的像「${recognized}」` : "辨識結果不像這個字";
 
@@ -921,12 +947,7 @@ function showZhWrongAnswer(q, recognized, imageDataUrl) {
       {
         label: "下一題",
         primary: false,
-        onClick: () => goNextQuestion(),
-      },
-      {
-        label: "請家長幫忙",
-        primary: false,
-        onClick: () => showParentReviewOverlay(recognized, imageDataUrl),
+        onClick: () => showHomophoneRecovery(q, recognized, imageDataUrl),
       },
       {
         label: "我寫對了（家長確認）",
@@ -936,57 +957,6 @@ function showZhWrongAnswer(q, recognized, imageDataUrl) {
     ],
     {
       sub: `${rec} · 正確：${q.word}（${q.zhuyin}）· 已記入錯題本`,
-    }
-  );
-}
-
-function showHomophonePicker(q, recognized, imageDataUrl) {
-  const choices = buildHomophoneChoices(q.word, q.zhuyin, zhBank, 4);
-  if (choices.length < 2) {
-    showParentReviewOverlay(recognized, imageDataUrl);
-    return;
-  }
-
-  recordZhWrong(q, recognized);
-  pendingReview = { recognized, imageDataUrl };
-
-  const wrote =
-    recognized && recognized !== q.word
-      ? `你寫的像「${recognized}」`
-      : recognized
-        ? ""
-        : "手寫辨識不確定";
-  const ocrNote = wrote ? `${wrote} · ` : "";
-  showFeedback(
-    "warn",
-    "答錯了！請選出正確的字",
-    [
-      {
-        label: "再寫一次",
-        primary: false,
-        onClick: () => {
-          pendingReview = null;
-          handwriting?.clear();
-        },
-      },
-      {
-        label: "請家長幫忙",
-        primary: false,
-        onClick: () => {
-          showParentReviewOverlay(recognized, imageDataUrl);
-        },
-      },
-      {
-        label: "我寫對了（家長確認）",
-        primary: false,
-        onClick: () => showParentConfirmWrittenCorrect(q, recognized, imageDataUrl),
-      },
-    ],
-    {
-      homophonePicker: true,
-      choices,
-      zhuyin: q.zhuyin,
-      sub: `${ocrNote}這題已記錄錯題本 · 請看注音點選`,
     }
   );
 }
@@ -1265,18 +1235,7 @@ async function submitAnswer() {
     return;
   }
 
-  if (
-    verdict.type === "homophone" &&
-    CONFIG.HOMOPHONE_PICKER !== false
-  ) {
-    showHomophonePicker(
-      q,
-      verdict.recognized || recognized,
-      imageDataUrl
-    );
-  } else {
-    showZhWrongAnswer(q, verdict.recognized || recognized, imageDataUrl);
-  }
+  showZhWrongAnswer(q, verdict.recognized || recognized, imageDataUrl);
 }
 
 function goNextQuestion() {
