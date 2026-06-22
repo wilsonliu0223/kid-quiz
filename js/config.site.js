@@ -44,7 +44,7 @@ export const CONFIG = {
   STROKE_EXTRA_LENIENT_CHARS: ["要", "在"],
   STROKE_EXTRA_LENIENT_TOP_N: 12,
 
-  /** 答錯後在畫布下方播放筆畫順序（HanziWriter，見 stroke-order-animation） */
+  /** 答錯複寫：HanziWriter 疊在手寫格底層（opacity 約 0.32） */
   STROKE_ORDER_ENABLED: true,
   STROKE_ORDER_DELAY: 500,
 };

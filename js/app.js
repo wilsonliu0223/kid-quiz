@@ -877,12 +877,17 @@ function recordZhWrong(q, recognized) {
   recordWrongAnswer(q, recognized);
 }
 
-/** 答錯後：清空畫布、在下方播放筆畫順序，引導再寫一次 */
+/** 答錯後：畫布底層播筆畫動畫，上層手寫描紅（參考 stroke-order-animation） */
 function promptStrokeOrderRewrite(q) {
+  const wrap = document.getElementById("canvas-wrap");
+  if (wrap) wrap.classList.add("stroke-order-active");
   handwriting?.clear();
-  void showStrokeOrderForWord(q.word);
+  requestAnimationFrame(() => {
+    handwriting?.resize();
+    void showStrokeOrderForWord(q.word);
+  });
   const hint = $("#quiz-hint");
-  if (hint) hint.textContent = "先看下方筆畫順序，再在格子裡寫一次";
+  if (hint) hint.textContent = "格子裡有淡色筆畫示範，照著描一次再按送出";
 }
 
 function onHomophonePick(picked) {

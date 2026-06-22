@@ -447,6 +447,7 @@ body {
 }
 
 .canvas-wrap {
+  position: relative;
   flex: 1 1 0;
   width: 100%;
   min-height: 96px;
@@ -457,6 +458,74 @@ body {
   border-radius: 12px;
   overflow: hidden;
   touch-action: none;
+}
+
+/* 答錯複寫：底層 HanziWriter 動畫 + 上層透明手寫 canvas（參考 stroke-order-animation） */
+.stroke-order-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.stroke-order-layer[hidden] {
+  display: none;
+}
+
+.stroke-order-target {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: var(--stroke-order-opacity, 0.32);
+}
+
+.stroke-order-char-host {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.stroke-order-char-host svg {
+  max-width: 100%;
+  max-height: 100%;
+}
+
+.stroke-order-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  margin-top: 6px;
+  padding: 4px 0;
+}
+
+.stroke-order-toolbar[hidden] {
+  display: none;
+}
+
+.stroke-order-label {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--zh, #e85d2a);
+  font-weight: 600;
+}
+
+.stroke-order-error {
+  margin: 4px 0 0;
+  font-size: 0.8rem;
+  color: var(--warn, #c45c00);
+  text-align: center;
+}
+
+.canvas-wrap.stroke-order-active {
+  border-color: #f0c4a8;
+  background: #fffdfb;
 }
 
 /* 有例句時：例句可略捲動，手寫區仍吃剩餘高度 */
@@ -487,54 +556,9 @@ body {
 
 #view-quiz-zh .quiz-hint,
 #view-quiz-zh .ocr-status,
-#view-quiz-zh .stroke-order-panel {
+#view-quiz-zh .stroke-order-toolbar,
+#view-quiz-zh .stroke-order-error {
   flex-shrink: 0;
-}
-
-.stroke-order-panel {
-  margin-top: 8px;
-  padding: 10px 12px 8px;
-  background: #fff8f3;
-  border: 1px solid #ffd4c2;
-  border-radius: 12px;
-  text-align: center;
-}
-
-.stroke-order-label {
-  margin: 0 0 6px;
-  font-size: 0.88rem;
-  color: var(--zh, #e85d2a);
-  font-weight: 600;
-}
-
-.stroke-order-target {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  align-items: center;
-  gap: 8px;
-  min-height: 132px;
-}
-
-.stroke-order-char-host {
-  width: 128px;
-  height: 128px;
-  flex-shrink: 0;
-}
-
-.stroke-order-char-host svg {
-  max-width: 100%;
-  max-height: 100%;
-}
-
-.stroke-order-error {
-  margin: 4px 0 0;
-  font-size: 0.8rem;
-  color: var(--warn, #c45c00);
-}
-
-#btn-stroke-order-replay {
-  margin-top: 4px;
 }
 
 @media (max-height: 700px) {
@@ -548,11 +572,17 @@ body {
 }
 
 #hand-canvas {
+  position: relative;
+  z-index: 2;
   display: block;
   width: 100%;
   height: 100%;
   touch-action: none;
   background: #fff;
+}
+
+.canvas-wrap.stroke-order-active #hand-canvas {
+  background: transparent;
 }
 
 .ocr-status {

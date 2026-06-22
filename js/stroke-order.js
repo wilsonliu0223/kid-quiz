@@ -18,21 +18,42 @@ function loadHanziWriterScript() {
   return loadPromise;
 }
 
-export function hideStrokeOrderPanel() {
-  animToken += 1;
-  const panel = document.getElementById("stroke-order-panel");
-  const target = document.getElementById("stroke-order-target");
-  const err = document.getElementById("stroke-order-error");
-  if (panel) panel.hidden = true;
-  if (target) target.innerHTML = "";
-  if (err) err.hidden = true;
+function getWrap() {
+  return document.getElementById("canvas-wrap");
 }
 
+export function hideStrokeOrderPanel() {
+  animToken += 1;
+  const wrap = getWrap();
+  const layer = document.getElementById("stroke-order-layer");
+  const toolbar = document.getElementById("stroke-order-toolbar");
+  const target = document.getElementById("stroke-order-target");
+  const err = document.getElementById("stroke-order-error");
+  wrap?.classList.remove("stroke-order-active");
+  if (layer) layer.hidden = true;
+  if (toolbar) toolbar.hidden = true;
+  if (target) target.innerHTML = "";
+  if (err) {
+    err.hidden = true;
+    err.textContent = "";
+  }
+}
+
+function measureCharSize(targetEl) {
+  const rect = targetEl.getBoundingClientRect();
+  const size = Math.floor(Math.min(rect.width, rect.height) - 20);
+  return Math.max(80, size);
+}
+
+/** 單字依序播放在同一格（參考 stroke-order-animation 疊層做法） */
 function animateOneChar(char, targetEl, delay) {
   return new Promise((resolve) => {
+    targetEl.innerHTML = "";
     const host = document.createElement("div");
     host.className = "stroke-order-char-host";
     targetEl.appendChild(host);
+
+    const size = measureCharSize(targetEl);
 
     let done = false;
     const finish = () => {
@@ -43,12 +64,12 @@ function animateOneChar(char, targetEl, delay) {
 
     try {
       const writer = window.HanziWriter.create(host, char, {
-        width: 128,
-        height: 128,
+        width: size,
+        height: size,
         padding: 10,
         strokeColor: "#e85d2a",
         radicalColor: "#c94a1a",
-        outlineColor: "#e8e8e8",
+        outlineColor: "#ddd",
         showOutline: true,
         delayBetweenStrokes: delay,
       });
@@ -62,14 +83,19 @@ function animateOneChar(char, targetEl, delay) {
   });
 }
 
-/** 在畫布下方播放標準答案的筆畫順序（參考 stroke-order-animation） */
+/**
+ * 答錯後「再寫一次」：HanziWriter 在畫布底層播筆畫，手寫 canvas 疊在上層描紅。
+ * @see https://wilsonliu0223.github.io/stroke-order-animation/
+ */
 export async function showStrokeOrderForWord(word) {
   if (CONFIG.STROKE_ORDER_ENABLED === false) return false;
 
-  const panel = document.getElementById("stroke-order-panel");
+  const wrap = getWrap();
+  const layer = document.getElementById("stroke-order-layer");
+  const toolbar = document.getElementById("stroke-order-toolbar");
   const target = document.getElementById("stroke-order-target");
   const errEl = document.getElementById("stroke-order-error");
-  if (!panel || !target) return false;
+  if (!wrap || !layer || !target) return false;
 
   const chars = [...String(word || "").trim()].filter(Boolean);
   if (!chars.length) return false;
@@ -86,7 +112,9 @@ export async function showStrokeOrderForWord(word) {
   }
 
   const token = ++animToken;
-  panel.hidden = false;
+  wrap.classList.add("stroke-order-active");
+  layer.hidden = false;
+  if (toolbar) toolbar.hidden = false;
   target.innerHTML = "";
   if (errEl) errEl.hidden = true;
 
