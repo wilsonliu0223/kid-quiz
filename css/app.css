@@ -486,8 +486,55 @@ body {
 }
 
 #view-quiz-zh .quiz-hint,
-#view-quiz-zh .ocr-status {
+#view-quiz-zh .ocr-status,
+#view-quiz-zh .stroke-order-panel {
   flex-shrink: 0;
+}
+
+.stroke-order-panel {
+  margin-top: 8px;
+  padding: 10px 12px 8px;
+  background: #fff8f3;
+  border: 1px solid #ffd4c2;
+  border-radius: 12px;
+  text-align: center;
+}
+
+.stroke-order-label {
+  margin: 0 0 6px;
+  font-size: 0.88rem;
+  color: var(--zh, #e85d2a);
+  font-weight: 600;
+}
+
+.stroke-order-target {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  min-height: 132px;
+}
+
+.stroke-order-char-host {
+  width: 128px;
+  height: 128px;
+  flex-shrink: 0;
+}
+
+.stroke-order-char-host svg {
+  max-width: 100%;
+  max-height: 100%;
+}
+
+.stroke-order-error {
+  margin: 4px 0 0;
+  font-size: 0.8rem;
+  color: var(--warn, #c45c00);
+}
+
+#btn-stroke-order-replay {
+  margin-top: 4px;
 }
 
 @media (max-height: 700px) {

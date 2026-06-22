@@ -156,6 +156,19 @@
             <canvas id="hand-canvas" aria-label="手寫區"></canvas>
           </div>
 
+          <div id="stroke-order-panel" class="stroke-order-panel" hidden>
+            <p class="stroke-order-label">筆畫順序 · 看完再在上方格子寫一次</p>
+            <div id="stroke-order-target" class="stroke-order-target"></div>
+            <p id="stroke-order-error" class="stroke-order-error" hidden></p>
+            <button
+              type="button"
+              class="btn-text btn-text-sm"
+              id="btn-stroke-order-replay"
+            >
+              重播筆畫
+            </button>
+          </div>
+
           <p class="ocr-status" id="ocr-status" hidden></p>
         </div>
 

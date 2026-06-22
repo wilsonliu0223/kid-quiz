@@ -19,6 +19,10 @@ import { recognizeZhHandwriting } from "./zh-recognize.js";
 import { ensureHanziStrokeReady } from "./hanzi-stroke.js";
 import { ensurePaddleOcr } from "./paddle-ocr.js";
 import {
+  showStrokeOrderForWord,
+  hideStrokeOrderPanel,
+} from "./stroke-order.js";
+import {
   getSelectedChild,
   setSelectedChild,
   addPending,
@@ -345,6 +349,7 @@ function leaveQuizToHome() {
     `離開測驗？\n\n目前第 ${at} / ${total} 題。\n進度會暫存，回首頁可點「繼續上次測驗」。`
   );
   if (!ok) return;
+  hideStrokeOrderPanel();
   persistQuizDraft();
   showView("home");
 }
@@ -559,6 +564,7 @@ function startZhQuiz(options = {}) {
 }
 
 function renderQuestion() {
+  hideStrokeOrderPanel();
   const q = quiz.questions[quiz.index];
   $("#quiz-progress").textContent = `第 ${quiz.index + 1} / ${quiz.questions.length} 題`;
 
@@ -871,6 +877,14 @@ function recordZhWrong(q, recognized) {
   recordWrongAnswer(q, recognized);
 }
 
+/** 答錯後：清空畫布、在下方播放筆畫順序，引導再寫一次 */
+function promptStrokeOrderRewrite(q) {
+  handwriting?.clear();
+  void showStrokeOrderForWord(q.word);
+  const hint = $("#quiz-hint");
+  if (hint) hint.textContent = "先看下方筆畫順序，再在格子裡寫一次";
+}
+
 function onHomophonePick(picked) {
   if (!quiz || quiz.subject !== "zh") return;
 
@@ -890,7 +904,7 @@ function onHomophonePick(picked) {
       {
         label: "再寫一次",
         primary: true,
-        onClick: () => handwriting?.clear(),
+        onClick: () => promptStrokeOrderRewrite(q),
       },
       {
         label: "下一題",
@@ -942,7 +956,7 @@ function showZhWrongAnswer(q, recognized, imageDataUrl) {
       {
         label: "再寫一次",
         primary: true,
-        onClick: () => handwriting?.clear(),
+        onClick: () => promptStrokeOrderRewrite(q),
       },
       {
         label: "下一題",
@@ -1620,6 +1634,11 @@ function bindEvents() {
     }
   });
   $("#btn-clear-canvas").addEventListener("click", () => handwriting?.clear());
+  $("#btn-stroke-order-replay")?.addEventListener("click", () => {
+    if (!quiz || quiz.subject !== "zh") return;
+    const q = quiz.questions[quiz.index];
+    if (q?.word) void showStrokeOrderForWord(q.word);
+  });
   $("#btn-submit-answer").addEventListener("click", submitAnswer);
   $("#btn-clear-en").addEventListener("click", () => {
     $("#en-answer-input").value = "";
