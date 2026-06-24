@@ -425,11 +425,15 @@ body {
   border-color: #d4cfc6;
 }
 
+.flip-card-char.flip-card-face-up {
+  padding: 2px;
+}
+
 .flip-card-char .flip-card-inner {
-  font-size: clamp(1.1rem, 5.5vw, 1.6rem);
+  font-size: clamp(1.55rem, 8.5vw, 2.35rem);
   font-weight: 800;
   color: var(--zh-dark);
-  line-height: 1.1;
+  line-height: 1;
 }
 
 .flip-card-zhuyin .flip-card-inner {

@@ -215,6 +215,7 @@ function renderBoard() {
     if (card.matched) {
       btn.classList.add("flip-card-matched");
       btn.classList.add("flip-card-face-up");
+      btn.classList.add(card.kind === "char" ? "flip-card-char" : "flip-card-zhuyin");
       btn.innerHTML = `<span class="flip-card-inner">${escapeHtml(card.face)}</span>`;
     } else if (card.faceUp) {
       btn.classList.add("flip-card-face-up");
