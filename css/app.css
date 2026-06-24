@@ -1657,6 +1657,130 @@ body {
   color: #4a5080;
 }
 
+.card-math-guess {
+  background: linear-gradient(135deg, #f5f0fc 0%, #e8ddf5 100%);
+  border: 2px solid #b8a0d8;
+  width: 100%;
+  margin-top: 10px;
+}
+
+.card-math-guess .card-title {
+  color: #5a4080;
+}
+
+.math-guess-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  gap: 8px;
+}
+
+.math-guess-target-block {
+  text-align: center;
+  padding: 12px 10px;
+  background: var(--math-bg);
+  border-radius: 12px;
+  border: 1px solid var(--math-border);
+}
+
+.math-guess-label {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.math-guess-range {
+  margin: 4px 0 2px;
+  font-size: clamp(1.5rem, 9vw, 2rem);
+  font-weight: 800;
+  color: var(--math-dark);
+  line-height: 1.15;
+}
+
+.math-guess-sub {
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.math-guess-input {
+  text-align: center;
+  font-size: clamp(2rem, 14vw, 3rem);
+  font-weight: 800;
+  color: var(--math-dark);
+  margin: 0;
+  padding: 10px 8px;
+  background: #fff;
+  border: 2px dashed var(--math-border);
+  border-radius: 12px;
+  min-height: 1.4em;
+  letter-spacing: 0.06em;
+}
+
+.math-guess-hint {
+  text-align: center;
+  font-size: 1rem;
+  font-weight: 700;
+  margin: 0;
+  padding: 8px 10px;
+  border-radius: 10px;
+  line-height: 1.35;
+}
+
+.math-guess-hint-idle {
+  color: var(--muted);
+  background: transparent;
+  font-weight: 600;
+}
+
+.math-guess-hint-hot {
+  color: #b84a00;
+  background: #fff4e8;
+  border: 1px solid #f0c090;
+}
+
+.math-guess-hint-warm {
+  color: #6a5080;
+  background: #f4f0fa;
+  border: 1px solid #d0c0e8;
+}
+
+.math-guess-hint-far {
+  color: #3d5080;
+  background: #eef2fa;
+  border: 1px solid #b8c4e0;
+}
+
+.math-numpad {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-top: auto;
+  padding-bottom: 4px;
+}
+
+.math-numpad-key {
+  min-height: 52px;
+  font-size: 1.35rem;
+  font-weight: 700;
+  border-radius: 12px;
+  border: 2px solid var(--math-border);
+  background: #fff;
+  color: var(--math-dark);
+  touch-action: manipulation;
+}
+
+.math-numpad-key:active {
+  background: var(--math-bg);
+  transform: scale(0.97);
+}
+
+.math-numpad-back {
+  font-size: 1.1rem;
+  color: var(--muted);
+}
+
 .quiz-header-math .quiz-subject {
   color: var(--math-dark);
 }
@@ -1777,60 +1901,69 @@ body {
 
 .math-card-down {
   cursor: pointer;
+  position: relative;
+  background: linear-gradient(165deg, #fafbfd 0%, #eef2f7 100%);
+  border: 2px solid #d4dae3;
+  box-shadow: none;
 }
 
-/* 1 組 0～9：淺綠背卡 */
+/* 蓋牌：統一淺灰底 + 中央淡框 + 底部色條區分類型 */
+.math-card-down::before {
+  content: "";
+  position: absolute;
+  inset: 20%;
+  border-radius: 6px;
+  border: 1.5px solid rgba(120, 140, 170, 0.14);
+  background: rgba(255, 255, 255, 0.55);
+  pointer-events: none;
+}
+
+.math-card-down::after {
+  content: "";
+  position: absolute;
+  bottom: 16%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 34%;
+  height: 4px;
+  border-radius: 999px;
+  pointer-events: none;
+}
+
+.math-card-down-digit::after {
+  background: #8fbf8f;
+}
+
+.math-card-down-money::after {
+  background: #7a9ec8;
+}
+
+.math-card-down-op::after {
+  background: #dfa8bc;
+}
+
+/* 舊版內層背卡圖案停用，改由 ::before/::after 呈現 */
+.math-card-back {
+  display: none;
+  pointer-events: none;
+}
+
 .math-card-down-digit {
-  background: linear-gradient(145deg, #eef8ef 0%, #cfe8d0 100%);
-  border-color: #7cb87c;
-  box-shadow: inset 0 0 0 1px rgba(124, 184, 124, 0.35);
+  border-color: #c8dcc8;
 }
 
-.math-card-back-digit {
-  display: block;
-  width: 55%;
-  height: 55%;
-  border-radius: 4px;
-  border: 2px solid #7cb87c;
-  background: linear-gradient(145deg, #f4fbf4 0%, #dcefdc 100%);
-}
-
-/* 2 組 面額：深藍背卡 */
 .math-card-down-money {
-  background: linear-gradient(145deg, #1a3568 0%, #0f2348 100%);
-  border-color: #0a1830;
-  box-shadow: inset 0 0 0 1px rgba(120, 160, 220, 0.2);
+  border-color: #c4d0e4;
 }
 
-.math-card-back-money {
-  display: block;
-  width: 55%;
-  height: 55%;
-  border-radius: 4px;
-  border: 2px solid #5a8fd4;
-  background: linear-gradient(145deg, #254a82 0%, #152d58 100%);
-}
-
-/* 3 組蓋牌：粉紅背卡 */
 .math-card-down-op {
-  background: linear-gradient(145deg, #fce8f0 0%, #f0b8cc 100%);
-  border-color: #e8a0b8;
-  box-shadow: inset 0 0 0 1px rgba(232, 160, 184, 0.35);
-}
-
-.math-card-back-op {
-  display: block;
-  width: 55%;
-  height: 55%;
-  border-radius: 4px;
-  border: 2px solid #e8a0b8;
-  background: linear-gradient(145deg, #fff0f5 0%, #f5c0d4 100%);
+  border-color: #e8cdd8;
 }
 
 .math-card-down-op.math-card-selected {
-  background: linear-gradient(145deg, #ffe8f0 0%, #f0a8c0 100%);
-  border-color: #d06088;
-  box-shadow: 0 0 0 2px rgba(208, 96, 136, 0.35);
+  border-color: #d8a0b8;
+  background: linear-gradient(165deg, #fdf8fa 0%, #f5e8ee 100%);
+  box-shadow: 0 0 0 2px rgba(216, 160, 184, 0.28);
 }
 
 .math-card-selected {
@@ -1840,23 +1973,20 @@ body {
 }
 
 .math-card-down-digit.math-card-selected {
-  background: linear-gradient(145deg, #e0f4e0 0%, #b8dfb9 100%);
-  border-color: #5aa85a;
-  box-shadow: 0 0 0 2px rgba(90, 168, 90, 0.35);
+  border-color: #8fbf8f;
+  background: linear-gradient(165deg, #f6fbf6 0%, #eaf4ea 100%);
+  box-shadow: 0 0 0 2px rgba(143, 191, 143, 0.28);
 }
 
 .math-card-down-money.math-card-selected {
-  background: linear-gradient(145deg, #254a82 0%, #152d58 100%);
-  border-color: #7eb0e8;
-  box-shadow: 0 0 0 2px rgba(126, 176, 232, 0.45);
+  border-color: #7a9ec8;
+  background: linear-gradient(165deg, #f6f9fd 0%, #e8eef8 100%);
+  box-shadow: 0 0 0 2px rgba(122, 158, 200, 0.28);
 }
 
 .math-card-turn:not(.math-card-selected) {
-  border-color: #9eb8e8;
-}
-
-.math-card-back {
-  pointer-events: none;
+  border-color: #a8b8d8;
+  box-shadow: 0 0 0 1px rgba(122, 158, 200, 0.35);
 }
 
 .math-card-face {

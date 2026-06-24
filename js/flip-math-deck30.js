@@ -10,7 +10,7 @@ const EXTRA_DIGIT_VALUE = 1;
 let deps = null;
 /** @type {MathGameState | null} */
 let game = null;
-/** @type {'open' | 'flip' | null} */
+/** @type {'open' | 'flip' | 'guess' | null} */
 let pendingMode = null;
 
 /**
@@ -33,7 +33,7 @@ let pendingMode = null;
 
 /**
  * @typedef {object} MathGameState
- * @property {'open'|'flip'} mode
+ * @property {'open'|'flip'|'guess'} mode
  * @property {'100'|'1000'} rangeKey
  * @property {number} target
  * @property {MathCard[]} cards
@@ -43,7 +43,12 @@ let pendingMode = null;
  * @property {string[]} selection
  * @property {string[]} turnFlippedIds
  * @property {boolean} locked
+ * @property {string} [guessInput]
+ * @property {{ text: string, level: string }} [lastHint]
  */
+
+const GUESS_HINT_IDLE = { text: "輸入數字後送出", level: "idle" };
+let numpadBuilt = false;
 
 const $ = (sel) => document.querySelector(sel);
 
@@ -146,6 +151,40 @@ function buildDeck() {
 
 function rangeBounds(rangeKey) {
   return rangeKey === "1000" ? { min: 100, max: 1000 } : { min: 10, max: 100 };
+}
+
+function guessMidThreshold(rangeKey) {
+  return rangeKey === "1000" ? 100 : 25;
+}
+
+function maxGuessDigits(rangeKey) {
+  return rangeKey === "1000" ? 4 : 3;
+}
+
+function pickSecret(rangeKey) {
+  const { min, max } = rangeBounds(rangeKey);
+  return randInt(min, max);
+}
+
+/**
+ * @param {number} guess
+ * @param {number} secret
+ * @param {'100'|'1000'} rangeKey
+ */
+function guessHint(guess, secret, rangeKey) {
+  const diff = Math.abs(guess - secret);
+  if (diff < 10) {
+    return { text: "快猜中了！", level: "hot" };
+  }
+  const mid = guessMidThreshold(rangeKey);
+  if (guess > secret) {
+    return diff < mid
+      ? { text: "偏大一點", level: "warm" }
+      : { text: "太大了", level: "far" };
+  }
+  return diff < mid
+    ? { text: "偏小一點", level: "warm" }
+    : { text: "太小了", level: "far" };
 }
 
 function cardNum(card) {
@@ -322,10 +361,31 @@ function pickTarget(rangeKey, mode = "open") {
 function startNewRound(keepScores = true) {
   const rangeKey = getMathRangeSetting();
   const prev = game;
+  const mode = pendingMode || prev?.mode || "open";
+
+  if (mode === "guess") {
+    game = {
+      mode: "guess",
+      rangeKey,
+      target: pickSecret(rangeKey),
+      cards: [],
+      scores: keepScores && prev ? { ...prev.scores } : { A: 0, B: 0 },
+      firstPlayerId: prev?.firstPlayerId || "A",
+      currentPlayerId: prev?.currentPlayerId || "A",
+      selection: [],
+      turnFlippedIds: [],
+      locked: false,
+      guessInput: "",
+      lastHint: { ...GUESS_HINT_IDLE },
+    };
+    renderMathPlayView();
+    return;
+  }
+
   game = {
-    mode: pendingMode || prev?.mode || "open",
+    mode,
     rangeKey,
-    target: pickTarget(rangeKey, pendingMode || prev?.mode || "open"),
+    target: pickTarget(rangeKey, mode),
     cards: buildDeck(),
     scores: keepScores && prev ? { ...prev.scores } : { A: 0, B: 0 },
     firstPlayerId: prev?.firstPlayerId || "A",
@@ -342,6 +402,7 @@ function startNewRound(keepScores = true) {
   } else {
     applyFlipModeFaces(game.cards);
   }
+  renderMathPlayView();
 }
 
 function applyFlipModeFaces(cards) {
@@ -358,14 +419,31 @@ function renderMathHeader() {
   $("#math-score-a").textContent = String(game.scores.A);
   $("#math-score-b").textContent = String(game.scores.B);
   $("#math-turn-label").textContent = `輪到：${playerName(game.currentPlayerId)}`;
-  $("#math-target-big").textContent = String(game.target);
-  const { min, max } = rangeBounds(game.rangeKey);
-  $("#math-target-hint").textContent = `範圍 ${min}～${max} · 先 ${WIN_SCORE} 分勝 · 共 ${game.cards.length} 張（${DECK_VERSION}）`;
 
   $("#math-score-block-a")?.classList.toggle("flip-score-active", game.currentPlayerId === "A");
   $("#math-score-block-b")?.classList.toggle("flip-score-active", game.currentPlayerId === "B");
   $("#math-first-tag-a").hidden = game.firstPlayerId !== "A";
   $("#math-first-tag-b").hidden = game.firstPlayerId !== "B";
+
+  const { min, max } = rangeBounds(game.rangeKey);
+
+  if (game.mode === "guess") {
+    $("#math-mode-badge").textContent = "猜數字";
+    $("#math-guess-range").textContent = `猜 ${min}～${max}`;
+    const inputEl = $("#math-guess-input");
+    if (inputEl) {
+      inputEl.textContent = game.guessInput || "—";
+    }
+    const hintEl = $("#math-guess-hint");
+    if (hintEl && game.lastHint) {
+      hintEl.textContent = game.lastHint.text;
+      hintEl.className = `math-guess-hint math-guess-hint-${game.lastHint.level}`;
+    }
+    return;
+  }
+
+  $("#math-target-big").textContent = String(game.target);
+  $("#math-target-hint").textContent = `範圍 ${min}～${max} · 先 ${WIN_SCORE} 分勝 · 共 ${game.cards.length} 張（${DECK_VERSION}）`;
 
   const modeLabel = game.mode === "open" ? "攤牌" : "翻牌";
   $("#math-mode-badge").textContent = modeLabel;
@@ -446,6 +524,125 @@ function renderCardGrid() {
   renderMathHeader();
 }
 
+function buildNumpad() {
+  if (numpadBuilt) return;
+  const pad = $("#math-numpad");
+  if (!pad) return;
+  const keys = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "⌫", "0"];
+  keys.forEach((key) => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "math-numpad-key" + (key === "⌫" ? " math-numpad-back" : "");
+    btn.textContent = key;
+    btn.addEventListener("click", () => {
+      if (key === "⌫") backspaceGuessDigit();
+      else appendGuessDigit(key);
+    });
+    pad.appendChild(btn);
+  });
+  numpadBuilt = true;
+}
+
+function renderGuessPanel() {
+  buildNumpad();
+  renderMathHeader();
+}
+
+function renderMathPlayView() {
+  const cardsPanel = $("#math-cards-panel");
+  const guessPanel = $("#math-guess-panel");
+  if (!game) return;
+
+  if (game.mode === "guess") {
+    if (cardsPanel) cardsPanel.hidden = true;
+    if (guessPanel) guessPanel.hidden = false;
+    renderGuessPanel();
+    return;
+  }
+
+  if (cardsPanel) cardsPanel.hidden = false;
+  if (guessPanel) guessPanel.hidden = true;
+  renderCardGrid();
+}
+
+function appendGuessDigit(digit) {
+  if (!game || game.mode !== "guess" || game.locked) return;
+  if (game.guessInput.length >= maxGuessDigits(game.rangeKey)) return;
+  game.guessInput += digit;
+  renderMathHeader();
+}
+
+function backspaceGuessDigit() {
+  if (!game || game.mode !== "guess" || game.locked) return;
+  game.guessInput = game.guessInput.slice(0, -1);
+  renderMathHeader();
+}
+
+function clearGuessInput() {
+  if (!game || game.mode !== "guess") return;
+  game.guessInput = "";
+  renderMathHeader();
+}
+
+function submitGuess() {
+  if (!game || game.mode !== "guess" || game.locked) return;
+  const raw = game.guessInput.trim();
+  if (!raw) {
+    deps.showWarn("請先輸入", "點數字鍵盤組出你的猜測");
+    return;
+  }
+  const guess = Number(raw);
+  if (!Number.isFinite(guess)) {
+    deps.showWarn("無法送出", "請輸入數字");
+    return;
+  }
+  const { min, max } = rangeBounds(game.rangeKey);
+  if (guess < min || guess > max) {
+    deps.showWarn("超出範圍", `請猜 ${min}～${max} 之間的數`);
+    return;
+  }
+
+  if (guess === game.target) {
+    game.scores[game.currentPlayerId] += 1;
+    const who = playerName(game.currentPlayerId);
+    deps.showOk("猜中了！", `${who} 猜對秘密數，+1 分`, () => {
+      if (!game) return;
+      if (checkWin()) return;
+      game.currentPlayerId = game.currentPlayerId === "A" ? "B" : "A";
+      nextGuessRound();
+    });
+    return;
+  }
+
+  const hint = guessHint(guess, game.target, game.rangeKey);
+  game.lastHint = hint;
+  game.guessInput = "";
+  switchPlayer();
+  renderMathHeader();
+}
+
+function nextGuessRound() {
+  const scores = { ...game.scores };
+  const firstPlayerId = game.firstPlayerId;
+  const currentPlayerId = game.currentPlayerId;
+  const rangeKey = getMathRangeSetting();
+  game = {
+    mode: "guess",
+    rangeKey,
+    target: pickSecret(rangeKey),
+    cards: [],
+    scores,
+    firstPlayerId,
+    currentPlayerId,
+    selection: [],
+    turnFlippedIds: [],
+    locked: false,
+    guessInput: "",
+    lastHint: { ...GUESS_HINT_IDLE },
+  };
+  renderMathPlayView();
+}
+
 function switchPlayer() {
   game.currentPlayerId = game.currentPlayerId === "A" ? "B" : "A";
   game.selection = [];
@@ -513,6 +710,10 @@ function checkWin() {
 }
 
 function nextQuestion() {
+  if (game.mode === "guess") {
+    nextGuessRound();
+    return;
+  }
   const scores = { ...game.scores };
   const firstPlayerId = game.firstPlayerId;
   const currentPlayerId = game.currentPlayerId;
@@ -536,11 +737,15 @@ function nextQuestion() {
   } else {
     applyFlipModeFaces(game.cards);
   }
-  renderCardGrid();
+  renderMathPlayView();
 }
 
 function submitAnswer() {
   if (!game || game.locked) return;
+  if (game.mode === "guess") {
+    submitGuess();
+    return;
+  }
   if (game.mode === "flip" && !turnHasOpFlipped()) {
     deps.showWarn("請翻運算符", "本回合至少需翻開 1 張粉紅運算符才能送出");
     return;
@@ -575,6 +780,10 @@ function submitAnswer() {
 
 function clearSelection() {
   if (!game) return;
+  if (game.mode === "guess") {
+    clearGuessInput();
+    return;
+  }
   game.selection = [];
   renderCardGrid();
 }
@@ -596,8 +805,18 @@ function renderMathFirstPicker() {
   $("#math-pick-b").textContent = names.B;
   const { min, max } = rangeBounds(getMathRangeSetting());
   $("#math-first-range").textContent = `${min}～${max}`;
-  const modeName = pendingMode === "flip" ? "翻牌對戰" : "攤牌計算機";
+  const modeName =
+    pendingMode === "flip"
+      ? "翻牌對戰"
+      : pendingMode === "guess"
+        ? "猜數字"
+        : "攤牌計算機";
   $("#math-first-mode").textContent = modeName;
+  const hintEl = document.querySelector("#view-math-first .flip-first-hint");
+  if (hintEl) {
+    hintEl.textContent =
+      pendingMode === "guess" ? "點名字先猜" : "點名字先出牌";
+  }
 }
 
 function beginMath(mode) {
@@ -614,12 +833,27 @@ export function beginMathFlip() {
   beginMath("flip");
 }
 
+export function beginMathGuess() {
+  beginMath("guess");
+}
+
 function startWithFirstPlayer(firstPlayerId) {
   game = null;
+  const mode = pendingMode || "open";
   startNewRound(false);
   game.firstPlayerId = firstPlayerId;
   game.currentPlayerId = firstPlayerId;
-  game.mode = pendingMode || "open";
+  game.mode = mode;
+
+  if (mode === "guess") {
+    game.guessInput = "";
+    game.lastHint = { ...GUESS_HINT_IDLE };
+    pendingMode = null;
+    deps.showView("mathPlay");
+    renderMathPlayView();
+    return;
+  }
+
   if (game.mode === "open") {
     game.cards.forEach((c) => {
       c.faceUp = true;
@@ -629,7 +863,7 @@ function startWithFirstPlayer(firstPlayerId) {
   }
   pendingMode = null;
   deps.showView("mathPlay");
-  renderCardGrid();
+  renderMathPlayView();
 }
 
 export function bindMathEvents() {
@@ -640,6 +874,10 @@ export function bindMathEvents() {
   $("#btn-start-math-flip")?.addEventListener("click", (e) => {
     e.preventDefault();
     beginMathFlip();
+  });
+  $("#btn-start-math-guess")?.addEventListener("click", (e) => {
+    e.preventDefault();
+    beginMathGuess();
   });
   $("#math-pick-a")?.addEventListener("click", () => startWithFirstPlayer("A"));
   $("#math-pick-b")?.addEventListener("click", () => startWithFirstPlayer("B"));

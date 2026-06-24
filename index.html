@@ -11,7 +11,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <title>家裡練習</title>
     <link rel="manifest" href="manifest.json" />
-    <link rel="stylesheet" href="css/app.css?v=math-card-big" />
+    <link rel="stylesheet" href="css/app.css?v=math-card-back-v1" />
     <script type="importmap">
       {
         "imports": {
@@ -164,7 +164,7 @@
             <span class="flip-vs">vs</span>
             <span id="math-player-b-name">思妤</span>
           </div>
-          <p class="flip-home-hint">先 5 分勝 · 湊錢或算式皆可</p>
+          <p class="flip-home-hint">先 5 分勝 · 攤牌／翻牌／猜數字</p>
           <button type="button" class="card card-math-open" id="btn-start-math-open">
             <span class="card-title">數學攤牌</span>
             <span class="card-desc">全部攤開 · 像計算機選牌</span>
@@ -172,6 +172,10 @@
           <button type="button" class="card card-math-flip" id="btn-start-math-flip">
             <span class="card-title">數學翻牌</span>
             <span class="card-desc">每回合翻 4 張 · 湊出目標數</span>
+          </button>
+          <button type="button" class="card card-math-guess" id="btn-start-math-guess">
+            <span class="card-title">猜數字</span>
+            <span class="card-desc">比大小猜秘密數 · 先猜中得分</span>
           </button>
         </section>
 
@@ -368,11 +372,6 @@
           <span class="quiz-subject">數學 <span id="math-mode-badge">攤牌</span></span>
         </header>
         <div class="math-play-body">
-          <div class="math-target-block">
-            <p class="math-target-label">目標數</p>
-            <p class="math-target-big" id="math-target-big">67</p>
-            <p class="math-target-hint" id="math-target-hint"></p>
-          </div>
           <div class="flip-scorebar math-scorebar">
             <div class="flip-score-block" id="math-score-block-a">
               <span class="flip-score-name" id="math-play-name-a">思妘</span>
@@ -388,9 +387,26 @@
               <span class="flip-score-num" id="math-score-b">0</span>
             </div>
           </div>
-          <p class="math-expression" id="math-expression">點選下方牌組成算式或湊錢</p>
-          <p class="math-flip-hint" id="math-flip-hint" hidden></p>
-          <div class="math-card-grid" id="math-card-grid"></div>
+          <div id="math-cards-panel">
+            <div class="math-target-block">
+              <p class="math-target-label">目標數</p>
+              <p class="math-target-big" id="math-target-big">67</p>
+              <p class="math-target-hint" id="math-target-hint"></p>
+            </div>
+            <p class="math-expression" id="math-expression">點選下方牌組成算式或湊錢</p>
+            <p class="math-flip-hint" id="math-flip-hint" hidden></p>
+            <div class="math-card-grid" id="math-card-grid"></div>
+          </div>
+          <div id="math-guess-panel" class="math-guess-panel" hidden>
+            <div class="math-guess-target-block">
+              <p class="math-guess-label">秘密數字</p>
+              <p class="math-guess-range" id="math-guess-range">猜 10～100</p>
+              <p class="math-guess-sub">不會告訴你答案，靠提示慢慢猜</p>
+            </div>
+            <p class="math-guess-input" id="math-guess-input" aria-live="polite">—</p>
+            <p class="math-guess-hint math-guess-hint-idle" id="math-guess-hint">輸入數字後送出</p>
+            <div class="math-numpad" id="math-numpad"></div>
+          </div>
         </div>
         <footer class="quiz-footer">
           <button type="button" class="btn btn-secondary" id="btn-math-clear">清除</button>
@@ -540,6 +556,6 @@
       </div>
     </div>
 
-    <script type="module" src="js/app.js?v=math-card-big"></script>
+    <script type="module" src="js/app.js?v=math-guess-v1"></script>
   </body>
 </html>
