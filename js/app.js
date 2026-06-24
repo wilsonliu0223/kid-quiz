@@ -42,6 +42,10 @@ import {
   scoresForChild,
 } from "./score-log.js";
 import {
+  initFlipZh,
+  renderFlipHomePlayers,
+} from "./flip-zh.js";
+import {
   addMistake,
   removeMistake,
   clearMistakes,
@@ -124,6 +128,9 @@ const views = {
   home: $("#view-home"),
   quizZh: $("#view-quiz-zh"),
   quizEn: $("#view-quiz-en"),
+  flipFirst: $("#view-flip-first"),
+  flipPlay: $("#view-flip-play"),
+  flipResult: $("#view-flip-result"),
   result: $("#view-result"),
   parent: $("#view-parent"),
 };
@@ -147,6 +154,7 @@ function showView(name) {
     renderHomeScoreHistory();
     renderResumeBanner();
     renderMistakeBookHome();
+    renderFlipHomePlayers();
   }
   if (name === "quizEn") setupEnQuizKeyboardLift();
 }
@@ -230,6 +238,7 @@ function renderChildChips() {
     btn.textContent = names[id] || id;
     btn.classList.toggle("chip-active", id === selected);
   });
+  renderFlipHomePlayers();
 }
 
 function initChildPicker() {
@@ -1708,6 +1717,17 @@ async function init() {
   setupQuizAutoSave();
   initChildPicker();
   initQuizCountPicker();
+  initFlipZh({
+    showView,
+    getZhBank: () => zhBank,
+    getLessonFilter: () => lessonFilter,
+    getChildNames,
+    showWarn: (title, sub) => {
+      showFeedback("warn", title, [{ label: "好的", primary: true, onClick: () => {} }], {
+        sub: sub || "",
+      });
+    },
+  });
   await refreshBank();
   renderHomeScoreHistory();
   renderResumeBanner();

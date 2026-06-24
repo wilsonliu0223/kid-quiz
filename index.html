@@ -52,17 +52,19 @@
           </button>
         </div>
 
+        <div class="lesson-picker" id="lesson-picker" hidden>
+          <span class="label">本週課次</span>
+          <div class="lesson-chips" id="lesson-chips"></div>
+        </div>
+
+        <p class="home-section-label">練習測驗</p>
+
         <div class="child-picker" role="group" aria-label="選擇小孩">
           <span class="label">誰在練習？</span>
           <div class="child-btns">
             <button type="button" class="chip chip-active" data-child="A">A</button>
             <button type="button" class="chip" data-child="B">B</button>
           </div>
-        </div>
-
-        <div class="lesson-picker" id="lesson-picker" hidden>
-          <span class="label">本週課次</span>
-          <div class="lesson-chips" id="lesson-chips"></div>
         </div>
 
         <div class="quiz-count-picker" role="group" aria-label="本次題數">
@@ -123,6 +125,32 @@
             <span class="card-desc">看中拼英 · 聽音拼字</span>
           </button>
         </div>
+
+        <p class="home-section-label home-section-label-flip">翻牌對戰</p>
+
+        <section class="home-flip-section" aria-label="翻牌對戰">
+          <div class="flip-players-vs" id="flip-players-vs">
+            <span id="flip-player-a-name">思妘</span>
+            <span class="flip-vs">vs</span>
+            <span id="flip-player-b-name">思妤</span>
+          </div>
+          <p class="flip-home-hint">兩人一起玩 · 開局再點誰先翻</p>
+
+          <div class="flip-pair-count-picker" role="group" aria-label="幾組字">
+            <span class="label">幾組字？</span>
+            <div class="lesson-chips" id="flip-pair-count-chips">
+              <button type="button" class="chip" data-flip-pairs="5">5</button>
+              <button type="button" class="chip chip-active" data-flip-pairs="10">10</button>
+              <button type="button" class="chip" data-flip-pairs="15">15</button>
+              <button type="button" class="chip" data-flip-pairs="20">20</button>
+            </div>
+          </div>
+
+          <button type="button" class="card card-flip" id="btn-start-flip-zh">
+            <span class="card-title">國字翻牌</span>
+            <span class="card-desc">國字配注音 · 兩人同機</span>
+          </button>
+        </section>
 
         <section class="home-history" id="home-history" aria-label="歷史分數">
           <div class="home-history-head">
@@ -224,6 +252,70 @@
         <footer class="quiz-footer quiz-footer-en" id="quiz-footer-en">
           <button type="button" class="btn btn-secondary" id="btn-clear-en">清除</button>
           <button type="button" class="btn btn-primary btn-primary-en" id="btn-submit-en">送出</button>
+        </footer>
+      </section>
+
+      <!-- 翻牌：選先手 -->
+      <section id="view-flip-first" class="view view-hidden" aria-label="誰先翻牌">
+        <header class="quiz-header quiz-header-flip">
+          <button type="button" class="btn-text" id="btn-flip-first-back">← 返回</button>
+          <span class="quiz-subject">國字翻牌</span>
+        </header>
+
+        <div class="flip-first-body">
+          <h2 class="flip-first-title">誰先翻牌？</h2>
+          <p class="flip-first-meta">
+            <span id="flip-first-pairs">10</span> 組 · 課次：<span id="flip-first-lesson">全部</span>
+          </p>
+          <p class="flip-first-hint">點一下你的名字，你先翻牌</p>
+
+          <div class="flip-pick-btns">
+            <button type="button" class="flip-pick-btn flip-pick-a" id="flip-pick-a">思妘</button>
+            <button type="button" class="flip-pick-btn flip-pick-b" id="flip-pick-b">思妤</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- 翻牌：對戰 -->
+      <section id="view-flip-play" class="view view-hidden" aria-label="翻牌對戰">
+        <header class="quiz-header quiz-header-flip">
+          <button type="button" class="btn-text" id="btn-flip-play-back">← 返回</button>
+          <span class="quiz-subject">國字翻牌</span>
+          <span class="quiz-progress" id="flip-progress-label">配對 0 / 10</span>
+        </header>
+
+        <div class="flip-play-body">
+          <div class="flip-scorebar">
+            <div class="flip-score-block" id="flip-score-block-a">
+              <span class="flip-score-name" id="flip-play-name-a">思妘</span>
+              <span class="flip-first-tag" id="flip-first-tag-a">先開</span>
+              <span class="flip-score-num" id="flip-score-a">0</span>
+            </div>
+            <div class="flip-turn-wrap">
+              <p class="flip-turn-label" id="flip-turn-label">輪到：思妘</p>
+            </div>
+            <div class="flip-score-block" id="flip-score-block-b">
+              <span class="flip-score-name" id="flip-play-name-b">思妤</span>
+              <span class="flip-first-tag" id="flip-first-tag-b" hidden>先開</span>
+              <span class="flip-score-num" id="flip-score-b">0</span>
+            </div>
+          </div>
+
+          <div class="flip-card-grid" id="flip-card-grid"></div>
+        </div>
+      </section>
+
+      <!-- 翻牌：結算 -->
+      <section id="view-flip-result" class="view view-hidden" aria-label="翻牌結算">
+        <header class="app-header">
+          <h2 class="result-title" id="flip-result-title">完成</h2>
+          <p class="flip-result-scores" id="flip-result-scores">思妘 0 ：0 思妤</p>
+          <p class="flip-result-detail" id="flip-result-detail"></p>
+        </header>
+
+        <footer class="result-footer">
+          <button type="button" class="btn btn-primary btn-block" id="btn-flip-replay">再玩一局</button>
+          <button type="button" class="btn btn-secondary btn-block" id="btn-flip-home">回首頁</button>
         </footer>
       </section>
 
