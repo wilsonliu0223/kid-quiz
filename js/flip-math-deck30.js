@@ -123,8 +123,8 @@ function buildDeck() {
     faceUp: false,
   });
   const money = [
-    { value: 10, label: "10", sub: "硬" },
-    { value: 50, label: "50", sub: "硬" },
+    { value: 10, label: "10" },
+    { value: 50, label: "50" },
     { value: 100, label: "100", sub: "鈔" },
     { value: 500, label: "500", sub: "鈔" },
     { value: 1000, label: "1000", sub: "鈔" },
@@ -425,7 +425,10 @@ function cardHtml(card) {
     return cardBackHtml(card.kind);
   }
   if (card.kind === "money") {
-    return `<span class="math-card-face"><span class="math-card-val">${card.label}</span><span class="math-card-sub">${card.sub || "元"}</span></span>`;
+    const subHtml = card.sub
+      ? `<span class="math-card-sub">${card.sub}</span>`
+      : "";
+    return `<span class="math-card-face"><span class="math-card-val">${card.label}</span>${subHtml}</span>`;
   }
   return `<span class="math-card-face">${card.label}</span>`;
 }
