@@ -436,13 +436,33 @@ body {
   line-height: 1;
 }
 
+.flip-card-zhuyin.flip-card-face-up {
+  padding: 2px;
+}
+
 .flip-card-zhuyin .flip-card-inner {
-  font-size: clamp(0.75rem, 3.8vw, 1rem);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+}
+
+.zhuyin-vertical {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-size: clamp(1.05rem, 5.8vw, 1.55rem);
   font-weight: 700;
   color: var(--zh);
-  letter-spacing: 0.06em;
-  line-height: 1.15;
-  word-break: break-all;
+  line-height: 1;
+  gap: 0;
+}
+
+.zhuyin-vertical .zhuyin-stroke {
+  display: block;
+  line-height: 0.92;
 }
 
 .flip-card-matched {

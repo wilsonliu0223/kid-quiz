@@ -216,11 +216,11 @@ function renderBoard() {
       btn.classList.add("flip-card-matched");
       btn.classList.add("flip-card-face-up");
       btn.classList.add(card.kind === "char" ? "flip-card-char" : "flip-card-zhuyin");
-      btn.innerHTML = `<span class="flip-card-inner">${escapeHtml(card.face)}</span>`;
+      btn.innerHTML = flipCardFaceHtml(card);
     } else if (card.faceUp) {
       btn.classList.add("flip-card-face-up");
       btn.classList.add(card.kind === "char" ? "flip-card-char" : "flip-card-zhuyin");
-      btn.innerHTML = `<span class="flip-card-inner">${escapeHtml(card.face)}</span>`;
+      btn.innerHTML = flipCardFaceHtml(card);
     } else {
       btn.innerHTML = '<span class="flip-card-back">?</span>';
     }
@@ -237,6 +237,24 @@ function escapeHtml(s) {
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;");
+}
+
+/** 注音直排：由上到下（聲母、韻母、聲調依序） */
+function zhuyinVerticalHtml(zhuyin) {
+  const raw = String(zhuyin || "").trim();
+  if (!raw) return "";
+  const strokes = [...raw.replace(/\s+/g, "")];
+  const cols = strokes
+    .map((ch) => `<span class="zhuyin-stroke">${escapeHtml(ch)}</span>`)
+    .join("");
+  return `<span class="zhuyin-vertical" aria-label="${escapeHtml(raw)}">${cols}</span>`;
+}
+
+function flipCardFaceHtml(card) {
+  if (card.kind === "zhuyin") {
+    return `<span class="flip-card-inner">${zhuyinVerticalHtml(card.face)}</span>`;
+  }
+  return `<span class="flip-card-inner">${escapeHtml(card.face)}</span>`;
 }
 
 function cardsMatch(a, b) {
