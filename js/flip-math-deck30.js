@@ -1,3 +1,4 @@
+const DECK_VERSION = "deck30";
 const KEY_MATH_RANGE = "kid-quiz-math-range";
 const WIN_SCORE = 5;
 const FLIP_PER_TURN = 4;
@@ -366,7 +367,7 @@ function renderMathHeader() {
   $("#math-turn-label").textContent = `輪到：${playerName(game.currentPlayerId)}`;
   $("#math-target-big").textContent = String(game.target);
   const { min, max } = rangeBounds(game.rangeKey);
-  $("#math-target-hint").textContent = `範圍 ${min}～${max} · 先 ${WIN_SCORE} 分勝 · 湊錢或算式皆可`;
+  $("#math-target-hint").textContent = `範圍 ${min}～${max} · 先 ${WIN_SCORE} 分勝 · 共 ${game.cards.length} 張（${DECK_VERSION}）`;
 
   $("#math-score-block-a")?.classList.toggle("flip-score-active", game.currentPlayerId === "A");
   $("#math-score-block-b")?.classList.toggle("flip-score-active", game.currentPlayerId === "B");
