@@ -548,13 +548,21 @@ function renderGuessPanel() {
   renderMathHeader();
 }
 
+/** @param {HTMLElement | null} el */
+function setPanelVisible(el, show, display = "flex") {
+  if (!el) return;
+  el.hidden = !show;
+  el.style.display = show ? display : "none";
+  el.classList.toggle("math-panel-off", !show);
+}
+
 /** @param {'open'|'flip'|'guess'|null} mode */
 function applyMathPlayPanels(mode) {
   const cardsPanel = $("#math-cards-panel");
   const guessPanel = $("#math-guess-panel");
   const isGuess = mode === "guess";
-  if (cardsPanel) cardsPanel.hidden = isGuess;
-  if (guessPanel) guessPanel.hidden = !isGuess;
+  setPanelVisible(cardsPanel, !isGuess);
+  setPanelVisible(guessPanel, isGuess);
   if (isGuess) {
     const grid = $("#math-card-grid");
     if (grid) grid.innerHTML = "";
@@ -933,5 +941,6 @@ export function initFlipMath(d) {
   deps = d;
   initMathRangePicker();
   renderMathHomePlayers();
+  applyMathPlayPanels(null);
   bindMathEvents();
 }

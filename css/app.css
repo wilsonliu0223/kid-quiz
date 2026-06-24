@@ -1833,7 +1833,8 @@ body {
 }
 
 #math-cards-panel[hidden],
-#math-guess-panel[hidden] {
+#math-guess-panel[hidden],
+.math-panel-off {
   display: none !important;
 }
 
