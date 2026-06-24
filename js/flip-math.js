@@ -112,11 +112,11 @@ function buildDeck() {
     }
   }
   const money = [
-    { value: 100, label: "100", sub: "鈔" },
-    { value: 50, label: "50", sub: "硬" },
     { value: 10, label: "10", sub: "硬" },
-    { value: 5, label: "5", sub: "硬" },
-    { value: 1, label: "1", sub: "硬" },
+    { value: 50, label: "50", sub: "硬" },
+    { value: 100, label: "100", sub: "鈔" },
+    { value: 500, label: "500", sub: "鈔" },
+    { value: 1000, label: "1000", sub: "鈔" },
   ];
   for (const m of money) {
     for (let c = 0; c < 3; c++) {
@@ -231,19 +231,24 @@ function playerName(id) {
 
 function deckMaxCopies(value) {
   if (typeof value !== "number") return 0;
-  if (value >= 0 && value <= 9) {
-    if (value === 1 || value === 5) return 6;
-    return 3;
-  }
-  if (value === 10) return 6;
-  if (value === 50 || value === 100) return 3;
+  if (value >= 0 && value <= 9) return 3;
+  if ([10, 50, 100, 500, 1000].includes(value)) return 3;
   return 0;
 }
 
-const CARD_VALUES = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 50, 100];
+const DIGIT_VALUES = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
+const MONEY_VALUES = [10, 50, 100, 500, 1000];
+
+function randomDigitValue() {
+  return DIGIT_VALUES[randInt(0, DIGIT_VALUES.length - 1)];
+}
+
+function randomMoneyValue() {
+  return MONEY_VALUES[randInt(0, MONEY_VALUES.length - 1)];
+}
 
 function randomCardValue() {
-  return CARD_VALUES[randInt(0, CARD_VALUES.length - 1)];
+  return Math.random() < 0.5 ? randomDigitValue() : randomMoneyValue();
 }
 
 function partsFitDeck(parts) {
@@ -261,7 +266,7 @@ function randomMoneyParts(maxCards) {
   const n = randInt(2, maxCards);
   const parts = [];
   for (let i = 0; i < n; i++) {
-    parts.push(randomCardValue());
+    parts.push(Math.random() < 0.45 ? randomDigitValue() : randomMoneyValue());
   }
   return parts;
 }
@@ -378,7 +383,7 @@ function renderMathHeader() {
   if (flipHint) {
     if (game.mode === "flip") {
       flipHint.hidden = false;
-      flipHint.textContent = `本回合已翻 ${game.turnFlippedIds.length} / ${FLIP_PER_TURN} 張（＋－×÷ 一直可看，其餘要翻）`;
+      flipHint.textContent = `本回合已翻 ${game.turnFlippedIds.length} / ${FLIP_PER_TURN} 張（綠背＝0～9、藍背＝面額、粉紅＝＋－×÷）`;
     } else {
       flipHint.hidden = true;
     }
@@ -395,16 +400,20 @@ function getSelectionCards() {
 function cardClass(card) {
   const parts = ["math-card", `math-card-${card.kind}`];
   if (game?.mode === "flip" && !card.faceUp && card.kind !== "op") {
-    parts.push("math-card-down");
+    parts.push("math-card-down", `math-card-down-${card.kind}`);
   }
   if (game?.selection.includes(card.id)) parts.push("math-card-selected");
   if (game?.turnFlippedIds.includes(card.id)) parts.push("math-card-turn");
   return parts.join(" ");
 }
 
+function cardBackHtml(kind) {
+  return `<span class="math-card-back math-card-back-${kind}" aria-hidden="true"></span>`;
+}
+
 function cardHtml(card) {
   if (game?.mode === "flip" && !card.faceUp && card.kind !== "op") {
-    return '<span class="math-card-back">?</span>';
+    return cardBackHtml(card.kind);
   }
   if (card.kind === "money") {
     return `<span class="math-card-face"><span class="math-card-val">${card.label}</span><span class="math-card-sub">${card.sub || "元"}</span></span>`;
