@@ -11,7 +11,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <title>家裡練習</title>
     <link rel="manifest" href="manifest.json" />
-    <link rel="stylesheet" href="css/app.css?v=20260529f" />
+    <link rel="stylesheet" href="css/app.css?v=20260530" />
     <script type="importmap">
       {
         "imports": {
@@ -149,6 +149,29 @@
           <button type="button" class="card card-flip" id="btn-start-flip-zh">
             <span class="card-title">國字翻牌</span>
             <span class="card-desc">國字配注音 · 兩人同機</span>
+          </button>
+
+          <p class="home-section-label home-section-label-math">數學對戰</p>
+          <div class="math-range-picker" role="group" aria-label="目標範圍">
+            <span class="label">目標範圍</span>
+            <div class="lesson-chips" id="math-range-chips">
+              <button type="button" class="chip chip-active" data-math-range="100">10～100</button>
+              <button type="button" class="chip" data-math-range="1000">100～1000</button>
+            </div>
+          </div>
+          <div class="flip-players-vs math-players-vs" id="math-players-vs">
+            <span id="math-player-a-name">思妘</span>
+            <span class="flip-vs">vs</span>
+            <span id="math-player-b-name">思妤</span>
+          </div>
+          <p class="flip-home-hint">先 5 分勝 · 湊錢或算式皆可</p>
+          <button type="button" class="card card-math-open" id="btn-start-math-open">
+            <span class="card-title">數學攤牌</span>
+            <span class="card-desc">全部攤開 · 像計算機選牌</span>
+          </button>
+          <button type="button" class="card card-math-flip" id="btn-start-math-flip">
+            <span class="card-title">數學翻牌</span>
+            <span class="card-desc">每回合翻 4 張 · 湊出目標數</span>
           </button>
         </section>
 
@@ -319,6 +342,74 @@
         </footer>
       </section>
 
+      <!-- 數學：選先手 -->
+      <section id="view-math-first" class="view view-hidden" aria-label="數學誰先">
+        <header class="quiz-header quiz-header-math">
+          <button type="button" class="btn-text" id="btn-math-first-back">← 返回</button>
+          <span class="quiz-subject">數學對戰</span>
+        </header>
+        <div class="flip-first-body">
+          <h2 class="flip-first-title">誰先？</h2>
+          <p class="flip-first-meta">
+            <span id="math-first-mode">攤牌</span> · 目標 <span id="math-first-range">10～100</span>
+          </p>
+          <p class="flip-first-hint">點名字先出牌</p>
+          <div class="flip-pick-btns">
+            <button type="button" class="flip-pick-btn flip-pick-a" id="math-pick-a">思妘</button>
+            <button type="button" class="flip-pick-btn flip-pick-b" id="math-pick-b">思妤</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- 數學：對戰（攤牌 / 翻牌共用） -->
+      <section id="view-math-play" class="view view-hidden" aria-label="數學對戰">
+        <header class="quiz-header quiz-header-math">
+          <button type="button" class="btn-text" id="btn-math-play-back">← 返回</button>
+          <span class="quiz-subject">數學 <span id="math-mode-badge">攤牌</span></span>
+        </header>
+        <div class="math-play-body">
+          <div class="math-target-block">
+            <p class="math-target-label">目標數</p>
+            <p class="math-target-big" id="math-target-big">67</p>
+            <p class="math-target-hint" id="math-target-hint"></p>
+          </div>
+          <div class="flip-scorebar math-scorebar">
+            <div class="flip-score-block" id="math-score-block-a">
+              <span class="flip-score-name" id="math-play-name-a">思妘</span>
+              <span class="flip-first-tag" id="math-first-tag-a">先開</span>
+              <span class="flip-score-num" id="math-score-a">0</span>
+            </div>
+            <div class="flip-turn-wrap">
+              <p class="flip-turn-label" id="math-turn-label">輪到：思妘</p>
+            </div>
+            <div class="flip-score-block" id="math-score-block-b">
+              <span class="flip-score-name" id="math-play-name-b">思妤</span>
+              <span class="flip-first-tag" id="math-first-tag-b" hidden>先開</span>
+              <span class="flip-score-num" id="math-score-b">0</span>
+            </div>
+          </div>
+          <p class="math-expression" id="math-expression">點選下方牌組成算式或湊錢</p>
+          <p class="math-flip-hint" id="math-flip-hint" hidden></p>
+          <div class="math-card-grid" id="math-card-grid"></div>
+        </div>
+        <footer class="quiz-footer">
+          <button type="button" class="btn btn-secondary" id="btn-math-clear">清除</button>
+          <button type="button" class="btn btn-primary btn-primary-math" id="btn-math-submit">送出</button>
+        </footer>
+      </section>
+
+      <!-- 數學：結算 -->
+      <section id="view-math-result" class="view view-hidden" aria-label="數學結算">
+        <header class="app-header">
+          <h2 class="result-title" id="math-result-title">完成</h2>
+          <p class="flip-result-scores math-result-scores" id="math-result-scores">0 ：0</p>
+        </header>
+        <footer class="result-footer">
+          <button type="button" class="btn btn-primary btn-block btn-primary-math" id="btn-math-replay">再玩一局</button>
+          <button type="button" class="btn btn-secondary btn-block" id="btn-math-home">回首頁</button>
+        </footer>
+      </section>
+
       <!-- 成績 -->
       <section id="view-result" class="view view-hidden" aria-label="成績">
         <header class="app-header">
@@ -449,6 +540,6 @@
       </div>
     </div>
 
-    <script type="module" src="js/app.js?v=20260529d"></script>
+    <script type="module" src="js/app.js?v=20260530"></script>
   </body>
 </html>

@@ -46,6 +46,10 @@ import {
   renderFlipHomePlayers,
 } from "./flip-zh.js";
 import {
+  initFlipMath,
+  renderMathHomePlayers,
+} from "./flip-math.js";
+import {
   addMistake,
   removeMistake,
   clearMistakes,
@@ -131,6 +135,9 @@ const views = {
   flipFirst: $("#view-flip-first"),
   flipPlay: $("#view-flip-play"),
   flipResult: $("#view-flip-result"),
+  mathFirst: $("#view-math-first"),
+  mathPlay: $("#view-math-play"),
+  mathResult: $("#view-math-result"),
   result: $("#view-result"),
   parent: $("#view-parent"),
 };
@@ -155,6 +162,7 @@ function showView(name) {
     renderResumeBanner();
     renderMistakeBookHome();
     renderFlipHomePlayers();
+    renderMathHomePlayers();
   }
   if (name === "quizEn") setupEnQuizKeyboardLift();
 }
@@ -239,6 +247,7 @@ function renderChildChips() {
     btn.classList.toggle("chip-active", id === selected);
   });
   renderFlipHomePlayers();
+  renderMathHomePlayers();
 }
 
 function initChildPicker() {
@@ -1726,6 +1735,26 @@ async function init() {
       showFeedback("warn", title, [{ label: "好的", primary: true, onClick: () => {} }], {
         sub: sub || "",
       });
+    },
+  });
+  initFlipMath({
+    showView,
+    getChildNames,
+    showWarn: (title, sub, onClose) => {
+      showFeedback(
+        "warn",
+        title,
+        [{ label: "好的", primary: true, onClick: () => onClose?.() }],
+        { sub: sub || "" }
+      );
+    },
+    showOk: (title, sub, onClose) => {
+      showFeedback(
+        "ok",
+        title,
+        [{ label: "好耶", primary: true, onClick: () => onClose?.() }],
+        { sub: sub || "" }
+      );
     },
   });
   await refreshBank();
