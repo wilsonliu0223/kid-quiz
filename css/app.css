@@ -397,11 +397,13 @@ body {
 }
 
 .flip-card {
+  container-type: size;
+  container-name: flip-cell;
   aspect-ratio: 1;
   border: 2px solid var(--border);
   border-radius: 10px;
   background: linear-gradient(145deg, #fff 0%, #f5f2ed 100%);
-  padding: 4px;
+  padding: 2px;
   cursor: pointer;
   touch-action: manipulation;
   display: flex;
@@ -437,6 +439,34 @@ body {
   line-height: 1;
 }
 
+/* 字級跟著格子大小縮放，20 組小格也能盡量撐滿 */
+@container flip-cell (min-width: 0px) {
+  .flip-card-char .flip-card-inner {
+    font-size: min(78cqw, 82cqh);
+  }
+
+  .flip-card-zhuyin .zhuyin-stack {
+    font-size: min(62cqw, 42cqh);
+  }
+
+  .flip-card-zhuyin[data-zh-rows="1"] .zhuyin-stack {
+    font-size: min(64cqw, 58cqh);
+  }
+
+  .flip-card-zhuyin[data-zh-rows="2"] .zhuyin-stack {
+    font-size: min(60cqw, 40cqh);
+  }
+
+  .flip-card-zhuyin[data-zh-rows="3"] .zhuyin-stack {
+    font-size: min(58cqw, 30cqh);
+  }
+
+  .flip-card-zhuyin[data-zh-rows="4"] .zhuyin-stack,
+  .flip-card-zhuyin[data-zh-rows="5"] .zhuyin-stack {
+    font-size: min(54cqw, 24cqh);
+  }
+}
+
 .flip-card-zhuyin.flip-card-face-up {
   padding: 2px;
 }
@@ -470,6 +500,8 @@ body {
   font-weight: 700;
   color: var(--zh);
   line-height: 1;
+  max-height: 96%;
+  max-width: 96%;
 }
 
 /* 預留聲調空間，整組置中時不會偏左 */
@@ -501,51 +533,31 @@ body {
   white-space: nowrap;
 }
 
-/* 依組數縮小字級，避免 20 組時注音超出格子 */
-#flip-card-grid[data-pairs="10"] .flip-card-char .flip-card-inner {
-  font-size: clamp(1.35rem, 7vw, 2rem);
+/* 20 組：縮小間距、壓縮計分列，把空間留給牌格 */
+#flip-card-grid[data-pairs="20"] {
+  gap: 4px;
 }
 
-#flip-card-grid[data-pairs="10"] .flip-card-zhuyin .zhuyin-stack {
-  font-size: clamp(0.95rem, 5vw, 1.35rem);
+#view-flip-play:has(#flip-card-grid[data-pairs="20"]) .flip-scorebar {
+  margin-bottom: 6px;
+  gap: 6px;
 }
 
-#flip-card-grid[data-pairs="15"] .flip-card-char .flip-card-inner {
-  font-size: clamp(1.15rem, 5.8vw, 1.65rem);
+#view-flip-play:has(#flip-card-grid[data-pairs="20"]) .flip-score-block {
+  padding: 5px 4px;
 }
 
-#flip-card-grid[data-pairs="15"] .flip-card-zhuyin .zhuyin-stack {
-  font-size: clamp(0.82rem, 4.2vw, 1.1rem);
+#view-flip-play:has(#flip-card-grid[data-pairs="20"]) .flip-score-num {
+  font-size: 1.4rem;
 }
 
-#flip-card-grid[data-pairs="15"] .flip-card {
-  padding: 3px;
-}
-
-#flip-card-grid[data-pairs="20"] .flip-card-char .flip-card-inner {
-  font-size: clamp(1rem, 4.5vw, 1.45rem);
-}
-
-#flip-card-grid[data-pairs="20"] .flip-card-zhuyin .zhuyin-stack {
-  font-size: clamp(0.72rem, 3.4vw, 0.95rem);
-}
-
-#flip-card-grid[data-pairs="20"] .flip-card-zhuyin[data-zh-rows="3"] .zhuyin-stack {
-  font-size: clamp(0.62rem, 3vw, 0.85rem);
-}
-
-#flip-card-grid[data-pairs="20"] .flip-card-zhuyin[data-zh-rows="4"] .zhuyin-stack,
-#flip-card-grid[data-pairs="20"] .flip-card-zhuyin[data-zh-rows="5"] .zhuyin-stack {
-  font-size: clamp(0.55rem, 2.6vw, 0.75rem);
-}
-
-#flip-card-grid[data-pairs="20"] .flip-card {
-  padding: 2px;
+#view-flip-play:has(#flip-card-grid[data-pairs="20"]) .flip-card {
   border-radius: 8px;
+  border-width: 1px;
 }
 
-#flip-card-grid[data-pairs="20"] .flip-card-back {
-  font-size: 0.9rem;
+#view-flip-play:has(#flip-card-grid[data-pairs="20"]) .flip-card-back {
+  font-size: min(42cqw, 42cqh);
 }
 
 .flip-card-matched {
