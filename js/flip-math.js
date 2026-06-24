@@ -101,7 +101,7 @@ function buildDeck() {
   const cards = [];
   let id = 0;
   for (let d = 0; d <= 9; d++) {
-    for (let c = 0; c < 3; c++) {
+    for (let c = 0; c < 2; c++) {
       cards.push({
         id: `d${id++}`,
         kind: "digit",
@@ -119,27 +119,23 @@ function buildDeck() {
     { value: 1000, label: "1000", sub: "鈔" },
   ];
   for (const m of money) {
-    for (let c = 0; c < 3; c++) {
-      cards.push({
-        id: `m${id++}`,
-        kind: "money",
-        value: m.value,
-        label: m.label,
-        sub: m.sub,
-        faceUp: false,
-      });
-    }
+    cards.push({
+      id: `m${id++}`,
+      kind: "money",
+      value: m.value,
+      label: m.label,
+      sub: m.sub,
+      faceUp: false,
+    });
   }
   for (const op of ["+", "-", "×", "÷"]) {
-    for (let c = 0; c < 3; c++) {
-      cards.push({
-        id: `o${id++}`,
-        kind: "op",
-        value: op,
-        label: op,
-        faceUp: false,
-      });
-    }
+    cards.push({
+      id: `o${id++}`,
+      kind: "op",
+      value: op,
+      label: op,
+      faceUp: false,
+    });
   }
   return shuffle(cards);
 }
@@ -231,8 +227,8 @@ function playerName(id) {
 
 function deckMaxCopies(value) {
   if (typeof value !== "number") return 0;
-  if (value >= 0 && value <= 9) return 3;
-  if ([10, 50, 100, 500, 1000].includes(value)) return 3;
+  if (value >= 0 && value <= 9) return 2;
+  if ([10, 50, 100, 500, 1000].includes(value)) return 1;
   return 0;
 }
 
