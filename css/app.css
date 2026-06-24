@@ -408,6 +408,7 @@ body {
   align-items: center;
   justify-content: center;
   min-height: 0;
+  overflow: hidden;
 }
 
 .flip-card:disabled {
@@ -446,6 +447,8 @@ body {
   justify-content: center;
   width: 100%;
   height: 100%;
+  max-height: 100%;
+  overflow: hidden;
 }
 
 /* 注音直排：音由上到下，聲調在右（如 洗 ㄒ／ㄧˇ） */
@@ -459,6 +462,57 @@ body {
   color: var(--zh);
   line-height: 1;
   gap: 1px;
+  max-height: 100%;
+  flex-shrink: 1;
+}
+
+/* 依組數縮小字級，避免 20 組時注音超出格子 */
+#flip-card-grid[data-pairs="10"] .flip-card-char .flip-card-inner {
+  font-size: clamp(1.35rem, 7vw, 2rem);
+}
+
+#flip-card-grid[data-pairs="10"] .flip-card-zhuyin .zhuyin-vertical {
+  font-size: clamp(0.95rem, 5vw, 1.35rem);
+}
+
+#flip-card-grid[data-pairs="15"] .flip-card-char .flip-card-inner {
+  font-size: clamp(1.15rem, 5.8vw, 1.65rem);
+}
+
+#flip-card-grid[data-pairs="15"] .flip-card-zhuyin .zhuyin-vertical {
+  font-size: clamp(0.82rem, 4.2vw, 1.1rem);
+  gap: 0;
+}
+
+#flip-card-grid[data-pairs="15"] .flip-card {
+  padding: 3px;
+}
+
+#flip-card-grid[data-pairs="20"] .flip-card-char .flip-card-inner {
+  font-size: clamp(1rem, 4.5vw, 1.45rem);
+}
+
+#flip-card-grid[data-pairs="20"] .flip-card-zhuyin .zhuyin-vertical {
+  font-size: clamp(0.72rem, 3.4vw, 0.95rem);
+  gap: 0;
+}
+
+#flip-card-grid[data-pairs="20"] .flip-card-zhuyin[data-zh-rows="3"] .zhuyin-vertical {
+  font-size: clamp(0.62rem, 3vw, 0.85rem);
+}
+
+#flip-card-grid[data-pairs="20"] .flip-card-zhuyin[data-zh-rows="4"] .zhuyin-vertical,
+#flip-card-grid[data-pairs="20"] .flip-card-zhuyin[data-zh-rows="5"] .zhuyin-vertical {
+  font-size: clamp(0.55rem, 2.6vw, 0.75rem);
+}
+
+#flip-card-grid[data-pairs="20"] .flip-card {
+  padding: 2px;
+  border-radius: 8px;
+}
+
+#flip-card-grid[data-pairs="20"] .flip-card-back {
+  font-size: 0.9rem;
 }
 
 .flip-card-zhuyin .zhuyin-row {

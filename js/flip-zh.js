@@ -203,6 +203,7 @@ function renderBoard() {
   if (!grid || !game) return;
 
   grid.style.setProperty("--flip-cols", String(gridCols(game.cards.length)));
+  grid.dataset.pairs = String(game.pairCount);
   grid.innerHTML = "";
 
   game.cards.forEach((card, idx) => {
@@ -211,6 +212,10 @@ function renderBoard() {
     btn.className = "flip-card";
     btn.dataset.idx = String(idx);
     btn.disabled = game.locked || card.matched;
+
+    if (card.kind === "zhuyin") {
+      btn.dataset.zhRows = String(zhuyinRowCount(card.face));
+    }
 
     if (card.matched) {
       btn.classList.add("flip-card-matched");
@@ -255,6 +260,11 @@ function parseZhuyinVertical(raw) {
     else body.push(ch);
   }
   return { body, tone };
+}
+
+function zhuyinRowCount(zhuyin) {
+  const { body } = parseZhuyinVertical(String(zhuyin || ""));
+  return Math.max(1, body.length);
 }
 
 /** 注音直排：音節由上到下，二三四聲標在右側 */
