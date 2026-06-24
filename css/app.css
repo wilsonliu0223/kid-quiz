@@ -133,7 +133,106 @@ body {
 }
 
 .lesson-picker {
-  margin-bottom: 20px;
+  margin-bottom: 16px;
+}
+
+.lesson-books {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.lesson-book {
+  border: 2px solid var(--border);
+  border-radius: 14px;
+  background: var(--card);
+  overflow: hidden;
+}
+
+.lesson-book-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 12px 14px;
+  border: none;
+  background: #fffaf7;
+  text-align: left;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.lesson-book-head-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.lesson-book-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--zh-dark);
+}
+
+.lesson-book-hint {
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.lesson-book-current {
+  flex-shrink: 0;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--zh);
+  max-width: 42%;
+  text-align: right;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.lesson-book-chevron {
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  border-right: 2px solid var(--muted);
+  border-bottom: 2px solid var(--muted);
+  transform: rotate(45deg);
+  margin-top: -3px;
+  transition: transform 0.15s ease;
+}
+
+.lesson-book-head[aria-expanded="true"] .lesson-book-chevron {
+  transform: rotate(-135deg);
+  margin-top: 3px;
+}
+
+.lesson-book-panel {
+  padding: 0 10px 10px;
+  border-top: 1px solid var(--border);
+}
+
+.lesson-chips-compact {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  padding-top: 10px;
+}
+
+.chip-lesson {
+  min-height: 40px;
+  min-width: 0;
+  padding: 8px 4px;
+  font-size: 0.92rem;
+  border-radius: 10px;
+}
+
+.lesson-chips-compact .chip-lesson:first-child {
+  grid-column: 1 / -1;
+  min-height: 42px;
+  font-size: 0.95rem;
 }
 
 .subject-cards {

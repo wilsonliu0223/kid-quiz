@@ -1,3 +1,7 @@
+import {
+  groupLessonsForBooks,
+  formatLessonCurrent,
+} from "./lesson-books.js";
 import { CONFIG } from "./config.site.js";
 import {
   loadZhItems,
@@ -204,10 +208,28 @@ async function refreshBank() {
   }
 }
 
+function selectLessonFilter(name, container) {
+  lessonFilter = name;
+  container.querySelectorAll("[data-lesson]").forEach((c) => {
+    c.classList.toggle("chip-active", c.dataset.lesson === name);
+  });
+  container.querySelectorAll(".lesson-book-current").forEach((el) => {
+    el.textContent = formatLessonCurrent(name);
+  });
+  container.querySelectorAll(".lesson-book-panel").forEach((p) => {
+    p.hidden = true;
+  });
+  container.querySelectorAll(".lesson-book-head").forEach((h) => {
+    h.setAttribute("aria-expanded", "false");
+  });
+  updateQuizCountHint();
+}
+
 function buildLessonChips(bank) {
   const lessons = uniqueLessons(bank || zhBank);
   const wrap = $("#lesson-picker");
-  const container = $("#lesson-chips");
+  const container = $("#lesson-books");
+  if (!container) return;
   container.innerHTML = "";
 
   if (lessons.length <= 1) {
@@ -221,21 +243,94 @@ function buildLessonChips(bank) {
   }
 
   wrap.hidden = false;
-  lessons.forEach((name) => {
+  const { books, ungrouped } = groupLessonsForBooks(lessons);
+
+  function addChip(parent, name, label) {
     const btn = document.createElement("button");
     btn.type = "button";
-    btn.className = "chip" + (name === lessonFilter ? " chip-active" : "");
-    btn.textContent = name;
+    btn.className =
+      "chip chip-lesson" + (name === lessonFilter ? " chip-active" : "");
+    btn.textContent = label;
     btn.dataset.lesson = name;
+    btn.title = name;
     btn.addEventListener("click", () => {
-      lessonFilter = name;
-      container.querySelectorAll(".chip").forEach((c) => {
-        c.classList.toggle("chip-active", c.dataset.lesson === name);
-      });
-      updateQuizCountHint();
+      selectLessonFilter(name, container);
     });
-    container.appendChild(btn);
-  });
+    parent.appendChild(btn);
+  }
+
+  function buildBookCard(book, { collapsible = true } = {}) {
+    const article = document.createElement("article");
+    article.className = "lesson-book";
+    article.dataset.book = book.id;
+
+    const head = document.createElement("button");
+    head.type = "button";
+    head.className = "lesson-book-head";
+    head.setAttribute("aria-expanded", collapsible ? "false" : "true");
+    head.innerHTML = `
+      <span class="lesson-book-head-main">
+        <span class="lesson-book-title">${book.label}</span>
+        <span class="lesson-book-hint">${book.hint || ""}</span>
+      </span>
+      <span class="lesson-book-current">${formatLessonCurrent(lessonFilter)}</span>
+      <span class="lesson-book-chevron" aria-hidden="true"></span>
+    `;
+
+    const panel = document.createElement("div");
+    panel.className = "lesson-book-panel";
+    if (collapsible) panel.hidden = true;
+
+    const chips = document.createElement("div");
+    chips.className = "lesson-chips lesson-chips-compact";
+    addChip(chips, "全部", "全部");
+    book.lessons.forEach((name) => {
+      addChip(chips, name, book.chipLabel ? book.chipLabel(name) : name);
+    });
+    panel.appendChild(chips);
+
+    if (collapsible) {
+      head.addEventListener("click", () => {
+        const open = panel.hidden;
+        container.querySelectorAll(".lesson-book-panel").forEach((p) => {
+          p.hidden = true;
+        });
+        container.querySelectorAll(".lesson-book-head").forEach((h) => {
+          h.setAttribute("aria-expanded", "false");
+        });
+        if (open) {
+          panel.hidden = false;
+          head.setAttribute("aria-expanded", "true");
+        }
+      });
+    }
+
+    article.appendChild(head);
+    article.appendChild(panel);
+    container.appendChild(article);
+  }
+
+  books.forEach((book) => buildBookCard(book));
+
+  if (ungrouped.length) {
+    buildBookCard(
+      {
+        id: "other",
+        label: "其他課次",
+        hint: ungrouped.length > 1 ? `${ungrouped.length} 課` : "",
+        lessons: ungrouped,
+        chipLabel: null,
+      },
+      { collapsible: true }
+    );
+  }
+
+  if (!books.length && !ungrouped.length) {
+    const chips = document.createElement("div");
+    chips.className = "lesson-chips";
+    lessons.forEach((name) => addChip(chips, name, name));
+    container.appendChild(chips);
+  }
 }
 
 function renderChildChips() {
