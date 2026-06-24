@@ -461,18 +461,23 @@ body {
 }
 
 .flip-card-zhuyin .zhuyin-stack {
-  display: inline-grid;
-  grid-template-columns: auto auto;
-  column-gap: 2px;
-  align-items: end;
+  position: relative;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
   font-size: clamp(1.2rem, 6.5vw, 1.75rem);
   font-weight: 700;
   color: var(--zh);
   line-height: 1;
 }
 
+/* 預留聲調空間，整組置中時不會偏左 */
+.flip-card-zhuyin .zhuyin-vertical.has-tone .zhuyin-stack {
+  padding-right: 0.48em;
+}
+
 .flip-card-zhuyin .zhuyin-letters {
-  grid-column: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -483,15 +488,16 @@ body {
 .flip-card-zhuyin .zhuyin-letter {
   display: block;
   line-height: 0.92;
+  text-align: center;
+  min-width: 1em;
 }
 
 .flip-card-zhuyin .zhuyin-tone-side {
-  grid-column: 2;
-  grid-row: 1;
-  align-self: end;
+  position: absolute;
+  right: 0;
+  bottom: 0.04em;
   font-size: 0.82em;
   line-height: 1;
-  padding-bottom: 0.05em;
   white-space: nowrap;
 }
 
