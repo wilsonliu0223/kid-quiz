@@ -344,7 +344,7 @@ function startNewRound(keepScores = true) {
 
 function applyFlipModeFaces(cards) {
   cards.forEach((c) => {
-    c.faceUp = c.kind === "op";
+    c.faceUp = false;
   });
 }
 
@@ -383,7 +383,7 @@ function renderMathHeader() {
   if (flipHint) {
     if (game.mode === "flip") {
       flipHint.hidden = false;
-      flipHint.textContent = `本回合已翻 ${game.turnFlippedIds.length} / ${FLIP_PER_TURN} 張（綠背＝0～9、藍背＝面額、粉紅＝＋－×÷）`;
+      flipHint.textContent = `本回合已翻 ${game.turnFlippedIds.length} / ${FLIP_PER_TURN} 張（綠＝0～9、藍＝面額、粉紅＝＋－×÷，皆需翻開）`;
     } else {
       flipHint.hidden = true;
     }
@@ -399,7 +399,7 @@ function getSelectionCards() {
 
 function cardClass(card) {
   const parts = ["math-card", `math-card-${card.kind}`];
-  if (game?.mode === "flip" && !card.faceUp && card.kind !== "op") {
+  if (game?.mode === "flip" && !card.faceUp) {
     parts.push("math-card-down", `math-card-down-${card.kind}`);
   }
   if (game?.selection.includes(card.id)) parts.push("math-card-selected");
@@ -412,7 +412,7 @@ function cardBackHtml(kind) {
 }
 
 function cardHtml(card) {
-  if (game?.mode === "flip" && !card.faceUp && card.kind !== "op") {
+  if (game?.mode === "flip" && !card.faceUp) {
     return cardBackHtml(card.kind);
   }
   if (card.kind === "money") {
@@ -451,7 +451,7 @@ function switchPlayer() {
 function flipBackTurn() {
   for (const id of game.turnFlippedIds) {
     const c = game.cards.find((x) => x.id === id);
-    if (c && c.kind !== "op") c.faceUp = false;
+    if (c) c.faceUp = false;
   }
   game.turnFlippedIds = [];
   game.selection = [];
@@ -463,15 +463,6 @@ function onCardClick(cardId) {
   if (!card) return;
 
   if (game.mode === "flip") {
-    if (card.kind === "op") {
-      if (game.selection.includes(cardId)) {
-        game.selection = game.selection.filter((id) => id !== cardId);
-      } else {
-        game.selection.push(cardId);
-      }
-      renderCardGrid();
-      return;
-    }
     if (!card.faceUp) {
       if (game.turnFlippedIds.length >= FLIP_PER_TURN) return;
       card.faceUp = true;
