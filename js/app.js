@@ -53,7 +53,7 @@ import {
 import {
   initFlipMath,
   renderMathHomePlayers,
-} from "./flip-math-deck30.js?v=math-mode-fix-v2";
+} from "./flip-math-deck30.js?v=flip-5cards";
 import {
   addMistake,
   removeMistake,

@@ -1,7 +1,7 @@
 const DECK_VERSION = "deck30";
 const KEY_MATH_RANGE = "kid-quiz-math-range";
 const WIN_SCORE = 5;
-const FLIP_PER_TURN = 4;
+const FLIP_PER_TURN = 5;
 const DIGIT_COPIES = 2;
 /** 補滿 30 張：數字 1 多 1 張（1 共 3 張） */
 const EXTRA_DIGIT_VALUE = 1;
@@ -695,7 +695,7 @@ function onCardClick(cardId) {
       if (game.turnFlippedIds.length >= FLIP_PER_TURN) return;
       const lastSlot = game.turnFlippedIds.length === FLIP_PER_TURN - 1;
       if (lastSlot && card.kind !== "op" && !turnHasOpFlipped()) {
-        deps.showWarn("請翻運算符", "本回合 4 張中至少要有 1 張粉紅運算符，請翻粉紅牌");
+        deps.showWarn("請翻運算符", `本回合 ${FLIP_PER_TURN} 張中至少要有 1 張粉紅運算符，請翻粉紅牌`);
         return;
       }
       card.faceUp = true;
