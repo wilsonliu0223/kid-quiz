@@ -383,7 +383,7 @@ function renderMathHeader() {
   if (flipHint) {
     if (game.mode === "flip") {
       flipHint.hidden = false;
-      flipHint.textContent = `本回合已翻 ${game.turnFlippedIds.length} / ${FLIP_PER_TURN} 張（綠＝0～9、藍＝面額、粉紅＝＋－×÷，皆需翻開）`;
+      flipHint.textContent = `本回合已翻 ${game.turnFlippedIds.length} / ${FLIP_PER_TURN} 張（至少 1 張粉紅運算符）`;
     } else {
       flipHint.hidden = true;
     }
@@ -449,6 +449,14 @@ function switchPlayer() {
   game.selection = [];
 }
 
+function turnHasOpFlipped() {
+  if (!game) return false;
+  return game.turnFlippedIds.some((id) => {
+    const c = game.cards.find((x) => x.id === id);
+    return c?.kind === "op";
+  });
+}
+
 function flipBackTurn() {
   for (const id of game.turnFlippedIds) {
     const c = game.cards.find((x) => x.id === id);
@@ -466,6 +474,11 @@ function onCardClick(cardId) {
   if (game.mode === "flip") {
     if (!card.faceUp) {
       if (game.turnFlippedIds.length >= FLIP_PER_TURN) return;
+      const lastSlot = game.turnFlippedIds.length === FLIP_PER_TURN - 1;
+      if (lastSlot && card.kind !== "op" && !turnHasOpFlipped()) {
+        deps.showWarn("請翻運算符", "本回合 4 張中至少要有 1 張粉紅運算符，請翻粉紅牌");
+        return;
+      }
       card.faceUp = true;
       game.turnFlippedIds.push(cardId);
       renderCardGrid();
@@ -526,6 +539,10 @@ function nextQuestion() {
 
 function submitAnswer() {
   if (!game || game.locked) return;
+  if (game.mode === "flip" && !turnHasOpFlipped()) {
+    deps.showWarn("請翻運算符", "本回合至少需翻開 1 張粉紅運算符才能送出");
+    return;
+  }
   const sel = getSelectionCards();
   const result = validateSelection(sel);
   if (!result.ok) {
