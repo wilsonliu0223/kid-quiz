@@ -1,6 +1,9 @@
 const KEY_MATH_RANGE = "kid-quiz-math-range";
 const WIN_SCORE = 5;
 const FLIP_PER_TURN = 4;
+const DIGIT_COPIES = 2;
+/** 補滿 30 張：數字 0 多 1 張（0 共 3 張） */
+const EXTRA_DIGIT_VALUE = 0;
 
 /** @type {MathDeps | null} */
 let deps = null;
@@ -101,7 +104,7 @@ function buildDeck() {
   const cards = [];
   let id = 0;
   for (let d = 0; d <= 9; d++) {
-    for (let c = 0; c < 2; c++) {
+    for (let c = 0; c < DIGIT_COPIES; c++) {
       cards.push({
         id: `d${id++}`,
         kind: "digit",
@@ -111,6 +114,13 @@ function buildDeck() {
       });
     }
   }
+  cards.push({
+    id: `d${id++}`,
+    kind: "digit",
+    value: EXTRA_DIGIT_VALUE,
+    label: String(EXTRA_DIGIT_VALUE),
+    faceUp: false,
+  });
   const money = [
     { value: 10, label: "10", sub: "硬" },
     { value: 50, label: "50", sub: "硬" },
@@ -227,7 +237,9 @@ function playerName(id) {
 
 function deckMaxCopies(value) {
   if (typeof value !== "number") return 0;
-  if (value >= 0 && value <= 9) return 2;
+  if (value >= 0 && value <= 9) {
+    return value === EXTRA_DIGIT_VALUE ? DIGIT_COPIES + 1 : DIGIT_COPIES;
+  }
   if ([10, 50, 100, 500, 1000].includes(value)) return 1;
   return 0;
 }

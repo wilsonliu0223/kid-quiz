@@ -48,7 +48,7 @@ import {
 import {
   initFlipMath,
   renderMathHomePlayers,
-} from "./flip-math.js?v=20260531c";
+} from "./flip-math.js?v=20260531d";
 import {
   addMistake,
   removeMistake,
