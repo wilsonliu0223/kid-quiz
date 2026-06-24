@@ -2,8 +2,8 @@ const KEY_MATH_RANGE = "kid-quiz-math-range";
 const WIN_SCORE = 5;
 const FLIP_PER_TURN = 4;
 const DIGIT_COPIES = 2;
-/** 補滿 30 張：數字 0 多 1 張（0 共 3 張） */
-const EXTRA_DIGIT_VALUE = 0;
+/** 補滿 30 張：數字 1 多 1 張（1 共 3 張） */
+const EXTRA_DIGIT_VALUE = 1;
 
 /** @type {MathDeps | null} */
 let deps = null;
