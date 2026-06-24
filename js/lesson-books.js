@@ -53,6 +53,23 @@ export function formatLessonCurrent(lesson) {
   return s.length > 10 ? `${s.slice(0, 10)}…` : s;
 }
 
+/** @param {string} lesson 完整課次名，例：第一課 看 */
+export function formatLessonTitle(lesson) {
+  if (lesson === "全部") return "全部課次";
+  const s = String(lesson).trim();
+  const m = s.match(/^第[一二三四五六七八九十百零〇\d]+課\s*(.*)$/u);
+  if (m) {
+    const n = parseZhLessonNum(lesson);
+    const title = m[1].trim();
+    if (n && title) return `第 ${n} 課 · ${title}`;
+    if (n) return `第 ${n} 課`;
+    if (title) return title;
+  }
+  const n = parseZhLessonNum(lesson);
+  if (n) return `第 ${n} 課`;
+  return s;
+}
+
 /**
  * @param {string[]} lessons 含「全部」
  */

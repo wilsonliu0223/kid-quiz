@@ -1,6 +1,7 @@
 import {
   groupLessonsForBooks,
   formatLessonCurrent,
+  formatLessonTitle,
 } from "./lesson-books.js";
 import { CONFIG } from "./config.site.js";
 import {
@@ -208,20 +209,52 @@ async function refreshBank() {
   }
 }
 
+function updateLessonPickedRows(container, name) {
+  container.querySelectorAll(".lesson-book").forEach((article) => {
+    const pickedRow = article.querySelector(".lesson-book-picked");
+    const titleEl = article.querySelector(".lesson-book-picked-title");
+    if (!pickedRow || !titleEl) return;
+    const bookLessons = [...article.querySelectorAll("[data-lesson]")].map(
+      (c) => c.dataset.lesson
+    );
+    if (name === "全部" || !bookLessons.includes(name)) {
+      pickedRow.hidden = true;
+      titleEl.textContent = "";
+      return;
+    }
+    pickedRow.hidden = false;
+    titleEl.textContent = formatLessonTitle(name);
+  });
+}
+
 function selectLessonFilter(name, container) {
   lessonFilter = name;
   container.querySelectorAll("[data-lesson]").forEach((c) => {
     c.classList.toggle("chip-active", c.dataset.lesson === name);
   });
   container.querySelectorAll(".lesson-book-current").forEach((el) => {
-    el.textContent = formatLessonCurrent(name);
+    el.textContent =
+      name === "全部" ? formatLessonCurrent(name) : formatLessonTitle(name);
   });
+  updateLessonPickedRows(container, name);
   container.querySelectorAll(".lesson-book-panel").forEach((p) => {
     p.hidden = true;
   });
   container.querySelectorAll(".lesson-book-head").forEach((h) => {
     h.setAttribute("aria-expanded", "false");
   });
+  if (name !== "全部") {
+    container.querySelectorAll(".lesson-book").forEach((article) => {
+      const bookLessons = [...article.querySelectorAll("[data-lesson]")].map(
+        (c) => c.dataset.lesson
+      );
+      if (!bookLessons.includes(name)) return;
+      const panel = article.querySelector(".lesson-book-panel");
+      const head = article.querySelector(".lesson-book-head");
+      if (panel) panel.hidden = false;
+      if (head) head.setAttribute("aria-expanded", "true");
+    });
+  }
   updateQuizCountHint();
 }
 
@@ -273,7 +306,11 @@ function buildLessonChips(bank) {
         <span class="lesson-book-title">${book.label}</span>
         <span class="lesson-book-hint">${book.hint || ""}</span>
       </span>
-      <span class="lesson-book-current">${formatLessonCurrent(lessonFilter)}</span>
+      <span class="lesson-book-current">${
+        lessonFilter === "全部"
+          ? formatLessonCurrent(lessonFilter)
+          : formatLessonTitle(lessonFilter)
+      }</span>
       <span class="lesson-book-chevron" aria-hidden="true"></span>
     `;
 
@@ -288,6 +325,15 @@ function buildLessonChips(bank) {
       addChip(chips, name, book.chipLabel ? book.chipLabel(name) : name);
     });
     panel.appendChild(chips);
+
+    const picked = document.createElement("p");
+    picked.className = "lesson-book-picked";
+    picked.hidden = true;
+    picked.innerHTML = `
+      <span class="lesson-book-picked-label">課次名稱</span>
+      <span class="lesson-book-picked-title"></span>
+    `;
+    panel.appendChild(picked);
 
     if (collapsible) {
       head.addEventListener("click", () => {
@@ -331,6 +377,8 @@ function buildLessonChips(bank) {
     lessons.forEach((name) => addChip(chips, name, name));
     container.appendChild(chips);
   }
+
+  updateLessonPickedRows(container, lessonFilter);
 }
 
 function renderChildChips() {

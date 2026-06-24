@@ -235,6 +235,34 @@ body {
   font-size: 0.95rem;
 }
 
+.lesson-book-picked {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin: 10px 2px 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #fff5f0;
+  border: 1px solid #f0d8cc;
+}
+
+.lesson-book-picked-label {
+  flex-shrink: 0;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.lesson-book-picked-title {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--zh-dark);
+  line-height: 1.35;
+  word-break: break-word;
+}
+
 .subject-cards {
   display: flex;
   flex-direction: column;
