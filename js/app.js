@@ -44,11 +44,11 @@ import {
 import {
   initFlipZh,
   renderFlipHomePlayers,
-} from "./flip-zh.js";
+} from "./flip-zh.js?v=20260531";
 import {
   initFlipMath,
   renderMathHomePlayers,
-} from "./flip-math.js";
+} from "./flip-math.js?v=20260531";
 import {
   addMistake,
   removeMistake,

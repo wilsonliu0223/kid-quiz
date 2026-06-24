@@ -1815,7 +1815,13 @@ body {
 }
 
 .math-card-money .math-card-val {
-  font-size: clamp(0.7rem, 28cqw, 0.95rem);
+  font-size: clamp(0.55rem, 24cqw, 0.9rem);
+}
+
+.math-card-money[data-value="1000"] .math-card-val,
+.math-card-money[data-value="500"] .math-card-val {
+  font-size: clamp(0.5rem, 22cqw, 0.8rem);
+  letter-spacing: -0.02em;
 }
 
 .math-card-money .math-card-sub {

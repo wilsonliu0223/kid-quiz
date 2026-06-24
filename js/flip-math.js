@@ -434,6 +434,7 @@ function renderCardGrid() {
     btn.type = "button";
     btn.className = cardClass(card);
     btn.dataset.id = card.id;
+    if (card.kind === "money") btn.dataset.value = String(card.value);
     btn.innerHTML = cardHtml(card);
     btn.disabled = game.locked;
     btn.addEventListener("click", () => onCardClick(card.id));
