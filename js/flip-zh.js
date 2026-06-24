@@ -239,15 +239,11 @@ function escapeHtml(s) {
     .replace(/>/g, "&gt;");
 }
 
-/** 注音直排：由上到下（聲母、韻母、聲調依序） */
+/** 注音直排：writing-mode 由上到下（例：ㄩ → ㄣ → ˊ） */
 function zhuyinVerticalHtml(zhuyin) {
-  const raw = String(zhuyin || "").trim();
+  const raw = String(zhuyin || "").trim().replace(/\s+/g, "");
   if (!raw) return "";
-  const strokes = [...raw.replace(/\s+/g, "")];
-  const cols = strokes
-    .map((ch) => `<span class="zhuyin-stroke">${escapeHtml(ch)}</span>`)
-    .join("");
-  return `<span class="zhuyin-vertical" aria-label="${escapeHtml(raw)}">${cols}</span>`;
+  return `<span class="zhuyin-vertical" aria-label="${escapeHtml(raw)}">${escapeHtml(raw)}</span>`;
 }
 
 function flipCardFaceHtml(card) {

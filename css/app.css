@@ -448,21 +448,20 @@ body {
   height: 100%;
 }
 
-.zhuyin-vertical {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  font-size: clamp(1.05rem, 5.8vw, 1.55rem);
+/* 注音直排：與課本相同，由上到下 */
+.flip-card-zhuyin .zhuyin-vertical {
+  display: inline-block;
+  writing-mode: vertical-lr;
+  text-orientation: upright;
+  -webkit-text-orientation: upright;
+  font-size: clamp(1.2rem, 6.5vw, 1.75rem);
   font-weight: 700;
   color: var(--zh);
-  line-height: 1;
-  gap: 0;
-}
-
-.zhuyin-vertical .zhuyin-stroke {
-  display: block;
-  line-height: 0.92;
+  line-height: 1.12;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+  max-height: 94%;
+  text-align: center;
 }
 
 .flip-card-matched {
