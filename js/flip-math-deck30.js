@@ -548,20 +548,32 @@ function renderGuessPanel() {
   renderMathHeader();
 }
 
-function renderMathPlayView() {
+/** @param {'open'|'flip'|'guess'|null} mode */
+function applyMathPlayPanels(mode) {
   const cardsPanel = $("#math-cards-panel");
   const guessPanel = $("#math-guess-panel");
-  if (!game) return;
+  const isGuess = mode === "guess";
+  if (cardsPanel) cardsPanel.hidden = isGuess;
+  if (guessPanel) guessPanel.hidden = !isGuess;
+  if (isGuess) {
+    const grid = $("#math-card-grid");
+    if (grid) grid.innerHTML = "";
+  }
+}
+
+function renderMathPlayView() {
+  if (!game) {
+    applyMathPlayPanels(null);
+    return;
+  }
+
+  applyMathPlayPanels(game.mode);
 
   if (game.mode === "guess") {
-    if (cardsPanel) cardsPanel.hidden = true;
-    if (guessPanel) guessPanel.hidden = false;
     renderGuessPanel();
     return;
   }
 
-  if (cardsPanel) cardsPanel.hidden = false;
-  if (guessPanel) guessPanel.hidden = true;
   renderCardGrid();
 }
 
@@ -821,6 +833,7 @@ function renderMathFirstPicker() {
 
 function beginMath(mode) {
   pendingMode = mode;
+  applyMathPlayPanels(mode);
   renderMathFirstPicker();
   deps.showView("mathFirst");
 }
@@ -883,11 +896,15 @@ export function bindMathEvents() {
   $("#math-pick-b")?.addEventListener("click", () => startWithFirstPlayer("B"));
   $("#btn-math-first-back")?.addEventListener("click", () => {
     pendingMode = null;
+    game = null;
+    applyMathPlayPanels(null);
     deps.showView("home");
   });
   $("#btn-math-play-back")?.addEventListener("click", () => {
     if (confirm("離開對戰？進度不會儲存。")) {
       game = null;
+      pendingMode = null;
+      applyMathPlayPanels(null);
       deps.showView("home");
     }
   });
@@ -897,11 +914,14 @@ export function bindMathEvents() {
     const mode = game?.mode || "open";
     pendingMode = mode;
     game = null;
+    applyMathPlayPanels(mode);
     renderMathFirstPicker();
     deps.showView("mathFirst");
   });
   $("#btn-math-home")?.addEventListener("click", () => {
     game = null;
+    pendingMode = null;
+    applyMathPlayPanels(null);
     deps.showView("home");
   });
 }
