@@ -1878,7 +1878,7 @@ body {
 
 .math-card-digit .math-card-face {
   color: #2d6b2d;
-  font-size: clamp(1rem, 38cqw, 1.4rem);
+  font-size: clamp(1.2rem, 46cqw, 1.75rem);
 }
 
 /* 2 組正面 */
@@ -1889,6 +1889,13 @@ body {
 
 .math-card-money .math-card-face {
   color: #1a3d6e;
+  font-size: clamp(1.05rem, 40cqw, 1.55rem);
+}
+
+.math-card-money[data-value="500"] .math-card-face,
+.math-card-money[data-value="1000"] .math-card-face {
+  font-size: clamp(0.95rem, 36cqw, 1.35rem);
+  letter-spacing: -0.03em;
 }
 
 /* 3 組 ＋－×÷：粉紅 */
@@ -1911,22 +1918,6 @@ body {
   background: linear-gradient(145deg, #ffe8f0 0%, #fcc8d8 100%);
   border-color: #d06088;
   box-shadow: 0 0 0 2px rgba(208, 96, 136, 0.35);
-}
-
-.math-card-money .math-card-val {
-  font-size: clamp(0.55rem, 24cqw, 0.9rem);
-}
-
-.math-card-money[data-value="1000"] .math-card-val,
-.math-card-money[data-value="500"] .math-card-val {
-  font-size: clamp(0.5rem, 22cqw, 0.8rem);
-  letter-spacing: -0.02em;
-}
-
-.math-card-money .math-card-sub {
-  font-size: clamp(0.5rem, 18cqw, 0.65rem);
-  font-weight: 600;
-  color: var(--muted);
 }
 
 .math-result-scores {

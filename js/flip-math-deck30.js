@@ -122,20 +122,13 @@ function buildDeck() {
     label: String(EXTRA_DIGIT_VALUE),
     faceUp: false,
   });
-  const money = [
-    { value: 10, label: "10" },
-    { value: 50, label: "50" },
-    { value: 100, label: "100", sub: "鈔" },
-    { value: 500, label: "500", sub: "鈔" },
-    { value: 1000, label: "1000", sub: "鈔" },
-  ];
-  for (const m of money) {
+  const money = [10, 50, 100, 500, 1000];
+  for (const value of money) {
     cards.push({
       id: `m${id++}`,
       kind: "money",
-      value: m.value,
-      label: m.label,
-      sub: m.sub,
+      value,
+      label: String(value),
       faceUp: false,
     });
   }
@@ -425,10 +418,7 @@ function cardHtml(card) {
     return cardBackHtml(card.kind);
   }
   if (card.kind === "money") {
-    const subHtml = card.sub
-      ? `<span class="math-card-sub">${card.sub}</span>`
-      : "";
-    return `<span class="math-card-face"><span class="math-card-val">${card.label}</span>${subHtml}</span>`;
+    return `<span class="math-card-face">${card.label}</span>`;
   }
   return `<span class="math-card-face">${card.label}</span>`;
 }
