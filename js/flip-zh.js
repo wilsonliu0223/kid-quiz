@@ -267,7 +267,7 @@ function zhuyinRowCount(zhuyin) {
   return Math.max(1, body.length);
 }
 
-/** 注音直排：音節由上到下，二三四聲標在右側 */
+/** 注音直排：左欄音節上下排，右欄聲調對齊最後一音（課本寫法） */
 function zhuyinVerticalHtml(zhuyin) {
   const raw = String(zhuyin || "").trim().replace(/\s+/g, "");
   if (!raw) return "";
@@ -277,20 +277,21 @@ function zhuyinVerticalHtml(zhuyin) {
     return `<span class="zhuyin-vertical" aria-label="${escapeHtml(raw)}">${escapeHtml(raw)}</span>`;
   }
 
-  const rows = body.map((ch, i) => {
-    const isLast = i === body.length - 1;
-    if (isLast && tone) {
-      return (
-        `<span class="zhuyin-row zhuyin-row-tone">` +
-        `<span class="zhuyin-letter">${escapeHtml(ch)}</span>` +
-        `<span class="zhuyin-tone">${escapeHtml(tone)}</span>` +
-        `</span>`
-      );
-    }
-    return `<span class="zhuyin-row"><span class="zhuyin-letter">${escapeHtml(ch)}</span></span>`;
-  });
+  const letters = body
+    .map((ch) => `<span class="zhuyin-letter">${escapeHtml(ch)}</span>`)
+    .join("");
 
-  return `<span class="zhuyin-vertical" aria-label="${escapeHtml(raw)}">${rows.join("")}</span>`;
+  const toneHtml = tone
+    ? `<span class="zhuyin-tone-side">${escapeHtml(tone)}</span>`
+    : "";
+
+  return (
+    `<span class="zhuyin-vertical${tone ? " has-tone" : ""}" aria-label="${escapeHtml(raw)}">` +
+    `<span class="zhuyin-stack">` +
+    `<span class="zhuyin-letters">${letters}</span>` +
+    toneHtml +
+    `</span></span>`
+  );
 }
 
 function flipCardFaceHtml(card) {
