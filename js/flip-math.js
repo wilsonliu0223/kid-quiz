@@ -332,7 +332,15 @@ function startNewRound(keepScores = true) {
     game.cards.forEach((c) => {
       c.faceUp = true;
     });
+  } else {
+    applyFlipModeFaces(game.cards);
   }
+}
+
+function applyFlipModeFaces(cards) {
+  cards.forEach((c) => {
+    c.faceUp = c.kind === "op";
+  });
 }
 
 function renderMathHeader() {
@@ -360,21 +368,17 @@ function renderMathHeader() {
   if (exprEl) {
     if (!sel.length) {
       exprEl.textContent = "點選下方牌組成算式或湊錢";
-      exprEl.classList.remove("math-expression-ok");
     } else {
-      const v = validateSelection(sel);
-      exprEl.textContent = v.ok
-        ? `${selectionLabel(sel)} ＝ ${v.value}`
-        : selectionLabel(sel);
-      exprEl.classList.toggle("math-expression-ok", v.ok && v.value === game.target);
+      exprEl.textContent = selectionLabel(sel);
     }
+    exprEl.classList.remove("math-expression-ok");
   }
 
   const flipHint = $("#math-flip-hint");
   if (flipHint) {
     if (game.mode === "flip") {
       flipHint.hidden = false;
-      flipHint.textContent = `本回合已翻 ${game.turnFlippedIds.length} / ${FLIP_PER_TURN} 張（只能用最後翻開的牌）`;
+      flipHint.textContent = `本回合已翻 ${game.turnFlippedIds.length} / ${FLIP_PER_TURN} 張（＋－×÷ 一直可看，其餘要翻）`;
     } else {
       flipHint.hidden = true;
     }
@@ -390,14 +394,16 @@ function getSelectionCards() {
 
 function cardClass(card) {
   const parts = ["math-card", `math-card-${card.kind}`];
-  if (!card.faceUp && game?.mode === "flip") parts.push("math-card-down");
+  if (game?.mode === "flip" && !card.faceUp && card.kind !== "op") {
+    parts.push("math-card-down");
+  }
   if (game?.selection.includes(card.id)) parts.push("math-card-selected");
   if (game?.turnFlippedIds.includes(card.id)) parts.push("math-card-turn");
   return parts.join(" ");
 }
 
 function cardHtml(card) {
-  if (!card.faceUp && game?.mode === "flip") {
+  if (game?.mode === "flip" && !card.faceUp && card.kind !== "op") {
     return '<span class="math-card-back">?</span>';
   }
   if (card.kind === "money") {
@@ -436,7 +442,7 @@ function switchPlayer() {
 function flipBackTurn() {
   for (const id of game.turnFlippedIds) {
     const c = game.cards.find((x) => x.id === id);
-    if (c) c.faceUp = false;
+    if (c && c.kind !== "op") c.faceUp = false;
   }
   game.turnFlippedIds = [];
   game.selection = [];
@@ -448,6 +454,15 @@ function onCardClick(cardId) {
   if (!card) return;
 
   if (game.mode === "flip") {
+    if (card.kind === "op") {
+      if (game.selection.includes(cardId)) {
+        game.selection = game.selection.filter((id) => id !== cardId);
+      } else {
+        game.selection.push(cardId);
+      }
+      renderCardGrid();
+      return;
+    }
     if (!card.faceUp) {
       if (game.turnFlippedIds.length >= FLIP_PER_TURN) return;
       card.faceUp = true;
@@ -502,6 +517,8 @@ function nextQuestion() {
     game.cards.forEach((c) => {
       c.faceUp = true;
     });
+  } else {
+    applyFlipModeFaces(game.cards);
   }
   renderCardGrid();
 }
@@ -515,20 +532,13 @@ function submitAnswer() {
     return;
   }
   if (result.value !== game.target) {
-    game.locked = true;
     const who = playerName(game.currentPlayerId);
-    deps.showWarn(
-      "還沒湊對",
-      `${who}：${selectionLabel(sel)} ＝ ${result.value}，目標是 ${game.target}`,
-      () => {
-        if (!game) return;
-        game.locked = false;
-        if (game.mode === "flip") flipBackTurn();
-        else game.selection = [];
-        switchPlayer();
-        renderCardGrid();
-      }
-    );
+    const msg = `${who}：${selectionLabel(sel)} ＝ ${result.value}，目標是 ${game.target}`;
+    if (game.mode === "flip") flipBackTurn();
+    else game.selection = [];
+    switchPlayer();
+    renderCardGrid();
+    deps.showWarn("還沒湊對", `${msg}，換 ${playerName(game.currentPlayerId)}`);
     return;
   }
 
@@ -594,6 +604,8 @@ function startWithFirstPlayer(firstPlayerId) {
     game.cards.forEach((c) => {
       c.faceUp = true;
     });
+  } else {
+    applyFlipModeFaces(game.cards);
   }
   pendingMode = null;
   deps.showView("mathPlay");

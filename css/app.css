@@ -1717,6 +1717,11 @@ body {
   font-size: clamp(1.1rem, 42cqw, 1.5rem);
 }
 
+.math-grid-flip .math-card-op {
+  background: #f5f8fe;
+  border-color: var(--math-border);
+}
+
 .math-card-money .math-card-val {
   font-size: clamp(0.7rem, 28cqw, 0.95rem);
 }
