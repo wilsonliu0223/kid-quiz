@@ -448,20 +448,43 @@ body {
   height: 100%;
 }
 
-/* 注音直排：與課本相同，由上到下 */
+/* 注音直排：音由上到下，聲調在右（如 洗 ㄒ／ㄧˇ） */
 .flip-card-zhuyin .zhuyin-vertical {
-  display: inline-block;
-  writing-mode: vertical-lr;
-  text-orientation: upright;
-  -webkit-text-orientation: upright;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
   font-size: clamp(1.2rem, 6.5vw, 1.75rem);
   font-weight: 700;
   color: var(--zh);
-  line-height: 1.12;
-  letter-spacing: 0.06em;
-  white-space: nowrap;
-  max-height: 94%;
-  text-align: center;
+  line-height: 1;
+  gap: 1px;
+}
+
+.flip-card-zhuyin .zhuyin-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.flip-card-zhuyin .zhuyin-row-tone {
+  flex-direction: row;
+  align-items: flex-end;
+  gap: 1px;
+}
+
+.flip-card-zhuyin .zhuyin-letter {
+  display: block;
+  line-height: 0.95;
+}
+
+.flip-card-zhuyin .zhuyin-tone {
+  display: block;
+  font-size: 0.8em;
+  line-height: 1;
+  padding-left: 1px;
+  padding-bottom: 0.04em;
 }
 
 .flip-card-matched {

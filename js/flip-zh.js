@@ -239,11 +239,48 @@ function escapeHtml(s) {
     .replace(/>/g, "&gt;");
 }
 
-/** 注音直排：writing-mode 由上到下（例：ㄩ → ㄣ → ˊ） */
+const TONE_CHARS = new Set(["ˊ", "ˇ", "ˋ", "˙", "\u02CA", "\u02C7", "\u02CB", "\u02D9"]);
+
+function isToneChar(ch) {
+  return TONE_CHARS.has(ch);
+}
+
+/** 拆成直排注音 + 右側聲調（課本寫法：ˊˇˋ˙ 在最後一個音右邊） */
+function parseZhuyinVertical(raw) {
+  const chars = [...String(raw || "").replace(/\s+/g, "")];
+  let tone = "";
+  const body = [];
+  for (const ch of chars) {
+    if (isToneChar(ch)) tone = ch;
+    else body.push(ch);
+  }
+  return { body, tone };
+}
+
+/** 注音直排：音節由上到下，二三四聲標在右側 */
 function zhuyinVerticalHtml(zhuyin) {
   const raw = String(zhuyin || "").trim().replace(/\s+/g, "");
   if (!raw) return "";
-  return `<span class="zhuyin-vertical" aria-label="${escapeHtml(raw)}">${escapeHtml(raw)}</span>`;
+
+  const { body, tone } = parseZhuyinVertical(raw);
+  if (!body.length) {
+    return `<span class="zhuyin-vertical" aria-label="${escapeHtml(raw)}">${escapeHtml(raw)}</span>`;
+  }
+
+  const rows = body.map((ch, i) => {
+    const isLast = i === body.length - 1;
+    if (isLast && tone) {
+      return (
+        `<span class="zhuyin-row zhuyin-row-tone">` +
+        `<span class="zhuyin-letter">${escapeHtml(ch)}</span>` +
+        `<span class="zhuyin-tone">${escapeHtml(tone)}</span>` +
+        `</span>`
+      );
+    }
+    return `<span class="zhuyin-row"><span class="zhuyin-letter">${escapeHtml(ch)}</span></span>`;
+  });
+
+  return `<span class="zhuyin-vertical" aria-label="${escapeHtml(raw)}">${rows.join("")}</span>`;
 }
 
 function flipCardFaceHtml(card) {
