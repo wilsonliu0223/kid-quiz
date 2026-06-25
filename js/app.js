@@ -53,7 +53,7 @@ import {
 import {
   initFlipMath,
   renderMathHomePlayers,
-} from "./flip-math-deck30.js?v=flip-5cards";
+} from "./flip-math-deck30.js?v=guess-hot-lt5";
 import {
   addMistake,
   removeMistake,

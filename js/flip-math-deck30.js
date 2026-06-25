@@ -173,7 +173,7 @@ function pickSecret(rangeKey) {
  */
 function guessHint(guess, secret, rangeKey) {
   const diff = Math.abs(guess - secret);
-  if (diff < 10) {
+  if (diff < 5) {
     return { text: "快猜中了！", level: "hot" };
   }
   const mid = guessMidThreshold(rangeKey);
