@@ -11,7 +11,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <title>家裡練習</title>
     <link rel="manifest" href="manifest.json" />
-    <link rel="stylesheet" href="css/app.css?v=math-mode-fix-v2" />
+    <link rel="stylesheet" href="css/app.css?v=times-table-v1" />
     <script type="importmap">
       {
         "imports": {
@@ -125,6 +125,12 @@
             <span class="card-desc">看中拼英 · 聽音拼字</span>
           </button>
         </div>
+
+        <p class="home-section-label home-section-label-mul">九九乘法</p>
+        <button type="button" class="card card-mul" id="btn-start-mul">
+          <span class="card-title">九九乘法</span>
+          <span class="card-desc">選一個數背誦 · 隨機填空測驗</span>
+        </button>
 
         <p class="home-section-label home-section-label-flip">翻牌對戰</p>
 
@@ -426,6 +432,78 @@
         </footer>
       </section>
 
+      <!-- 九九乘法：選數字 -->
+      <section id="view-mul-pick" class="view view-hidden" aria-label="九九乘法選數字">
+        <header class="quiz-header quiz-header-mul">
+          <button type="button" class="btn-text" id="btn-mul-pick-back">← 返回</button>
+          <span class="quiz-subject">九九乘法</span>
+        </header>
+        <div class="mul-body">
+          <h2 class="mul-heading">今天想背哪一個？</h2>
+          <p class="mul-sub">點數字開始 · 綠色代表已過關</p>
+          <div class="mul-digit-grid" id="mul-digit-grid"></div>
+        </div>
+      </section>
+
+      <!-- 九九乘法：背誦 -->
+      <section id="view-mul-learn" class="view view-hidden" aria-label="九九乘法背誦">
+        <header class="quiz-header quiz-header-mul">
+          <button type="button" class="btn-text" id="btn-mul-learn-back">← 返回</button>
+          <span class="quiz-subject" id="mul-learn-title">背 3</span>
+        </header>
+        <div class="mul-body">
+          <p class="mul-sub" id="mul-learn-sub">3 × 1 ～ 3 × 9</p>
+          <div class="mul-learn-row" id="mul-learn-row"></div>
+          <div id="mul-learn-recite-panel" class="mul-learn-panel">
+            <p class="mul-recite-line" id="mul-recite-line">3 × 1 ＝ 3</p>
+            <button type="button" class="btn btn-secondary btn-block" id="btn-mul-recite">從頭跟念</button>
+          </div>
+          <div id="mul-learn-reveal-panel" class="mul-learn-panel" hidden>
+            <p class="mul-reveal-equation" id="mul-reveal-equation">3 × 1 ＝ □</p>
+            <p class="mul-reveal-hint" id="mul-reveal-hint">點一下看答案</p>
+            <button type="button" class="btn btn-secondary btn-block" id="btn-mul-reveal-next">下一句</button>
+          </div>
+          <div class="mul-learn-actions">
+            <button type="button" class="btn btn-secondary" id="btn-mul-reveal-mode">遮答案練習</button>
+            <button type="button" class="btn btn-primary btn-primary-mul" id="btn-mul-to-quiz">開始測驗</button>
+          </div>
+          <button type="button" class="btn btn-text btn-block" id="btn-mul-skip-learn">我已經會了，直接考</button>
+        </div>
+      </section>
+
+      <!-- 九九乘法：測驗 -->
+      <section id="view-mul-quiz" class="view view-hidden" aria-label="九九乘法測驗">
+        <header class="quiz-header quiz-header-mul">
+          <button type="button" class="btn-text" id="btn-mul-quiz-back">← 返回</button>
+          <span class="quiz-subject" id="mul-quiz-title">背 3 · 測驗</span>
+          <span class="quiz-progress" id="mul-quiz-progress">第 1 / 9 題</span>
+        </header>
+        <div class="mul-body mul-quiz-body">
+          <p class="mul-prompt" id="mul-prompt">3 × □ ＝ 21</p>
+          <p class="mul-quiz-hint" id="mul-quiz-hint">選出正確答案</p>
+          <div class="mul-answer-area">
+            <div class="mul-factor-pad" id="mul-factor-pad" hidden></div>
+            <div class="mul-choice-pad" id="mul-choice-pad" hidden></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 九九乘法：結算 -->
+      <section id="view-mul-result" class="view view-hidden" aria-label="九九乘法結算">
+        <header class="app-header">
+          <h2 class="result-title" id="mul-result-title">完成</h2>
+          <p class="mul-result-score" id="mul-result-score">0 / 9</p>
+          <p class="mul-result-sub" id="mul-result-sub"></p>
+        </header>
+        <ul class="mul-wrong-list" id="mul-wrong-list" hidden></ul>
+        <footer class="result-footer">
+          <button type="button" class="btn btn-primary btn-block btn-primary-mul" id="btn-mul-retry-wrong" hidden>錯題再練</button>
+          <button type="button" class="btn btn-secondary btn-block" id="btn-mul-try-again">再考一次</button>
+          <button type="button" class="btn btn-secondary btn-block" id="btn-mul-next-digit">換背其他數字</button>
+          <button type="button" class="btn btn-secondary btn-block" id="btn-mul-home">回首頁</button>
+        </footer>
+      </section>
+
       <!-- 成績 -->
       <section id="view-result" class="view view-hidden" aria-label="成績">
         <header class="app-header">
@@ -556,6 +634,6 @@
       </div>
     </div>
 
-    <script type="module" src="js/app.js?v=math-mode-fix-v2"></script>
+    <script type="module" src="js/app.js?v=times-table-v1"></script>
   </body>
 </html>

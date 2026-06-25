@@ -2100,3 +2100,273 @@ body {
   border-color: #a8b4d8;
   color: #4a5080;
 }
+
+/* ── 九九乘法 ── */
+.home-section-label-mul {
+  margin-top: 4px;
+}
+
+.card-mul {
+  background: linear-gradient(135deg, #eefaf3 0%, #d4efe0 100%);
+  border: 2px solid #7cb89a;
+  width: 100%;
+  margin-bottom: 12px;
+}
+
+.card-mul .card-title {
+  color: #2d6b4a;
+}
+
+.quiz-header-mul .quiz-subject {
+  color: #2d6b4a;
+}
+
+.btn-primary-mul {
+  background: #3d9a6a;
+  border-color: #2d6b4a;
+}
+
+.mul-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  padding: 0 4px 12px;
+}
+
+.mul-heading {
+  margin: 0 0 4px;
+  font-size: 1.2rem;
+  color: #2d6b4a;
+  text-align: center;
+}
+
+.mul-sub {
+  margin: 0 0 12px;
+  font-size: 0.8rem;
+  color: var(--muted);
+  text-align: center;
+}
+
+.mul-digit-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+
+.mul-digit-btn {
+  position: relative;
+  min-height: 56px;
+  font-size: 1.5rem;
+  font-weight: 800;
+  border-radius: 14px;
+  border: 2px solid #b8dcc8;
+  background: #fff;
+  color: #2d6b4a;
+  touch-action: manipulation;
+}
+
+.mul-digit-tried {
+  background: #f5fbf7;
+  border-color: #8fbf9f;
+}
+
+.mul-digit-passed {
+  background: linear-gradient(145deg, #e8f8ee 0%, #c8e8d4 100%);
+  border-color: #5aa87a;
+}
+
+.mul-digit-star {
+  position: absolute;
+  top: 4px;
+  right: 6px;
+  font-size: 0.7rem;
+  color: #d4a017;
+}
+
+.mul-learn-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.mul-learn-cell {
+  padding: 8px 4px;
+  text-align: center;
+  font-size: 0.78rem;
+  font-weight: 600;
+  border-radius: 8px;
+  background: #f4faf6;
+  border: 1px solid #d0e8d8;
+  color: var(--muted);
+}
+
+.mul-learn-cell-active {
+  background: #e0f5e8;
+  border-color: #5aa87a;
+  color: #2d6b4a;
+  font-weight: 800;
+}
+
+.mul-learn-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 0;
+}
+
+.mul-learn-panel[hidden],
+.mul-panel-off {
+  display: none !important;
+}
+
+.mul-recite-line,
+.mul-reveal-equation {
+  text-align: center;
+  font-size: clamp(1.6rem, 10vw, 2.2rem);
+  font-weight: 800;
+  color: #2d6b4a;
+  margin: 12px 0;
+  padding: 16px 10px;
+  background: #fff;
+  border: 2px dashed #9ccfb0;
+  border-radius: 12px;
+}
+
+.mul-reveal-equation {
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.mul-reveal-equation.mul-revealed {
+  border-style: solid;
+  background: #f0faf4;
+}
+
+.mul-reveal-hint {
+  text-align: center;
+  font-size: 0.85rem;
+  color: var(--muted);
+  margin: 0;
+}
+
+.mul-learn-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.mul-learn-actions .btn {
+  flex: 1;
+}
+
+.mul-quiz-body {
+  gap: 10px;
+}
+
+.mul-prompt {
+  text-align: center;
+  font-size: clamp(2rem, 12vw, 2.75rem);
+  font-weight: 800;
+  color: #2d6b4a;
+  margin: 8px 0;
+  padding: 14px 8px;
+  background: #fff;
+  border: 2px solid #9ccfb0;
+  border-radius: 14px;
+  letter-spacing: 0.04em;
+}
+
+.mul-quiz-hint {
+  text-align: center;
+  font-size: 0.9rem;
+  color: var(--muted);
+  margin: 0;
+  padding: 6px;
+}
+
+.mul-quiz-hint-warm {
+  color: #5a4080;
+  background: #f4f0fa;
+  border-radius: 8px;
+}
+
+.mul-answer-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  margin-top: auto;
+}
+
+.mul-factor-pad,
+.mul-choice-pad {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  padding-bottom: 8px;
+}
+
+.mul-choice-pad {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.mul-factor-pad[hidden],
+.mul-choice-pad[hidden] {
+  display: none !important;
+}
+
+.mul-factor-key,
+.mul-choice-key {
+  min-height: 52px;
+  font-size: 1.35rem;
+  font-weight: 700;
+  border-radius: 12px;
+  border: 2px solid #9ccfb0;
+  background: #fff;
+  color: #2d6b4a;
+  touch-action: manipulation;
+}
+
+.mul-choice-key {
+  min-height: 56px;
+  font-size: 1.5rem;
+}
+
+.mul-factor-key:active,
+.mul-choice-key:active {
+  background: #e8f5ec;
+  transform: scale(0.97);
+}
+
+.mul-result-score {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #2d6b4a;
+  text-align: center;
+  margin: 8px 0;
+}
+
+.mul-result-sub {
+  text-align: center;
+  font-size: 0.9rem;
+  color: var(--muted);
+  margin: 0 16px 12px;
+}
+
+.mul-wrong-list {
+  list-style: none;
+  margin: 0 16px 16px;
+  padding: 12px;
+  background: #fff8f5;
+  border: 1px solid #f0d8cc;
+  border-radius: 10px;
+}
+
+.mul-wrong-list li {
+  padding: 4px 0;
+  font-weight: 600;
+  color: #8a4030;
+}

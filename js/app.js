@@ -54,6 +54,7 @@ import {
   initFlipMath,
   renderMathHomePlayers,
 } from "./flip-math-deck30.js?v=guess-hot-lt5";
+import { initTimesTable } from "./times-table.js?v=times-table-v1";
 import {
   addMistake,
   removeMistake,
@@ -143,6 +144,10 @@ const views = {
   mathFirst: $("#view-math-first"),
   mathPlay: $("#view-math-play"),
   mathResult: $("#view-math-result"),
+  mulPick: $("#view-mul-pick"),
+  mulLearn: $("#view-mul-learn"),
+  mulQuiz: $("#view-mul-quiz"),
+  mulResult: $("#view-mul-result"),
   result: $("#view-result"),
   parent: $("#view-parent"),
 };
@@ -1883,6 +1888,26 @@ async function init() {
   initFlipMath({
     showView,
     getChildNames,
+    showWarn: (title, sub, onClose) => {
+      showFeedback(
+        "warn",
+        title,
+        [{ label: "好的", primary: true, onClick: () => onClose?.() }],
+        { sub: sub || "" }
+      );
+    },
+    showOk: (title, sub, onClose) => {
+      showFeedback(
+        "ok",
+        title,
+        [{ label: "好耶", primary: true, onClick: () => onClose?.() }],
+        { sub: sub || "" }
+      );
+    },
+  });
+  initTimesTable({
+    showView,
+    getSelectedChild,
     showWarn: (title, sub, onClose) => {
       showFeedback(
         "warn",
