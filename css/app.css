@@ -243,16 +243,23 @@ body {
 
 .home-zone-duo .card {
   width: 100%;
-  min-height: 56px;
-  padding: 16px;
+  min-height: 64px;
+  padding: 14px 16px;
   margin-bottom: 0;
   display: flex;
-  align-items: center;
+  flex-direction: column;
+  align-items: flex-start;
   justify-content: center;
+  gap: 2px;
+  text-align: left;
 }
 
 .home-zone-duo .card-title {
   font-size: 1.12rem;
+}
+
+.home-zone-duo .card-desc {
+  font-size: 0.82rem;
 }
 
 .home-zone-meta {

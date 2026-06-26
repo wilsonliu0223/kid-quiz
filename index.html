@@ -11,7 +11,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <title>家裡練習</title>
     <link rel="manifest" href="manifest.json" />
-    <link rel="stylesheet" href="css/app.css?v=gomoku-note-v1" />
+    <link rel="stylesheet" href="css/app.css?v=duo-desc-v1" />
     <script type="importmap">
       {
         "imports": {
@@ -92,12 +92,15 @@
           <div class="home-duo-cards">
             <button type="button" class="card card-math-open" id="btn-start-math-open">
               <span class="card-title">數學攤牌</span>
+              <span class="card-desc">全部攤開選牌</span>
             </button>
             <button type="button" class="card card-math-flip" id="btn-start-math-flip">
               <span class="card-title">數學翻牌</span>
+              <span class="card-desc">每回合翻 5 張</span>
             </button>
             <button type="button" class="card card-math-guess" id="btn-start-math-guess">
               <span class="card-title">猜數字</span>
+              <span class="card-desc">比大小猜秘密數</span>
             </button>
             <button type="button" class="card card-gomoku card-gomoku-home" id="btn-start-gomoku">
               <span class="card-gomoku-head">
@@ -754,6 +757,6 @@
       </div>
     </div>
 
-    <script type="module" src="js/app.js?v=duo-four-v1"></script>
+    <script type="module" src="js/app.js?v=duo-desc-v1"></script>
   </body>
 </html>
