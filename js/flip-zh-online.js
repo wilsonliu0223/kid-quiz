@@ -1,11 +1,11 @@
-import { pickFlipWords, getFlipPairCountSetting } from "./flip-zh.js?v=duo-active-v1";
+import { pickFlipWords, getFlipPairCountSetting, clearLocalFlipGame } from "./flip-zh.js?v=duo-active-v1";
 import {
   registerOnlineGame,
   getOnlineContext,
   leaveOnlineRoom,
   openDuoModePicker,
-} from "./online-duo.js?v=duo-online-v2";
-import { startGameRoom, transactGameState } from "./room-service.js";
+} from "./online-duo.js?v=duo-online-v4";
+import { startGameRoom, transactGameState, asFirebaseList } from "./room-service.js";
 
 /** @typedef {'host' | 'guest'} RoomSlot */
 
@@ -173,6 +173,35 @@ function renderPlayHeader() {
   if ($("#flip-first-tag-b")) $("#flip-first-tag-b").hidden = onlineState.firstPlayerId !== "guest";
 }
 
+function normalizeFlipState(state) {
+  if (!state || typeof state !== "object") return state;
+  return {
+    ...state,
+    cards: asFirebaseList(state.cards),
+    flippedIdx: asFirebaseList(state.flippedIdx).map((n) => Number(n)),
+  };
+}
+
+let onlineGridBound = false;
+
+function ensureOnlineGridClick() {
+  const grid = $("#flip-card-grid");
+  if (!grid || onlineGridBound) return;
+  onlineGridBound = true;
+  grid.addEventListener("click", (e) => {
+    const btn = e.target instanceof Element ? e.target.closest(".flip-card") : null;
+    if (!btn || /** @type {HTMLButtonElement} */ (btn).disabled) return;
+    const ctx = getOnlineContext();
+    if (!ctx.roomId || !ctx.slot || !onlineState || onlineState.over) return;
+    if (ctx.slot !== onlineState.currentPlayerId) return;
+    const idx = Number(btn.dataset.idx);
+    if (!Number.isFinite(idx)) return;
+    const card = onlineState.cards[idx];
+    if (!card || card.matched || card.faceUp) return;
+    void onOnlineCardClick(idx);
+  });
+}
+
 function renderBoard() {
   const grid = $("#flip-card-grid");
   if (!grid || !onlineState) return;
@@ -203,9 +232,6 @@ function renderBoard() {
       btn.innerHTML = '<span class="flip-card-back">?</span>';
     }
 
-    if (myTurn && !card.matched && !card.faceUp) {
-      btn.addEventListener("click", () => onOnlineCardClick(idx));
-    }
     grid.appendChild(btn);
   });
 
@@ -217,16 +243,18 @@ function cardsMatch(a, b) {
 }
 
 function applyRemoteState(state, snap) {
-  onlineState = state;
+  ensureOnlineGridClick();
+  onlineState = normalizeFlipState(state);
   names = {
     host: snap.players.host?.name || "房主",
     guest: snap.players.guest?.name || "來賓",
   };
   renderBoard();
-  if (state.over) showOnlineResult();
+  if (onlineState?.over) showOnlineResult();
 }
 
 function enterPlay(snap) {
+  clearLocalFlipGame();
   getOnlineContext().deps?.showView("flipPlay");
   applyRemoteState(snap.state, snap);
 }
@@ -235,55 +263,67 @@ async function onOnlineCardClick(idx) {
   const ctx = getOnlineContext();
   if (!ctx.roomId || !ctx.slot || !onlineState || onlineState.over) return;
 
-  await transactGameState(ctx.roomId, (current) => {
-    if (!current || current.over || current.locked) return;
-    if (current.currentPlayerId !== ctx.slot) return;
-    const cards = current.cards.map((c) => ({ ...c }));
-    const card = cards[idx];
-    if (!card || card.matched || card.faceUp) return;
-    if (current.flippedIdx.length >= 2) return;
+  try {
+    const next = await transactGameState(ctx.roomId, (raw) => {
+      const current = normalizeFlipState(raw);
+      if (!current || current.over || current.locked) return;
+      if (current.currentPlayerId !== ctx.slot) return;
+      const cards = asFirebaseList(current.cards).map((c) => ({ ...c }));
+      const card = cards[idx];
+      if (!card || card.matched || card.faceUp) return;
+      if (current.flippedIdx.length >= 2) return;
 
-    card.faceUp = true;
-    const flippedIdx = [...current.flippedIdx, idx];
-    const totalClicks = current.totalClicks + 1;
+      card.faceUp = true;
+      const flippedIdx = [...current.flippedIdx, idx];
+      const totalClicks = current.totalClicks + 1;
 
-    if (flippedIdx.length < 2) {
-      return { ...current, cards, flippedIdx, totalClicks };
-    }
+      if (flippedIdx.length < 2) {
+        return { ...current, cards, flippedIdx, totalClicks };
+      }
 
-    const [i0, i1] = flippedIdx;
-    const c0 = cards[i0];
-    const c1 = cards[i1];
+      const [i0, i1] = flippedIdx;
+      const c0 = cards[i0];
+      const c1 = cards[i1];
 
-    if (cardsMatch(c0, c1)) {
-      c0.matched = true;
-      c1.matched = true;
-      const scores = { ...current.scores };
-      scores[ctx.slot] = (scores[ctx.slot] || 0) + 1;
-      const matchedPairs = current.matchedPairs + 1;
+      if (cardsMatch(c0, c1)) {
+        c0.matched = true;
+        c1.matched = true;
+        const scores = { ...current.scores };
+        scores[ctx.slot] = (scores[ctx.slot] || 0) + 1;
+        const matchedPairs = current.matchedPairs + 1;
+        return {
+          ...current,
+          cards,
+          flippedIdx: [],
+          locked: false,
+          scores,
+          matchedPairs,
+          totalClicks,
+          over: matchedPairs >= current.pairCount,
+        };
+      }
+
+      c0.faceUp = false;
+      c1.faceUp = false;
       return {
         ...current,
         cards,
         flippedIdx: [],
         locked: false,
-        scores,
-        matchedPairs,
         totalClicks,
-        over: matchedPairs >= current.pairCount,
+        currentPlayerId: otherSlot(ctx.slot),
       };
-    }
+    });
 
-    c0.faceUp = false;
-    c1.faceUp = false;
-    return {
-      ...current,
-      cards,
-      flippedIdx: [],
-      locked: false,
-      totalClicks,
-      currentPlayerId: otherSlot(ctx.slot),
-    };
-  });
+    if (next) {
+      onlineState = normalizeFlipState(next);
+      renderBoard();
+      if (onlineState.over) showOnlineResult();
+    }
+  } catch (err) {
+    console.error("flip-zh online click failed", err);
+    alert("翻牌失敗，請再試一次");
+  }
 }
 
 function showOnlineResult() {

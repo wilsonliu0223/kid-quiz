@@ -48,6 +48,18 @@ function snapshotFromVal(roomId, val) {
   };
 }
 
+/** Firebase 常把陣列存成 {0:…, 1:…}，讀回時需還原 */
+export function asFirebaseList(val) {
+  if (Array.isArray(val)) return val;
+  if (val && typeof val === "object") {
+    return Object.keys(val)
+      .filter((k) => /^\d+$/.test(k))
+      .sort((a, b) => Number(a) - Number(b))
+      .map((k) => /** @type {Record<string, unknown>} */ (val)[k]);
+  }
+  return [];
+}
+
 /** @returns {OnlineSession | null} */
 export function getOnlineSession() {
   try {

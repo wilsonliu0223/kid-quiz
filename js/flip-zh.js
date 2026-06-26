@@ -5,8 +5,8 @@ import {
   refreshDuoBattleUI,
   renderDuoPickButtons,
 } from "./duo-pick.js";
-import { getOnlineContext, leaveOnlineRoom } from "./online-duo.js?v=duo-online-v2";
-import { openFlipZhDuoMode } from "./flip-zh-online.js?v=duo-online-v2";
+import { getOnlineContext, leaveOnlineRoom } from "./online-duo.js?v=duo-online-v4";
+import { openFlipZhDuoMode } from "./flip-zh-online.js?v=duo-online-v4";
 
 const KEY_FLIP_PAIR_COUNT = "kid-quiz-flip-pair-count";
 const FLIP_PAIR_OPTIONS = [5, 10, 15, 20];
@@ -182,6 +182,7 @@ function renderFirstPicker() {
 }
 
 function renderPlayHeader() {
+  if (getOnlineContext().roomId) return;
   if (!game) return;
   const [idA, idB] = game.playerIds;
   const aScore = $("#flip-score-a");
@@ -216,6 +217,7 @@ function renderPlayHeader() {
 }
 
 function renderBoard() {
+  if (getOnlineContext().roomId) return;
   const grid = $("#flip-card-grid");
   if (!grid || !game) return;
 
@@ -439,6 +441,10 @@ function createFlipLobby(words, pairCount) {
     pairCount,
     totalClicks: 0,
   };
+}
+
+export function clearLocalFlipGame() {
+  game = null;
 }
 
 export function beginFlipFromHome() {

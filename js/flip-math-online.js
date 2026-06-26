@@ -4,7 +4,7 @@ import {
   getOnlineContext,
   leaveOnlineRoom,
   openDuoModePicker,
-} from "./online-duo.js?v=duo-online-v2";
+} from "./online-duo.js?v=duo-online-v4";
 import { startGameRoom, transactGameState } from "./room-service.js";
 
 const WIN_SCORE = 5;
