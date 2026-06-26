@@ -1,7 +1,7 @@
 import { CONFIG } from "./config.site.js";
 import { DEMO_ZH_ITEMS } from "./demo-data.js";
 import { DEMO_EN_ITEMS } from "./demo-en.js";
-import { enLessonFilterAliases } from "./exam-books.js";
+import { enLessonFilterAliases, normalizeEnLesson } from "./exam-books.js";
 
 const COL_ZH = {
   lesson: ["課次"],
@@ -74,7 +74,12 @@ function getHeaderAndRows(table) {
   if (headerIsBroken && rows.some((r) => rowLooksLikeEnData(rowCells(r)))) {
     return {
       headerRow: ["課次", "類型", "中文", "提示", "英文"],
-      dataRows: rows.filter((r) => rowLooksLikeEnData(rowCells(r))),
+      dataRows: rows.filter((r) => {
+        const cells = rowCells(r);
+        const t = cellNorm(cells[1]);
+        const english = cellNorm(cells[4]);
+        return english && (t === "單字" || t === "生字" || t === "");
+      }),
     };
   }
 
@@ -108,6 +113,15 @@ function resolveZhColIdx(headerRow, dataRows) {
   return idx;
 }
 
+function lessonFromHeaderLabel(label) {
+  const parts = cellNorm(label).split(/\s+/).filter(Boolean);
+  const i = parts[0] === "課次" ? 1 : 0;
+  const book = parts[i];
+  const unit = parts[i + 1];
+  if (book && unit) return normalizeEnLesson(`${book} ${unit}`);
+  return normalizeEnLesson(book || "TJ3 Unit21考試");
+}
+
 /** 第 1 列標題貼到同一格時，從欄位標題救回前面幾個單字 */
 function recoverEnItemsFromBrokenColLabels(table) {
   const cols = table.cols || [];
@@ -125,15 +139,14 @@ function recoverEnItemsFromBrokenColLabels(table) {
   const chinese = splitField(labels[2], true);
   const english = splitField(labels[4], true);
   const hintsRaw = splitField(labels[3], labels[3]?.startsWith("提示"));
-  const lesson =
-    splitField(labels[0], labels[0]?.startsWith("課次"))[0] || "TJ3 Unit21考試";
+  const lesson = lessonFromHeaderLabel(labels[0]);
 
   const n = Math.min(chinese.length, english.length);
   const items = [];
   for (let i = 0; i < n; i++) {
     if (!chinese[i] || !english[i]) continue;
     items.push({
-      lesson,
+      lesson: normalizeEnLesson(lesson),
       type: "單字",
       chinese: chinese[i],
       hint: hintsRaw[i] || english[i],
@@ -177,17 +190,43 @@ function rowToZhItem(cells, idx) {
   };
 }
 
+function enRowChineseAndHint(cells, idx, english) {
+  let chinese = String(cells[idx.chinese] ?? "").trim();
+  const hint = idx.hint >= 0 ? String(cells[idx.hint] ?? "").trim() : "";
+  if (chinese) return { chinese, hint };
+
+  const numPrefix = hint.match(/^(\d+)\s*[\/／]/);
+  if (numPrefix) return { chinese: numPrefix[1], hint };
+
+  const fromHint = hint
+    .replace(/^\d+\s*/, "")
+    .replace(/^\/(.+)\/$/, "$1")
+    .trim();
+  return { chinese: fromHint || english, hint };
+}
+
 function rowToEnItem(cells, idx) {
   const english = String(cells[idx.english] ?? "").trim();
-  const chinese = String(cells[idx.chinese] ?? "").trim();
-  if (!english || !chinese) return null;
+  if (!english) return null;
+  const { chinese, hint } = enRowChineseAndHint(cells, idx, english);
+  if (!chinese) return null;
   return {
-    lesson: cells[idx.lesson] ?? "",
+    lesson: normalizeEnLesson(cells[idx.lesson] ?? ""),
     type: cells[idx.type] ?? "",
     chinese,
-    hint: idx.hint >= 0 ? String(cells[idx.hint] ?? "").trim() : "",
+    hint,
     english,
   };
+}
+
+function enItemDedupeKey(item) {
+  return [
+    normalizeEnLesson(item.lesson),
+    String(item.chinese ?? "").trim(),
+    String(item.english ?? "").trim(),
+  ]
+    .join("\t")
+    .toLowerCase();
 }
 
 function filterByTypes(items, types) {
@@ -244,7 +283,14 @@ export async function loadEnItems() {
     const res = await fetch(CONFIG.SHEETS_JSON_URL);
     if (!res.ok) throw new Error(`無法讀取題庫 (${res.status})`);
     const data = await res.json();
-    const items = data.enItems ?? [];
+    const items = (data.enItems ?? []).map((item) =>
+      item
+        ? {
+            ...item,
+            lesson: normalizeEnLesson(item.lesson),
+          }
+        : item,
+    );
     return filterByTypes(items, types);
   }
 
@@ -263,10 +309,13 @@ export async function loadEnItems() {
     const seen = new Set();
     const addItem = (item) => {
       if (!item) return;
-      const key = item.english.toLowerCase();
+      const key = enItemDedupeKey(item);
       if (seen.has(key)) return;
       seen.add(key);
-      items.push(item);
+      items.push({
+        ...item,
+        lesson: normalizeEnLesson(item.lesson),
+      });
     };
 
     for (const row of recoverEnItemsFromBrokenColLabels(table)) {

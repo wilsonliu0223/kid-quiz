@@ -1,3 +1,10 @@
+/** 試算表課次欄正規化（舊名、多餘空白） */
+export function normalizeEnLesson(lesson) {
+  const s = String(lesson ?? "").trim().replace(/\s+/g, " ");
+  if (s === "Unit21考試" || s === "TJ3") return "TJ3 Unit21考試";
+  return s;
+}
+
 /** 英語考試範圍分組（試算表「課次」欄，例：TJ3 Unit21考試） */
 export const EN_EXAM_BOOKS = [
   {
@@ -6,10 +13,7 @@ export const EN_EXAM_BOOKS = [
     hint: "三年級",
     match: (lesson) => /^TJ3(\s|$)/i.test(lesson) || lesson === "Unit21考試", // 舊課次名相容
     sortKey: (lesson) => lesson,
-    chipLabel: (lesson) => {
-      const s = String(lesson).replace(/^TJ3\s*/i, "");
-      return s || lesson;
-    },
+    chipLabel: (lesson) => String(lesson),
   },
   {
     id: "tj4",
@@ -17,10 +21,7 @@ export const EN_EXAM_BOOKS = [
     hint: "四年級",
     match: (lesson) => /^TJ4(\s|$)/i.test(lesson),
     sortKey: (lesson) => lesson,
-    chipLabel: (lesson) => {
-      const s = String(lesson).replace(/^TJ4\s*/i, "");
-      return s || lesson;
-    },
+    chipLabel: (lesson) => String(lesson),
   },
 ];
 
