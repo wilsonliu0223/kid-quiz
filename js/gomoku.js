@@ -5,6 +5,10 @@ import {
   rebindGomokuBoardZoom,
   shouldSuppressGomokuCellTap,
 } from "./gomoku-board-zoom.js";
+import {
+  celebrateGomokuWin,
+  clearGomokuWinCelebration,
+} from "./gomoku-win-ui.js";
 import { getChildName, otherDuoPlayer } from "./children.js";
 import {
   canStartDuoBattle,
@@ -117,10 +121,22 @@ function stoneLabel(playerId) {
 }
 
 function renderPlayHeader() {
-  if (!game || game.over) return;
+  if (!game) return;
   const turn = $("#gomoku-turn-label");
   const blackTag = $("#gomoku-black-tag");
   const renjuHint = $("#gomoku-renju-hint");
+  if (game.over) {
+    if (turn) {
+      turn.textContent = game.winner
+        ? `${playerName(game.winner)} 連五獲勝！`
+        : "和棋！";
+    }
+    if (renjuHint) {
+      renjuHint.classList.remove("is-visible");
+      renjuHint.setAttribute("aria-hidden", "true");
+    }
+    return;
+  }
   if (turn) {
     turn.textContent = `輪到：${playerName(game.currentPlayerId)} · ${stoneLabel(game.currentPlayerId)}`;
   }
@@ -285,7 +301,7 @@ function onCellClick(row, col) {
     game.winner = player;
     game.winLine = winLine;
     renderBoard();
-    setTimeout(showResult, 350);
+    showWinOnBoard();
     return;
   }
 
@@ -293,7 +309,7 @@ function onCellClick(row, col) {
     game.over = true;
     game.winner = null;
     renderBoard();
-    setTimeout(showResult, 350);
+    showWinOnBoard();
     return;
   }
 
@@ -301,22 +317,24 @@ function onCellClick(row, col) {
   syncBoardAfterMove(row, col, prevLastMove);
 }
 
-function showResult() {
+function showWinOnBoard() {
   if (!game) return;
-  const title = $("#gomoku-result-title");
-  const detail = $("#gomoku-result-detail");
-
-  if (game.winner) {
-    if (title) title.textContent = `${playerName(game.winner)} 連五獲勝！`;
-    if (detail) {
-      detail.textContent = `${playerName(game.winner)} 的${stoneLabel(game.winner)}連成五子`;
-    }
-  } else {
-    if (title) title.textContent = "和棋！";
-    if (detail) detail.textContent = "棋盤已滿，沒有連五";
-  }
-
-  deps.showView("gomokuResult");
+  const title = game.winner
+    ? `${playerName(game.winner)} 連五獲勝！`
+    : "和棋！";
+  const detail = game.winner
+    ? `${playerName(game.winner)} 的${stoneLabel(game.winner)}連成五子`
+    : "棋盤已滿，沒有連五";
+  celebrateGomokuWin({
+    stageEl: $("#gomoku-board-stage"),
+    overlayEl: $("#gomoku-win-overlay"),
+    titleEl: $("#gomoku-win-title"),
+    detailEl: $("#gomoku-win-detail"),
+    winLine: game.winLine,
+    lastMove: game.lastMove,
+    title,
+    detail,
+  });
 }
 
 function startWithBlackPlayer(blackPlayerId) {
@@ -335,6 +353,7 @@ function startWithBlackPlayer(blackPlayerId) {
   };
   const grid = $("#gomoku-board");
   if (grid) delete grid.dataset.built;
+  clearGomokuWinCelebration($("#gomoku-board-stage"), $("#gomoku-win-overlay"));
   deps.showView("gomokuPlay");
   rebindGomokuBoardZoom("#gomoku-board-viewport", "#gomoku-board-stage");
   resetGomokuBoardZoom();
@@ -376,6 +395,17 @@ export function bindGomokuEvents() {
   });
   $("#btn-gomoku-replay")?.addEventListener("click", replayGomoku);
   $("#btn-gomoku-home")?.addEventListener("click", () => deps.showView("home"));
+  $("#btn-gomoku-win-dismiss")?.addEventListener("click", () => {
+    clearGomokuWinCelebration($("#gomoku-board-stage"), $("#gomoku-win-overlay"));
+  });
+  $("#btn-gomoku-win-replay")?.addEventListener("click", () => {
+    clearGomokuWinCelebration($("#gomoku-board-stage"), $("#gomoku-win-overlay"));
+    replayGomoku();
+  });
+  $("#btn-gomoku-win-home")?.addEventListener("click", () => {
+    clearGomokuWinCelebration($("#gomoku-board-stage"), $("#gomoku-win-overlay"));
+    deps.showView("home");
+  });
 }
 
 /**

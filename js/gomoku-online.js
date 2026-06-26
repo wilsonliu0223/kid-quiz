@@ -5,6 +5,11 @@ import {
   shouldSuppressGomokuCellTap,
 } from "./gomoku-board-zoom.js";
 import {
+  celebrateGomokuWin,
+  clearGomokuWinCelebration,
+  renderGomokuWinLine,
+} from "./gomoku-win-ui.js";
+import {
   registerOnlineGame,
   getOnlineContext,
   leaveOnlineRoom,
@@ -18,6 +23,8 @@ const BOARD_SIZE = 15;
 
 /** @type {object | null} */
 let onlineGame = null;
+/** @type {string | null} */
+let celebratedWinKey = null;
 
 const $ = (sel) => document.querySelector(sel);
 
@@ -134,15 +141,23 @@ function applyRemoteGomoku(snapshot) {
     },
   };
   renderOnlineBoard();
-  if (g.over && !$("#view-gomoku-online-result")?.classList.contains("view-active")) {
-    showOnlineResult();
+  if (g.over) {
+    const winKey = `${snapshot.roomId}:${g.winner || "draw"}:${g.cells}`;
+    if (winKey !== celebratedWinKey) {
+      celebratedWinKey = winKey;
+      showOnlineWinOnBoard();
+    } else if (onlineGame.winLine) {
+      renderGomokuWinLine($("#gomoku-online-board-stage"), onlineGame.winLine, onlineGame.lastMove);
+    }
   }
 }
 
 function enterOnlinePlay(snapshot) {
   getOnlineContext().deps?.showView("gomokuOnlinePlay");
+  celebratedWinKey = null;
   const grid = $("#gomoku-online-board");
   if (grid) delete grid.dataset.built;
+  clearGomokuWinCelebration($("#gomoku-online-board-stage"), $("#gomoku-online-win-overlay"));
   rebindGomokuBoardZoom("#gomoku-online-board-viewport", "#gomoku-online-board-stage");
   resetGomokuBoardZoom();
   applyRemoteGomoku(snapshot);
@@ -233,9 +248,20 @@ function renderOnlineBoard() {
   if ($("#gomoku-online-room-tag") && ctx.roomId) {
     $("#gomoku-online-room-tag").textContent = `房間 ${ctx.roomId}`;
   }
-  if ($("#gomoku-online-turn-label") && !onlineGame.over) {
-    const me = ctx.slot === onlineGame.currentPlayerId;
-    $("#gomoku-online-turn-label").textContent = `輪到：${slotName(onlineGame.currentPlayerId)} · ${stoneLabel(onlineGame.currentPlayerId)}${me ? "（你）" : ""}`;
+  if ($("#gomoku-online-turn-label")) {
+    if (onlineGame.over) {
+      if (onlineGame.winner) {
+        const meWon = onlineGame.winner === ctx.slot;
+        $("#gomoku-online-turn-label").textContent = meWon
+          ? "你連五獲勝！"
+          : `${slotName(onlineGame.winner)} 連五獲勝`;
+      } else {
+        $("#gomoku-online-turn-label").textContent = "和棋！";
+      }
+    } else {
+      const me = ctx.slot === onlineGame.currentPlayerId;
+      $("#gomoku-online-turn-label").textContent = `輪到：${slotName(onlineGame.currentPlayerId)} · ${stoneLabel(onlineGame.currentPlayerId)}${me ? "（你）" : ""}`;
+    }
   }
   if ($("#gomoku-online-black-tag")) {
     $("#gomoku-online-black-tag").textContent = `黑子：${slotName(onlineGame.blackPlayerId)}`;
@@ -296,20 +322,27 @@ async function onOnlineCellClick(row, col) {
   if (!result) alert("這一步無法下（可能輪到對方或已被下過）");
 }
 
-function showOnlineResult() {
+function showOnlineWinOnBoard() {
   if (!onlineGame) return;
   const ctx = getOnlineContext();
-  const title = $("#gomoku-online-result-title");
-  const detail = $("#gomoku-online-result-detail");
-  if (onlineGame.winner) {
-    const meWon = onlineGame.winner === ctx.slot;
-    if (title) title.textContent = meWon ? "你贏了！" : `${slotName(onlineGame.winner)} 連五獲勝`;
-    if (detail) detail.textContent = `${slotName(onlineGame.winner)} 的${stoneLabel(onlineGame.winner)}連成五子`;
-  } else {
-    if (title) title.textContent = "和棋！";
-    if (detail) detail.textContent = "棋盤已滿，沒有連五";
-  }
-  ctx.deps?.showView("gomokuOnlineResult");
+  const title = onlineGame.winner
+    ? onlineGame.winner === ctx.slot
+      ? "你贏了！"
+      : `${slotName(onlineGame.winner)} 連五獲勝`
+    : "和棋！";
+  const detail = onlineGame.winner
+    ? `${slotName(onlineGame.winner)} 的${stoneLabel(onlineGame.winner)}連成五子`
+    : "棋盤已滿，沒有連五";
+  celebrateGomokuWin({
+    stageEl: $("#gomoku-online-board-stage"),
+    overlayEl: $("#gomoku-online-win-overlay"),
+    titleEl: $("#gomoku-online-win-title"),
+    detailEl: $("#gomoku-online-win-detail"),
+    winLine: onlineGame.winLine,
+    lastMove: onlineGame.lastMove,
+    title,
+    detail,
+  });
 }
 
 function bindGomokuOnlineOnly() {
@@ -319,12 +352,26 @@ function bindGomokuOnlineOnly() {
     if (confirm("離開棋局？")) {
       await leaveOnlineRoom();
       onlineGame = null;
+      celebratedWinKey = null;
+      clearGomokuWinCelebration($("#gomoku-online-board-stage"), $("#gomoku-online-win-overlay"));
       getOnlineContext().deps?.showView("home");
     }
+  });
+  $("#btn-gomoku-online-win-dismiss")?.addEventListener("click", () => {
+    clearGomokuWinCelebration($("#gomoku-online-board-stage"), $("#gomoku-online-win-overlay"));
+  });
+  $("#btn-gomoku-online-win-home")?.addEventListener("click", async () => {
+    await leaveOnlineRoom();
+    onlineGame = null;
+    celebratedWinKey = null;
+    clearGomokuWinCelebration($("#gomoku-online-board-stage"), $("#gomoku-online-win-overlay"));
+    getOnlineContext().deps?.showView("home");
   });
   $("#btn-gomoku-online-home")?.addEventListener("click", async () => {
     await leaveOnlineRoom();
     onlineGame = null;
+    celebratedWinKey = null;
+    clearGomokuWinCelebration($("#gomoku-online-board-stage"), $("#gomoku-online-win-overlay"));
     getOnlineContext().deps?.showView("home");
   });
 }
