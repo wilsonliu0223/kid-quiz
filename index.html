@@ -11,7 +11,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <title>家裡練習</title>
     <link rel="manifest" href="manifest.json" />
-    <link rel="stylesheet" href="css/app.css?v=gomoku-online-v3" />
+    <link rel="stylesheet" href="css/app.css?v=gomoku-online-v4" />
     <script type="importmap">
       {
         "imports": {
@@ -583,6 +583,9 @@
               <button type="button" class="btn btn-secondary" id="btn-gomoku-join-room">加入</button>
             </div>
           </div>
+          <p class="gomoku-mode-note">
+            測試可用手機＋電腦（兩個不同裝置）。若顯示「房間已滿」，請房主在等候室按「清除來賓重試」。
+          </p>
         </div>
       </section>
 
@@ -601,6 +604,14 @@
             <p><span class="label">來賓</span> <span id="gomoku-lobby-guest">—</span></p>
           </div>
           <button type="button" class="btn btn-primary btn-block" id="btn-gomoku-lobby-ready">我準備好了</button>
+          <button
+            type="button"
+            class="btn btn-secondary btn-block"
+            id="btn-gomoku-lobby-kick-guest"
+            hidden
+          >
+            來賓沒進來？清除來賓重試
+          </button>
           <div id="gomoku-lobby-start-panel" class="online-lobby-start" hidden>
             <p class="flip-first-hint">請選誰執黑（黑先）</p>
             <div class="flip-pick-btns" id="gomoku-lobby-black-pick"></div>
@@ -931,6 +942,6 @@
       </div>
     </div>
 
-    <script type="module" src="js/app.js?v=gomoku-online-v3"></script>
+    <script type="module" src="js/app.js?v=gomoku-online-v4"></script>
   </body>
 </html>

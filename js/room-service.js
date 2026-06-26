@@ -168,6 +168,23 @@ export async function setPlayerReady(roomId, slot, ready) {
   await update(r, { [`players/${slot}/ready`]: !!ready });
 }
 
+/** 房主清除殘留來賓（對方沒進等候室、或測試卡「房間已滿」時用） */
+export async function clearGuestSlot(roomId) {
+  const { uid } = await ensureFirebase();
+  const snap = await getRoomSnapshot(roomId);
+  if (!snap?.players?.host || snap.players.host.uid !== uid) {
+    const err = new Error("NOT_HOST");
+    err.code = "NOT_HOST";
+    throw err;
+  }
+  const r = await roomRef(roomId);
+  await update(r, {
+    "players/guest": null,
+    gomoku: null,
+    "meta/status": "lobby",
+  });
+}
+
 /**
  * @param {string} roomId
  * @param {'host' | 'guest'} blackSlot

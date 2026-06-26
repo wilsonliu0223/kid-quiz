@@ -14,8 +14,9 @@ import {
   transactGomoku,
   getOnlineSession,
   getRoomSnapshot,
+  clearGuestSlot,
 } from "./room-service.js";
-import { beginGomokuLocal } from "./gomoku.js?v=gomoku-online-v3";
+import { beginGomokuLocal } from "./gomoku.js?v=gomoku-online-v4";
 import { getChildName } from "./children.js";
 
 const BOARD_SIZE = 15;
@@ -73,7 +74,7 @@ function formatOnlineError(err) {
   const map = {
     ROOM_NOT_FOUND: "找不到這個房間碼（請確認房主還在等候室、房間碼正確）",
     ROOM_FULL:
-      "房間已有另一位玩家。若那是你的手機，請再按一次「加入」；否則請房主離開後重建房間。",
+      "房間已有另一位玩家（可能是上次測試殘留）。請房主在等候室按「清除來賓重試」，或房主離開後重建房間。",
     ROOM_EXPIRED: "房間已過期，請房主重新建立",
     ROOM_ID_INVALID: "房間碼格式不正確",
     FIREBASE_NOT_CONFIGURED: "尚未設定 Firebase，請見 docs/firebase-setup.md",
@@ -257,6 +258,7 @@ function renderLobby(snapshot) {
   const readyBtn = $("#btn-gomoku-lobby-ready");
   const startPanel = $("#gomoku-lobby-start-panel");
   const blackPick = $("#gomoku-lobby-black-pick");
+  const kickBtn = $("#btn-gomoku-lobby-kick-guest");
 
   if (!snapshot) {
     if (statusEl) statusEl.textContent = "房間已關閉";
@@ -294,6 +296,9 @@ function renderLobby(snapshot) {
 
   const showStart = mySlot === "host" && bothReady && snapshot.meta.status === "lobby";
   if (startPanel) startPanel.hidden = !showStart;
+  if (kickBtn) {
+    kickBtn.hidden = !(mySlot === "host" && guest && snapshot.meta.status === "lobby");
+  }
   if (blackPick && showStart) {
     blackPick.innerHTML = "";
     const mkBtn = (slot, label) => {
@@ -631,6 +636,17 @@ async function leaveOnlineRoom() {
   onlineGame = null;
 }
 
+async function onKickGuest() {
+  if (!activeRoomId || mySlot !== "host") return;
+  if (!confirm("清除來賓位子？對方需重新輸入房間碼加入。")) return;
+  try {
+    await clearGuestSlot(activeRoomId);
+  } catch (err) {
+    console.error("clearGuestSlot failed", err);
+    alert("無法清除來賓，請離開房間後重建。");
+  }
+}
+
 function bindOnlineEvents() {
   $("#btn-gomoku-mode-local")?.addEventListener("click", () => beginGomokuLocal());
   $("#btn-gomoku-mode-online")?.addEventListener("click", () => enterOnlineFlow());
@@ -651,6 +667,7 @@ function bindOnlineEvents() {
     }
   });
   $("#btn-gomoku-lobby-ready")?.addEventListener("click", () => onToggleReady());
+  $("#btn-gomoku-lobby-kick-guest")?.addEventListener("click", () => onKickGuest());
   $("#btn-gomoku-online-play-back")?.addEventListener("click", async () => {
     if (confirm("離開棋局？房間會結束或回到等候室。")) {
       await leaveOnlineRoom();
