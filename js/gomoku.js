@@ -1,5 +1,5 @@
 import { forbiddenLabel, wouldBlackForbidden } from "./gomoku-renju.js?v=gomoku-v2";
-import { openGomokuDuoMode } from "./gomoku-online.js?v=duo-online-v1";
+import { openGomokuDuoMode } from "./gomoku-online.js?v=duo-online-v2";
 import {
   resetGomokuBoardZoom,
   rebindGomokuBoardZoom,

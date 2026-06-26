@@ -1,10 +1,10 @@
-import { getMathRangeSetting } from "./flip-math-deck30.js";
+import { getMathRangeSetting } from "./flip-math-deck30.js?v=duo-active-v1";
 import {
   registerOnlineGame,
   getOnlineContext,
   leaveOnlineRoom,
   openDuoModePicker,
-} from "./online-duo.js";
+} from "./online-duo.js?v=duo-online-v2";
 import { startGameRoom, transactGameState } from "./room-service.js";
 
 const WIN_SCORE = 5;

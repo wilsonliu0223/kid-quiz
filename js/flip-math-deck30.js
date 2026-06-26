@@ -5,8 +5,8 @@ import {
   refreshDuoBattleUI,
   renderDuoPickButtons,
 } from "./duo-pick.js";
-import { getOnlineContext, leaveOnlineRoom } from "./online-duo.js?v=duo-online-v1";
-import { openMathDuoMode } from "./flip-math-online.js?v=duo-online-v1";
+import { getOnlineContext, leaveOnlineRoom } from "./online-duo.js?v=duo-online-v2";
+import { openMathDuoMode } from "./flip-math-online.js?v=duo-online-v2";
 
 const DECK_VERSION = "deck30";
 const KEY_MATH_RANGE = "kid-quiz-math-range";

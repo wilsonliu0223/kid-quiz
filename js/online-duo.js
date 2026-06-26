@@ -392,17 +392,26 @@ export function initOnlineDuo(d) {
   if (session?.roomId && isFirebaseConfigured()) {
     activeRoomId = session.roomId;
     mySlot = session.slot;
-    getRoomSnapshot(session.roomId).then((snap) => {
-      if (snap?.meta?.game) {
-        pendingMode = {
-          game: snap.meta.game,
-          title: GAME_TITLES[snap.meta.game] || snap.meta.game,
-          backView: "home",
-          localStart: () => {},
-          config: snap.meta.config,
-        };
-      }
-      openLobby(session.roomId);
-    });
+    getRoomSnapshot(session.roomId)
+      .then((snap) => {
+        if (!snap) {
+          void leaveOnlineRoom();
+          return;
+        }
+        if (snap?.meta?.game) {
+          pendingMode = {
+            game: snap.meta.game,
+            title: GAME_TITLES[snap.meta.game] || snap.meta.game,
+            backView: "home",
+            localStart: () => {},
+            config: snap.meta.config,
+          };
+        }
+        openLobby(session.roomId);
+      })
+      .catch((err) => {
+        console.warn("resume online room failed", err);
+        void leaveOnlineRoom();
+      });
   }
 }
