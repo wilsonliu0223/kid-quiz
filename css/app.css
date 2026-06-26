@@ -235,21 +235,24 @@ body {
   margin-bottom: 10px;
 }
 
+.home-zone-duo .home-duo-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
 .home-zone-duo .card {
   width: 100%;
-  min-height: 64px;
-  padding: 14px 16px;
-  margin-bottom: 8px;
-}
-
-.home-zone-duo .card-math-open,
-.home-zone-duo .card-math-flip,
-.home-zone-duo .card-math-guess {
-  margin-top: 0;
-}
-
-.home-zone-duo .card:last-child {
+  min-height: 56px;
+  padding: 16px;
   margin-bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.home-zone-duo .card-title {
+  font-size: 1.12rem;
 }
 
 .home-zone-meta {
