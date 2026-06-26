@@ -1,4 +1,5 @@
 import { forbiddenLabel, wouldBlackForbidden } from "./gomoku-renju.js?v=gomoku-v2";
+import { openGomokuDuoMode } from "./gomoku-online.js?v=duo-online-v1";
 import {
   resetGomokuBoardZoom,
   rebindGomokuBoardZoom,
@@ -341,7 +342,7 @@ function startWithBlackPlayer(blackPlayerId) {
 }
 
 export function beginGomokuFromHome() {
-  deps.showView("gomokuMode");
+  openGomokuDuoMode(beginGomokuLocal);
 }
 
 export function beginGomokuLocal() {

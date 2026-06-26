@@ -5,6 +5,8 @@ import {
   refreshDuoBattleUI,
   renderDuoPickButtons,
 } from "./duo-pick.js";
+import { getOnlineContext, leaveOnlineRoom } from "./online-duo.js?v=duo-online-v1";
+import { openFlipZhDuoMode } from "./flip-zh-online.js?v=duo-online-v1";
 
 const KEY_FLIP_PAIR_COUNT = "kid-quiz-flip-pair-count";
 const FLIP_PAIR_OPTIONS = [5, 10, 15, 20];
@@ -321,6 +323,7 @@ function cardsMatch(a, b) {
 }
 
 function onCardClick(idx) {
+  if (getOnlineContext().roomId) return;
   if (!game || game.locked) return;
   const card = game.cards[idx];
   if (!card || card.matched || card.faceUp) return;
@@ -439,6 +442,10 @@ function createFlipLobby(words, pairCount) {
 }
 
 export function beginFlipFromHome() {
+  openFlipZhDuoMode(beginFlipLocal);
+}
+
+export function beginFlipLocal() {
   const pairCount = getFlipPairCountSetting();
   const zhBank = deps.getZhBank();
   const lessonFilter = deps.getLessonFilter();
@@ -482,7 +489,14 @@ export function bindFlipEvents() {
   });
 
   $("#btn-flip-first-back")?.addEventListener("click", () => deps.showView("setupZh"));
-  $("#btn-flip-play-back")?.addEventListener("click", () => {
+  $("#btn-flip-play-back")?.addEventListener("click", async () => {
+    if (getOnlineContext().roomId) {
+      if (confirm("離開對戰？")) {
+        await leaveOnlineRoom();
+        deps.showView("setupZh");
+      }
+      return;
+    }
     if (confirm("離開對戰？目前進度不會儲存。")) deps.showView("setupZh");
   });
   $("#btn-flip-replay")?.addEventListener("click", () => {

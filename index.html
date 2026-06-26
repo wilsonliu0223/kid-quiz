@@ -11,7 +11,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <title>家裡練習</title>
     <link rel="manifest" href="manifest.json" />
-    <link rel="stylesheet" href="css/app.css?v=gomoku-online-v6" />
+    <link rel="stylesheet" href="css/app.css?v=duo-online-v1" />
     <script type="importmap">
       {
         "imports": {
@@ -513,20 +513,20 @@
         </footer>
       </section>
 
-      <!-- 五子棋：同機 / 兩台手機 -->
-      <section id="view-gomoku-mode" class="view view-hidden" aria-label="五子棋模式">
+      <!-- 對戰：同機 / 兩台手機（共用） -->
+      <section id="view-duo-mode" class="view view-hidden" aria-label="對戰模式">
         <header class="quiz-header quiz-header-gomoku">
-          <button type="button" class="btn-text" id="btn-gomoku-mode-back">← 返回</button>
-          <span class="quiz-subject">五子棋</span>
+          <button type="button" class="btn-text" id="btn-duo-mode-back">← 返回</button>
+          <span class="quiz-subject" id="duo-mode-header">對戰</span>
         </header>
         <div class="flip-first-body gomoku-mode-body">
-          <h2 class="flip-first-title">怎麼玩？</h2>
-          <p class="flip-first-meta">15×15 · 連珠規則 · 黑先禁手</p>
+          <h2 class="flip-first-title" id="duo-mode-title">怎麼玩？</h2>
+          <p class="flip-first-meta" id="duo-mode-sub">同一台裝置，或兩台手機用房間碼連線</p>
           <div class="gomoku-mode-btns">
-            <button type="button" class="btn btn-primary btn-block btn-primary-gomoku" id="btn-gomoku-mode-local">
+            <button type="button" class="btn btn-primary btn-block btn-primary-gomoku" id="btn-duo-mode-local">
               同一台裝置（面對面）
             </button>
-            <button type="button" class="btn btn-secondary btn-block" id="btn-gomoku-mode-online">
+            <button type="button" class="btn btn-secondary btn-block" id="btn-duo-mode-online">
               兩台手機（房間碼連線）
             </button>
           </div>
@@ -534,45 +534,43 @@
         </div>
       </section>
 
-      <!-- Firebase 尚未設定說明 -->
-      <section id="view-gomoku-firebase-setup" class="view view-hidden" aria-label="Firebase 設定說明">
+      <section id="view-online-firebase-setup" class="view view-hidden" aria-label="Firebase 設定說明">
         <header class="quiz-header quiz-header-gomoku">
-          <button type="button" class="btn-text" id="btn-gomoku-firebase-setup-back">← 返回</button>
+          <button type="button" class="btn-text" id="btn-online-firebase-setup-back">← 返回</button>
           <span class="quiz-subject">連線設定</span>
         </header>
         <div class="flip-first-body online-setup-body">
           <h2 class="flip-first-title">尚未設定 Firebase</h2>
           <p class="flip-first-meta">兩台手機對戰需要雲端資料庫。請用 <strong>Google 帳號</strong>登入 Firebase 主控台完成一次性設定。</p>
           <ol class="online-setup-steps">
-            <li>開啟專案裡的 <code>docs/firebase-setup.md</code>（GitHub 上同路徑）</li>
+            <li>開啟專案裡的 <code>docs/firebase-setup.md</code></li>
             <li>依教學建立 Firebase 專案、Realtime Database、匿名登入</li>
             <li>把網頁設定貼到 <code>js/config.site.js</code> 的 <code>FIREBASE</code></li>
             <li>推送後重新整理網站（Ctrl+Shift+R）</li>
           </ol>
-          <p class="flip-first-hint">小孩玩遊戲時<strong>不用</strong>登入 Google；只有家長設定 Firebase 時需要。</p>
         </div>
       </section>
 
-      <!-- 建房 / 加入 -->
-      <section id="view-gomoku-room-entry" class="view view-hidden" aria-label="五子棋房間">
+      <section id="view-online-room-entry" class="view view-hidden" aria-label="建立或加入房間">
         <header class="quiz-header quiz-header-gomoku">
-          <button type="button" class="btn-text" id="btn-gomoku-room-entry-back">← 返回</button>
+          <button type="button" class="btn-text" id="btn-online-room-entry-back">← 返回</button>
           <span class="quiz-subject">兩台手機</span>
         </header>
         <div class="flip-first-body">
           <h2 class="flip-first-title">建立或加入房間</h2>
           <p class="flip-first-meta">
-            代表名字：<strong id="gomoku-online-player-name">思妘</strong>（首頁「誰在練習」）
+            <span id="online-room-game-label">對戰</span> · 代表名字：
+            <strong id="online-player-name">思妘</strong>
           </p>
-          <button type="button" class="btn btn-primary btn-block btn-primary-gomoku" id="btn-gomoku-create-room">
+          <button type="button" class="btn btn-primary btn-block btn-primary-gomoku" id="btn-online-create-room">
             建立房間（取得 4 碼）
           </button>
           <div class="online-join-row">
-            <label class="label" for="gomoku-room-join-input">加入房間</label>
+            <label class="label" for="online-room-join-input">加入房間</label>
             <div class="online-join-inputs">
               <input
                 type="text"
-                id="gomoku-room-join-input"
+                id="online-room-join-input"
                 class="input online-room-input"
                 inputmode="numeric"
                 pattern="[0-9]*"
@@ -580,41 +578,35 @@
                 placeholder="例如 4821"
                 autocomplete="off"
               />
-              <button type="button" class="btn btn-secondary" id="btn-gomoku-join-room">加入</button>
+              <button type="button" class="btn btn-secondary" id="btn-online-join-room">加入</button>
             </div>
           </div>
           <p class="gomoku-mode-note">
-            測試可用手機＋電腦（兩個不同裝置）。若顯示「房間已滿」，請房主在等候室按「清除來賓重試」。
+            測試可用手機＋電腦。若顯示「房間已滿」，請房主在等候室按「清除來賓重試」。
           </p>
         </div>
       </section>
 
-      <!-- 等候室 -->
-      <section id="view-gomoku-lobby" class="view view-hidden" aria-label="五子棋等候室">
+      <section id="view-online-lobby" class="view view-hidden" aria-label="等候室">
         <header class="quiz-header quiz-header-gomoku">
-          <button type="button" class="btn-text" id="btn-gomoku-lobby-back">← 離開</button>
-          <span class="quiz-subject">等候室</span>
+          <button type="button" class="btn-text" id="btn-online-lobby-back">← 離開</button>
+          <span class="quiz-subject">等候室 · <span id="online-lobby-game">對戰</span></span>
         </header>
         <div class="flip-first-body online-lobby-body">
           <p class="online-room-code-label">房間碼</p>
-          <p class="online-room-code" id="gomoku-lobby-code">0000</p>
-          <p class="flip-first-meta" id="gomoku-lobby-status">等候對方加入…</p>
+          <p class="online-room-code" id="online-lobby-code">0000</p>
+          <p class="flip-first-meta" id="online-lobby-status">等候對方加入…</p>
           <div class="online-lobby-players">
-            <p><span class="label">房主</span> <span id="gomoku-lobby-host">—</span></p>
-            <p><span class="label">來賓</span> <span id="gomoku-lobby-guest">—</span></p>
+            <p><span class="label">房主</span> <span id="online-lobby-host">—</span></p>
+            <p><span class="label">來賓</span> <span id="online-lobby-guest">—</span></p>
           </div>
-          <button type="button" class="btn btn-primary btn-block" id="btn-gomoku-lobby-ready">我準備好了</button>
-          <button
-            type="button"
-            class="btn btn-secondary btn-block"
-            id="btn-gomoku-lobby-kick-guest"
-            hidden
-          >
+          <button type="button" class="btn btn-primary btn-block" id="btn-online-lobby-ready">我準備好了</button>
+          <button type="button" class="btn btn-secondary btn-block" id="btn-online-lobby-kick-guest" hidden>
             來賓沒進來？清除來賓重試
           </button>
-          <div id="gomoku-lobby-start-panel" class="online-lobby-start" hidden>
-            <p class="flip-first-hint">請選誰執黑（黑先）</p>
-            <div class="flip-pick-btns" id="gomoku-lobby-black-pick"></div>
+          <div id="online-lobby-start-panel" class="online-lobby-start" hidden>
+            <p class="flip-first-hint" id="online-lobby-start-hint">請選先手</p>
+            <div class="flip-pick-btns" id="online-lobby-start-pick"></div>
           </div>
         </div>
       </section>
@@ -942,6 +934,6 @@
       </div>
     </div>
 
-    <script type="module" src="js/app.js?v=gomoku-online-v6"></script>
+    <script type="module" src="js/app.js?v=duo-online-v1"></script>
   </body>
 </html>

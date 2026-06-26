@@ -66,8 +66,11 @@ import {
   initFlipMath,
   renderMathHomePlayers,
 } from "./flip-math-deck30.js?v=duo-active-v1";
-import { initGomoku, renderGomokuHomePlayers } from "./gomoku.js?v=gomoku-online-v6";
-import { initGomokuOnline } from "./gomoku-online.js?v=gomoku-online-v6";
+import { initGomoku, renderGomokuHomePlayers } from "./gomoku.js?v=duo-online-v1";
+import { initOnlineDuo } from "./online-duo.js?v=duo-online-v1";
+import "./flip-zh-online.js?v=duo-online-v1";
+import "./flip-math-online.js?v=duo-online-v1";
+import "./gomoku-online.js?v=duo-online-v1";
 import { initTimesTable, openMulHome } from "./times-table.js?v=mul-pair-v10";
 import {
   addMistake,
@@ -160,10 +163,10 @@ const views = {
   mulLearn: $("#view-mul-learn"),
   mulQuiz: $("#view-mul-quiz"),
   mulResult: $("#view-mul-result"),
-  gomokuMode: $("#view-gomoku-mode"),
-  gomokuFirebaseSetup: $("#view-gomoku-firebase-setup"),
-  gomokuRoomEntry: $("#view-gomoku-room-entry"),
-  gomokuLobby: $("#view-gomoku-lobby"),
+  duoMode: $("#view-duo-mode"),
+  onlineFirebaseSetup: $("#view-online-firebase-setup"),
+  onlineRoomEntry: $("#view-online-room-entry"),
+  onlineLobby: $("#view-online-lobby"),
   gomokuFirst: $("#view-gomoku-first"),
   gomokuPlay: $("#view-gomoku-play"),
   gomokuResult: $("#view-gomoku-result"),
@@ -2163,9 +2166,11 @@ async function init() {
     showView,
     getChildNames,
   });
-  initGomokuOnline({
+  initOnlineDuo({
     showView,
     getSelectedChild,
+    getZhBank: () => zhBank,
+    getLessonFilter: () => zhLessonFilter,
     showWarn: (title, sub) => {
       showFeedback(
         "warn",

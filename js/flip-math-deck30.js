@@ -5,6 +5,8 @@ import {
   refreshDuoBattleUI,
   renderDuoPickButtons,
 } from "./duo-pick.js";
+import { getOnlineContext, leaveOnlineRoom } from "./online-duo.js?v=duo-online-v1";
+import { openMathDuoMode } from "./flip-math-online.js?v=duo-online-v1";
 
 const DECK_VERSION = "deck30";
 const KEY_MATH_RANGE = "kid-quiz-math-range";
@@ -612,6 +614,7 @@ function renderMathPlayView() {
 }
 
 function appendGuessDigit(digit) {
+  if (getOnlineContext().roomId) return;
   if (!game || game.mode !== "guess" || game.locked) return;
   if (game.guessInput.length >= maxGuessDigits(game.rangeKey)) return;
   game.guessInput += digit;
@@ -714,6 +717,7 @@ function flipBackTurn() {
 }
 
 function onCardClick(cardId) {
+  if (getOnlineContext().roomId) return;
   if (!game || game.locked) return;
   const card = game.cards.find((c) => c.id === cardId);
   if (!card) return;
@@ -792,6 +796,7 @@ function nextQuestion() {
 }
 
 function submitAnswer() {
+  if (getOnlineContext().roomId) return;
   if (!game || game.locked) return;
   if (game.mode === "guess") {
     submitGuess();
@@ -949,8 +954,11 @@ export function bindMathEvents() {
       );
       return;
     }
-    renderMathFirstPicker();
-    deps.showView("mathFirst");
+    const mode = pendingMode;
+    openMathDuoMode(mode, () => {
+      renderMathFirstPicker();
+      deps.showView("mathFirst");
+    });
   });
   $("#btn-math-first-back")?.addEventListener("click", () => {
     if (!pendingMode) {
@@ -960,7 +968,16 @@ export function bindMathEvents() {
     renderMathSetupView();
     deps.showView("mathSetup");
   });
-  $("#btn-math-play-back")?.addEventListener("click", () => {
+  $("#btn-math-play-back")?.addEventListener("click", async () => {
+    if (getOnlineContext().roomId) {
+      if (confirm("離開對戰？")) {
+        await leaveOnlineRoom();
+        game = null;
+        applyMathPlayPanels(null);
+        deps.showView("home");
+      }
+      return;
+    }
     if (confirm("離開對戰？進度不會儲存。")) {
       game = null;
       pendingMode = null;

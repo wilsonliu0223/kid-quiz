@@ -32,10 +32,21 @@ const ROOM_TTL_MS = 60 * 60 * 1000;
 /**
  * @typedef {object} RoomSnapshot
  * @property {string} roomId
- * @property {{ game: string, createdAt: number, expiresAt: number, status: string }} meta
+ * @property {{ game: string, config?: object, createdAt: number, expiresAt: number, status: string }} meta
  * @property {{ host: RoomPlayer | null, guest: RoomPlayer | null }} players
- * @property {object | null} gomoku
+ * @property {object | null} state
+ * @property {object | null} [gomoku]
  */
+
+function snapshotFromVal(roomId, val) {
+  return {
+    roomId,
+    meta: val.meta,
+    players: val.players || { host: null, guest: null },
+    state: val.state ?? val.gomoku ?? null,
+    gomoku: val.gomoku || null,
+  };
+}
 
 /** @returns {OnlineSession | null} */
 export function getOnlineSession() {
@@ -69,8 +80,9 @@ async function roomRef(roomId) {
  * @param {string} game
  * @param {string} name
  * @param {string} childId
+ * @param {object} [config]
  */
-export async function createRoom(game, name, childId) {
+export async function createRoom(game, name, childId, config = null) {
   const { uid } = await ensureFirebase();
 
   for (let attempt = 0; attempt < 12; attempt++) {
@@ -80,18 +92,22 @@ export async function createRoom(game, name, childId) {
     if (snap.exists()) continue;
 
     const now = Date.now();
+    /** @type {Record<string, unknown>} */
+    const meta = {
+      game,
+      createdAt: now,
+      expiresAt: now + ROOM_TTL_MS,
+      status: "lobby",
+    };
+    if (config) meta.config = config;
+
     const payload = {
-      meta: {
-        game,
-        createdAt: now,
-        expiresAt: now + ROOM_TTL_MS,
-        status: "lobby",
-      },
+      meta,
       players: {
         host: { uid, name, childId, ready: false },
         guest: null,
       },
-      gomoku: null,
+      state: null,
     };
 
     await set(r, payload);
@@ -168,7 +184,7 @@ export async function setPlayerReady(roomId, slot, ready) {
   await update(r, { [`players/${slot}/ready`]: !!ready });
 }
 
-/** 房主清除殘留來賓（對方沒進等候室、或測試卡「房間已滿」時用） */
+/** 房主清除殘留來賓 */
 export async function clearGuestSlot(roomId) {
   const { uid } = await ensureFirebase();
   const snap = await getRoomSnapshot(roomId);
@@ -180,8 +196,17 @@ export async function clearGuestSlot(roomId) {
   const r = await roomRef(roomId);
   await update(r, {
     "players/guest": null,
-    gomoku: null,
+    state: null,
     "meta/status": "lobby",
+  });
+}
+
+/** @param {string} roomId @param {object} state */
+export async function startGameRoom(roomId, state) {
+  const r = await roomRef(roomId);
+  await update(r, {
+    "meta/status": "playing",
+    state,
   });
 }
 
@@ -190,9 +215,8 @@ export async function clearGuestSlot(roomId) {
  * @param {'host' | 'guest'} blackSlot
  */
 export async function startGomokuRoom(roomId, blackSlot) {
-  const r = await roomRef(roomId);
   const whiteSlot = blackSlot === "host" ? "guest" : "host";
-  const gomoku = {
+  await startGameRoom(roomId, {
     blackPlayerId: blackSlot,
     whitePlayerId: whiteSlot,
     currentPlayerId: blackSlot,
@@ -201,10 +225,6 @@ export async function startGomokuRoom(roomId, blackSlot) {
     over: false,
     winner: null,
     winLine: null,
-  };
-  await update(r, {
-    "meta/status": "playing",
-    gomoku,
   });
 }
 
@@ -216,13 +236,7 @@ export async function getRoomSnapshot(roomId) {
   const r = await roomRef(roomId);
   const snap = await get(r);
   if (!snap.exists()) return null;
-  const val = snap.val();
-  return {
-    roomId,
-    meta: val.meta,
-    players: val.players || { host: null, guest: null },
-    gomoku: val.gomoku || null,
-  };
+  return snapshotFromVal(roomId, snap.val());
 }
 
 /**
@@ -239,13 +253,7 @@ export function subscribeRoom(roomId, cb) {
         cb(null);
         return;
       }
-      const val = snap.val();
-      cb({
-        roomId,
-        meta: val.meta,
-        players: val.players || { host: null, guest: null },
-        gomoku: val.gomoku || null,
-      });
+      cb(snapshotFromVal(roomId, snap.val()));
     });
   });
   return () => unsubscribe();
@@ -256,19 +264,23 @@ export async function leaveRoom(roomId, slot) {
   if (slot === "host") {
     await remove(r);
   } else {
-    await update(r, { "players/guest": null, gomoku: null, "meta/status": "lobby" });
+    await update(r, { "players/guest": null, state: null, "meta/status": "lobby" });
   }
   setOnlineSession(null);
 }
 
 /**
  * @param {string} roomId
- * @param {RoomSlot} slot
  * @param {(current: object | null) => object | null | undefined} mutator
  */
-export async function transactGomoku(roomId, mutator) {
+export async function transactGameState(roomId, mutator) {
   const { db } = await ensureFirebase();
-  const gRef = ref(db, `rooms/${roomId}/gomoku`);
+  const gRef = ref(db, `rooms/${roomId}/state`);
   const result = await runTransaction(gRef, mutator);
   return result.committed ? result.snapshot.val() : null;
+}
+
+/** @deprecated 使用 transactGameState */
+export async function transactGomoku(roomId, mutator) {
+  return transactGameState(roomId, mutator);
 }

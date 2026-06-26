@@ -1,6 +1,8 @@
-# Firebase 設定教學（兩台手機五子棋連線）
+# Firebase 設定教學（兩台手機對戰連線）
 
-本教學說明如何用 **Google 帳號** 在 Firebase 建立免費專案，讓 kid-quiz 的「兩台手機」五子棋可以透過房間碼連線對戰。
+本教學說明如何用 **Google 帳號** 在 Firebase 建立免費專案，讓 kid-quiz 的「兩台手機」對戰模式可以透過房間碼連線。
+
+支援的雙人對戰：**五子棋**、**國語翻字**、**數學攤牌**、**數學翻牌**、**猜數字**（流程相同：建房 → 加入 → 準備 → 房主選先手）。
 
 > **重要區分**
 >
@@ -159,12 +161,12 @@ FIREBASE: {
 
 1. 開啟 https://wilsonliu0223.github.io/kid-quiz/
 2. 強制重新整理：**Ctrl + Shift + R**（清除快取）
-3. 首頁選「誰在練習」→ 雙人對戰 → **五子棋**
+3. 首頁選「誰在練習」→ 雙人對戰 → 任選一種（五子棋、國語翻字、數學對戰等）
 4. 選 **兩台手機（房間碼連線）**
    - 若仍顯示「尚未設定 Firebase」，代表 `config.site.js` 尚未部署或欄位有空值
 5. **手機 A**：建立房間 → 記下 4 碼房間碼
 6. **手機 B**：加入房間 → 輸入相同房間碼
-7. 雙方按 **我準備好了** → 房主選誰執黑 → 開始下棋
+7. 雙方按 **我準備好了** → 房主選誰先手 → 開始對局
 
 可在 Firebase 主控台 → Realtime Database → **資料** 分頁，即時看到 `rooms/1234` 等節點。
 
@@ -216,7 +218,10 @@ GitHub Pages 網域 `wilsonliu0223.github.io` 一般可直接使用。
 | `js/config.site.js` | `FIREBASE` 設定（你要填寫的） |
 | `js/firebase-app.js` | 初始化與匿名登入 |
 | `js/room-service.js` | 建房、加入、等候室 |
-| `js/gomoku-online.js` | 線上五子棋同步 |
+| `js/online-duo.js` | 共用建房、等候室、模式選擇 |
+| `js/gomoku-online.js` | 線上五子棋 |
+| `js/flip-zh-online.js` | 線上國語翻字 |
+| `js/flip-math-online.js` | 線上數學對戰（三模式） |
 | `firebase-database.rules.json` | 資料庫規則範本 |
 
 ---
@@ -229,6 +234,6 @@ GitHub Pages 網域 `wilsonliu0223.github.io` 一般可直接使用。
 - [ ] 註冊 Web App，複製 `firebaseConfig`
 - [ ] 貼到 `js/config.site.js` 並 push
 - [ ] 發布 `firebase-database.rules.json` 規則
-- [ ] 兩台手機實測建房、加入、下棋
+- [ ] 兩台手機實測建房、加入、對戰（任選一種對戰模式）
 
-完成後即可讓孩子用房間碼在不同手機上對戰五子棋。
+完成後即可讓孩子用房間碼在不同手機上進行各種雙人對戰。
