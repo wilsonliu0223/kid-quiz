@@ -4,7 +4,11 @@ const QUIZ_SIZE = 9;
 const DIGITS = [2, 3, 4, 5, 6, 7, 8, 9];
 
 import { createHandwritingCanvas } from "./canvas-handwriting.js";
-import { recognizeCanvas, answersMatch } from "./ocr.js";
+import {
+  recognizeNumericCanvas,
+  numericAnswerMatch,
+  normalizeNumericText,
+} from "./numeric-recognize.js";
 
 /** @type {MulDeps | null} */
 let deps = null;
@@ -373,17 +377,6 @@ function ensureMulHandwriting() {
   mulHandwriting.resize();
 }
 
-function normalizeNumericAnswer(text) {
-  return String(text || "").replace(/\D/g, "");
-}
-
-function numericAnswerMatch(recognized, expected) {
-  const exp = String(expected);
-  const digits = normalizeNumericAnswer(recognized);
-  if (digits === exp) return true;
-  return answersMatch(recognized, exp);
-}
-
 async function checkRevealAnswer() {
   if (!learnDigit || revealChecking) return;
   const expected = learnDigit * (revealIndex + 1);
@@ -404,9 +397,13 @@ async function checkRevealAnswer() {
 
   const canvas = $("#mul-reveal-canvas");
   let recognized = "";
+  let rawOcr = "";
   try {
-    const result = await recognizeCanvas(canvas, { expected: String(expected) });
+    const result = await recognizeNumericCanvas(canvas, {
+      expected: String(expected),
+    });
     recognized = result.text || "";
+    rawOcr = result.raw || "";
     if (result.skipped) {
       deps.showWarn("手寫辨識未開啟", "請在設定中啟用 OCR，或改用開始測驗");
       revealChecking = false;
@@ -426,7 +423,11 @@ async function checkRevealAnswer() {
     return;
   }
 
-  const shown = recognized ? `辨識到「${recognized}」` : "辨識不出數字";
+  const shown = recognized
+    ? `辨識到「${recognized}」`
+    : rawOcr
+      ? `辨識到「${normalizeNumericText(rawOcr) || rawOcr}」`
+      : "辨識不出數字";
   if (hint) {
     hint.textContent = `${shown}，再試一次`;
     hint.className = "mul-reveal-hint mul-reveal-hint-warn";

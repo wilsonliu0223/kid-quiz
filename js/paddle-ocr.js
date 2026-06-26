@@ -36,9 +36,9 @@ export async function ensurePaddleOcr() {
 }
 
 /** @param {HTMLCanvasElement} canvas */
-export async function predictHandwriting(canvas) {
+export async function predictHandwriting(canvas, params = {}) {
   const ocr = await ensurePaddleOcr();
-  const results = await ocr.predict(canvas);
+  const results = await ocr.predict(canvas, params);
   return results[0] ?? null;
 }
 

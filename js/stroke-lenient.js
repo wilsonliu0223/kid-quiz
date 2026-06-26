@@ -16,6 +16,14 @@ export function isLenientChar(expectedWord) {
 }
 
 export function getOcrMinSide(expectedWord) {
+  const w = String(expectedWord ?? "").trim();
+  if (/^\d+$/.test(w)) {
+    const base = CONFIG.OCR_NUMERIC_MIN_SIDE ?? 380;
+    if (w.length <= 1) {
+      return Math.max(base, CONFIG.OCR_NUMERIC_SINGLE_MIN_SIDE ?? 460);
+    }
+    return base;
+  }
   const base = CONFIG.OCR_MIN_SIDE ?? 280;
   if (!isLenientChar(expectedWord)) return base;
   return Math.max(base, CONFIG.OCR_LENIENT_MIN_SIDE ?? 340);

@@ -44,9 +44,13 @@ export function prepareHandwritingImage(sourceCanvas, expectedWord = "") {
 
   const inkW = maxX - minX + 1;
   const inkH = maxY - minY + 1;
+  const isNumeric = /^\d+$/.test(String(expectedWord ?? "").trim());
+  const padRatio = isNumeric
+    ? (CONFIG.OCR_NUMERIC_CROP_PADDING ?? 0.28)
+    : (CONFIG.OCR_CROP_PADDING ?? 0.15);
   const pad = Math.max(
-    12,
-    Math.round(Math.max(inkW, inkH) * (CONFIG.OCR_CROP_PADDING ?? 0.15))
+    isNumeric ? 16 : 12,
+    Math.round(Math.max(inkW, inkH) * padRatio)
   );
 
   minX = Math.max(0, minX - pad);

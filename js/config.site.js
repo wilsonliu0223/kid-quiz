@@ -31,6 +31,10 @@ export const CONFIG = {
   /** 裁切後最短邊像素（愈大愈準、略慢） */
   OCR_MIN_SIDE: 280,
   OCR_LENIENT_MIN_SIDE: 340,
+  /** 手寫阿拉伯數字（九九乘法） */
+  OCR_NUMERIC_MIN_SIDE: 400,
+  OCR_NUMERIC_SINGLE_MIN_SIDE: 480,
+  OCR_NUMERIC_CROP_PADDING: 0.28,
   /** 手寫筆畫粗細 */
   OCR_STROKE_WIDTH: 6,
   /** 同音易混時四選一；明顯寫錯則直接答錯並記入錯題本 */
