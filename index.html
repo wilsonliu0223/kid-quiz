@@ -11,7 +11,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <title>家裡練習</title>
     <link rel="manifest" href="manifest.json" />
-    <link rel="stylesheet" href="css/app.css?v=children-v1" />
+    <link rel="stylesheet" href="css/app.css?v=duo-four-v1" />
     <script type="importmap">
       {
         "imports": {
@@ -89,36 +89,18 @@
 
         <div class="home-zone home-zone-duo">
           <h2 class="home-zone-title">雙人對戰</h2>
-          <p class="home-zone-sub">兩人同機 · 開局再點誰先</p>
-
-          <div class="home-duo-group home-duo-group-math">
-            <h3 class="home-duo-label">數學對戰</h3>
-            <p class="home-duo-hint">兩人同機 · 先 5 分勝</p>
+          <div class="home-duo-cards">
             <button type="button" class="card card-math-open" id="btn-start-math-open">
               <span class="card-title">數學攤牌</span>
-              <span class="card-desc">全部攤開選牌</span>
             </button>
             <button type="button" class="card card-math-flip" id="btn-start-math-flip">
               <span class="card-title">數學翻牌</span>
-              <span class="card-desc">每回合翻 5 張</span>
             </button>
             <button type="button" class="card card-math-guess" id="btn-start-math-guess">
               <span class="card-title">猜數字</span>
-              <span class="card-desc">比大小猜秘密數</span>
             </button>
-          </div>
-
-          <div class="home-duo-group home-duo-group-gomoku">
-            <h3 class="home-duo-label">五子棋</h3>
-            <div class="flip-players-vs gomoku-players-vs" id="gomoku-players-vs">
-              <span id="gomoku-player-a-name">思妘</span>
-              <span class="flip-vs">vs</span>
-              <span id="gomoku-player-b-name">思妤</span>
-            </div>
-            <p class="home-duo-hint">15×15 · 連珠規則 · 黑先禁手（三三、四四、長連）</p>
             <button type="button" class="card card-gomoku" id="btn-start-gomoku">
-              <span class="card-title">開始五子棋</span>
-              <span class="card-desc">兩人同機 · 黑棋須遵守禁手</span>
+              <span class="card-title">五子棋</span>
             </button>
           </div>
         </div>
@@ -769,6 +751,6 @@
       </div>
     </div>
 
-    <script type="module" src="js/app.js?v=children-v1"></script>
+    <script type="module" src="js/app.js?v=duo-four-v1"></script>
   </body>
 </html>
