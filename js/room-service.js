@@ -131,14 +131,18 @@ export async function joinRoom(roomId, name, childId) {
     err.code = "ROOM_EXPIRED";
     throw err;
   }
-  if (data.players?.guest) {
-    const err = new Error("ROOM_FULL");
-    err.code = "ROOM_FULL";
-    throw err;
-  }
   if (data.players?.host?.uid === uid) {
     setOnlineSession({ roomId: code, slot: "host" });
     return code;
+  }
+  if (data.players?.guest) {
+    if (data.players.guest.uid === uid) {
+      setOnlineSession({ roomId: code, slot: "guest" });
+      return code;
+    }
+    const err = new Error("ROOM_FULL");
+    err.code = "ROOM_FULL";
+    throw err;
   }
 
   const guest = { uid, name, childId, ready: false };

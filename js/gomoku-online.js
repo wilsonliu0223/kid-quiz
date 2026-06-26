@@ -15,7 +15,7 @@ import {
   getOnlineSession,
   getRoomSnapshot,
 } from "./room-service.js";
-import { beginGomokuLocal } from "./gomoku.js?v=gomoku-online-v1";
+import { beginGomokuLocal } from "./gomoku.js?v=gomoku-online-v2";
 import { getChildName } from "./children.js";
 
 const BOARD_SIZE = 15;
@@ -204,7 +204,7 @@ async function onJoinRoom() {
   } catch (err) {
     const map = {
       ROOM_NOT_FOUND: "找不到這個房間碼",
-      ROOM_FULL: "房間已滿",
+      ROOM_FULL: "房間已有另一位玩家。若那是你的手機，請再按一次「加入」；否則請房主離開後重建房間。",
       ROOM_EXPIRED: "房間已過期，請請房主重新建立",
       ROOM_ID_INVALID: "房間碼格式不正確",
     };
