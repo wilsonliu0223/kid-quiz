@@ -1,6 +1,6 @@
 import { pickRandomQuestions } from "./sheets.js";
 import { englishAnswersMatch } from "./english.js";
-import { fillSentenceContext } from "./sentence.js";
+import { blankSentenceForRace, raceSentenceHtml } from "./sentence.js";
 import { buildMulRaceQuestions } from "./times-table.js";
 import {
   registerOnlineGame,
@@ -135,10 +135,12 @@ function buildZhRaceQuestions(zhBank, lessonFilter, count) {
       .slice(0, 3)
       .map((w) => String(w.word).trim());
     const choices = shuffle([answer, ...others]);
+    const rawSentence = item.sentence || "";
     return {
       id: `zh-${i}`,
       zhuyin: item.zhuyin || "",
-      sentence: item.sentence || "",
+      sentence: blankSentenceForRace(rawSentence, answer),
+      sentenceHtml: raceSentenceHtml(rawSentence, answer),
       answer,
       choices,
     };
@@ -313,10 +315,12 @@ function renderQuestionArea(force = false) {
     zhuyinTop.textContent = q.zhuyin || "";
     promptEl.appendChild(zhuyinTop);
 
-    if (q.sentence) {
+    if (q.sentence || q.sentenceHtml) {
       const sentenceEl = document.createElement("p");
       sentenceEl.className = "race-sentence";
-      fillSentenceContext(sentenceEl, q.sentence, q.answer, q.zhuyin);
+      const html = q.sentenceHtml || raceSentenceHtml(q.sentence, q.answer);
+      if (html) sentenceEl.innerHTML = html;
+      else sentenceEl.textContent = blankSentenceForRace(q.sentence, q.answer);
       promptEl.appendChild(sentenceEl);
     }
 

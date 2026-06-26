@@ -3332,14 +3332,16 @@ body {
   color: var(--text);
 }
 
-.race-sentence .zhuyin-in-sentence {
+.race-sentence .zhuyin-in-sentence,
+.race-char-blank {
   display: inline-block;
-  min-width: 2.2em;
-  padding: 0 0.15em;
-  font-size: 1.15em;
-  letter-spacing: 0.08em;
-  color: #3d5c32;
-  border-bottom: 2px dashed #8b9a7a;
+  min-width: 2.4em;
+  padding: 0 0.2em;
+  font-size: 1.05em;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  color: #8b4513;
+  border-bottom: 2px dashed #c45c26;
   vertical-align: baseline;
 }
 
