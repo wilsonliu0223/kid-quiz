@@ -37,6 +37,7 @@ let game = null;
  * @property {boolean} locked
  * @property {number} matchedPairs
  * @property {number} pairCount
+ * @property {number} totalClicks
  */
 
 const $ = (sel) => document.querySelector(sel);
@@ -159,6 +160,11 @@ function playerName(id) {
   return names[id] || id;
 }
 
+/** 單人記憶全對時，每組剛好翻 2 次 */
+function flipMinClicks(pairCount) {
+  return pairCount * 2;
+}
+
 function renderFirstPicker() {
   const names = deps.getChildNames();
   const aBtn = $("#flip-pick-a");
@@ -180,6 +186,7 @@ function renderPlayHeader() {
   const progress = $("#flip-progress-label");
   const firstTagA = $("#flip-first-tag-a");
   const firstTagB = $("#flip-first-tag-b");
+  const clickLabel = $("#flip-click-label");
 
   if (aName) aName.textContent = names.A;
   if (bName) bName.textContent = names.B;
@@ -188,6 +195,10 @@ function renderPlayHeader() {
   if (turn) turn.textContent = `輪到：${playerName(game.currentPlayerId)}`;
   if (progress) {
     progress.textContent = `配對 ${game.matchedPairs} / ${game.pairCount}`;
+  }
+  if (clickLabel) {
+    const min = flipMinClicks(game.pairCount);
+    clickLabel.textContent = `點擊 ${game.totalClicks} 次 · 單人最少 ${min} 次`;
   }
 
   const aActive = game.currentPlayerId === "A";
@@ -313,6 +324,7 @@ function onCardClick(idx) {
 
   card.faceUp = true;
   game.flippedIdx.push(idx);
+  game.totalClicks += 1;
   renderBoard();
 
   if (game.flippedIdx.length < 2) return;
@@ -356,8 +368,18 @@ function showFlipResult() {
   const title = $("#flip-result-title");
   const detail = $("#flip-result-detail");
   const scoreLine = $("#flip-result-scores");
+  const clickLine = $("#flip-result-clicks");
 
   if (scoreLine) scoreLine.textContent = `${names.A} ${a} ：${b} ${names.B}`;
+
+  const min = flipMinClicks(game.pairCount);
+  if (clickLine) {
+    const extra = game.totalClicks - min;
+    clickLine.textContent =
+      extra > 0
+        ? `本局共點擊 ${game.totalClicks} 次（比單人最少多 ${extra} 次）`
+        : `本局共點擊 ${game.totalClicks} 次 · 達到單人最少！`;
+  }
 
   if (a > b) {
     if (title) title.textContent = `${names.A} 獲勝！`;
@@ -381,6 +403,7 @@ function startGameWithFirstPlayer(firstPlayerId) {
   game.flippedIdx = [];
   game.locked = false;
   game.matchedPairs = 0;
+  game.totalClicks = 0;
   deps.showView("flipPlay");
   renderBoard();
 }
@@ -415,6 +438,7 @@ export function beginFlipFromHome() {
     locked: false,
     matchedPairs: 0,
     pairCount,
+    totalClicks: 0,
   };
 
   renderFirstPicker();
@@ -461,6 +485,7 @@ export function bindFlipEvents() {
       locked: false,
       matchedPairs: 0,
       pairCount,
+      totalClicks: 0,
     };
     renderFirstPicker();
     deps.showView("flipFirst");

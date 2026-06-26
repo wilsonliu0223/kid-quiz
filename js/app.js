@@ -55,7 +55,7 @@ import {
 import {
   initFlipZh,
   renderFlipHomePlayers,
-} from "./flip-zh.js?v=20260531";
+} from "./flip-zh.js?v=flip-clicks-v1";
 import {
   initFlipMath,
   renderMathHomePlayers,

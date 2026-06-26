@@ -710,6 +710,21 @@ body {
   white-space: nowrap;
 }
 
+.flip-click-label {
+  margin: 4px 0 0;
+  font-size: 0.72rem;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.flip-result-clicks {
+  text-align: center;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #3d5c32;
+  margin: 0 0 6px;
+}
+
 .flip-card-grid {
   flex: 1;
   display: grid;

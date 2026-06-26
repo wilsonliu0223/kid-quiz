@@ -1,0 +1,15 @@
+---
+description: kid-quiz 改完程式後自動 commit 並 push 到 main（GitHub Pages）
+alwaysApply: true
+---
+
+# 自動部署 GitHub Pages
+
+完成 kid-quiz 的程式修改後（功能、修 bug、樣式等），**在同一輪對話內**自動：
+
+1. `git add` 只加入與本次修改相關的檔案（勿順便提交無關的 `docs/` 題庫草稿，除非使用者明確要推）
+2. 用 `-c user.name=Wilsonliu0223 -c user.email=wilsonliu0223@users.noreply.github.com` 建立 commit（**勿**改 `git config`）
+3. `git push origin main`
+4. 回覆中附上 commit hash 與 https://wilsonliu0223.github.io/kid-quiz/ ，提醒 Ctrl+Shift+R
+
+僅問答、未改檔時不要空 commit。若 push 失敗則說明原因並重試或請使用者處理。
