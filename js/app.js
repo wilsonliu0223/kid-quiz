@@ -359,7 +359,7 @@ function buildLessonPicker(bank, container, options = {}) {
       </span>
       <span class="lesson-book-current">${
         current === "全部"
-          ? formatters.formatCurrent(current)
+          ? "全部課次"
           : formatters.formatTitle(current)
       }</span>
       <span class="lesson-book-chevron" aria-hidden="true"></span>
@@ -481,10 +481,8 @@ function openEnSetup() {
 }
 
 function validateZhLessonFilter() {
-  const lessons = uniqueLessons(zhBank);
-  if (lessons.length <= 1) return true;
-  if (zhLessonFilter === "全部") {
-    alert("請先點「一年級下」等區塊，選擇要考的課次");
+  if (!zhBank.length) {
+    alert("題庫尚未載入，請稍候或檢查網路後再試。");
     return false;
   }
   return true;
