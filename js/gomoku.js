@@ -1,3 +1,5 @@
+import { forbiddenLabel, wouldBlackForbidden } from "./gomoku-renju.js?v=gomoku-v2";
+
 const BOARD_SIZE = 15;
 
 /** @type {GomokuDeps | null} */
@@ -37,6 +39,10 @@ function emptyBoard() {
   return Array.from({ length: BOARD_SIZE }, () =>
     Array.from({ length: BOARD_SIZE }, () => "")
   );
+}
+
+function hasFiveWin(cells, row, col, player) {
+  return !!checkWin(cells, row, col, player);
 }
 
 function checkWin(cells, row, col, player) {
@@ -99,11 +105,19 @@ function renderPlayHeader() {
   if (!game || game.over) return;
   const turn = $("#gomoku-turn-label");
   const blackTag = $("#gomoku-black-tag");
+  const renjuHint = $("#gomoku-renju-hint");
   if (turn) {
     turn.textContent = `輪到：${playerName(game.currentPlayerId)} · ${stoneLabel(game.currentPlayerId)}`;
   }
   if (blackTag) {
     blackTag.textContent = `黑子：${playerName(game.blackPlayerId)}`;
+  }
+  if (renjuHint) {
+    const isBlackTurn = game.currentPlayerId === game.blackPlayerId;
+    renjuHint.hidden = !isBlackTurn;
+    renjuHint.textContent = isBlackTurn
+      ? "黑棋禁手格會標示 ✕（三三、四四、長連）"
+      : "";
   }
 }
 
@@ -140,6 +154,26 @@ function renderBoard() {
         btn.appendChild(stone);
       } else {
         btn.disabled = game.over;
+        const isBlackTurn =
+          !game.over && game.currentPlayerId === game.blackPlayerId;
+        if (isBlackTurn) {
+          const whiteId = otherPlayer(game.blackPlayerId);
+          const forbidden = wouldBlackForbidden(
+            game.cells,
+            row,
+            col,
+            game.blackPlayerId,
+            whiteId,
+            hasFiveWin
+          );
+          if (forbidden) {
+            btn.classList.add("gomoku-cell-forbidden");
+            btn.setAttribute(
+              "aria-label",
+              `禁手：${forbiddenLabel(forbidden)}`
+            );
+          }
+        }
       }
 
       if (game.lastMove && game.lastMove[0] === row && game.lastMove[1] === col) {
@@ -150,7 +184,12 @@ function renderBoard() {
       }
 
       if (!game.over && !cell) {
-        btn.addEventListener("click", () => onCellClick(row, col));
+        if (btn.classList.contains("gomoku-cell-forbidden")) {
+          const label = btn.getAttribute("aria-label") || "禁手";
+          btn.addEventListener("click", () => alert(`不能下這裡：${label.replace(/^禁手：/, "")}`));
+        } else {
+          btn.addEventListener("click", () => onCellClick(row, col));
+        }
       }
 
       grid.appendChild(btn);
@@ -165,6 +204,22 @@ function onCellClick(row, col) {
   if (game.cells[row][col]) return;
 
   const player = game.currentPlayerId;
+  if (player === game.blackPlayerId) {
+    const whiteId = otherPlayer(game.blackPlayerId);
+    const forbidden = wouldBlackForbidden(
+      game.cells,
+      row,
+      col,
+      game.blackPlayerId,
+      whiteId,
+      hasFiveWin
+    );
+    if (forbidden) {
+      alert(`不能下這裡：${forbiddenLabel(forbidden)}`);
+      return;
+    }
+  }
+
   game.cells[row][col] = player;
   game.lastMove = [row, col];
 

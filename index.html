@@ -11,7 +11,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <title>家裡練習</title>
     <link rel="manifest" href="manifest.json" />
-    <link rel="stylesheet" href="css/app.css?v=gomoku-v1" />
+    <link rel="stylesheet" href="css/app.css?v=gomoku-v2" />
     <script type="importmap">
       {
         "imports": {
@@ -130,10 +130,10 @@
               <span class="flip-vs">vs</span>
               <span id="gomoku-player-b-name">思妤</span>
             </div>
-            <p class="home-duo-hint">15×15 · 先連五子勝 · 黑先</p>
+            <p class="home-duo-hint">15×15 · 連珠規則 · 黑先禁手（三三、四四、長連）</p>
             <button type="button" class="card card-gomoku" id="btn-start-gomoku">
               <span class="card-title">開始五子棋</span>
-              <span class="card-desc">兩人同機輪流下棋</span>
+              <span class="card-desc">兩人同機 · 黑棋須遵守禁手</span>
             </button>
           </div>
         </div>
@@ -507,8 +507,8 @@
         </header>
         <div class="flip-first-body">
           <h2 class="flip-first-title">誰拿黑子？</h2>
-          <p class="flip-first-meta">15×15 棋盤 · 先連成五子獲勝</p>
-          <p class="flip-first-hint">黑子先手，點名字開始</p>
+          <p class="flip-first-meta">15×15 · 先連五子獲勝 · 連珠規則</p>
+          <p class="flip-first-hint">黑子先手須遵守禁手（三三、四四、長連）；白棋無禁手</p>
           <div class="flip-pick-btns">
             <button type="button" class="flip-pick-btn flip-pick-a gomoku-pick-a" id="gomoku-pick-a">思妘（黑先）</button>
             <button type="button" class="flip-pick-btn flip-pick-b gomoku-pick-b" id="gomoku-pick-b">思妤（黑先）</button>
@@ -525,6 +525,7 @@
         <div class="gomoku-play-body">
           <p class="gomoku-meta" id="gomoku-black-tag">黑子：思妘</p>
           <p class="gomoku-turn-label" id="gomoku-turn-label">輪到：思妘 · 黑子</p>
+          <p class="gomoku-renju-hint" id="gomoku-renju-hint">黑棋禁手格會標示 ✕</p>
           <div class="gomoku-board-wrap">
             <div class="gomoku-board" id="gomoku-board" role="grid" aria-label="五子棋棋盤"></div>
           </div>
@@ -766,6 +767,6 @@
       </div>
     </div>
 
-    <script type="module" src="js/app.js?v=gomoku-v1"></script>
+    <script type="module" src="js/app.js?v=gomoku-v2"></script>
   </body>
 </html>

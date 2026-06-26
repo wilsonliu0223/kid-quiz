@@ -2841,6 +2841,13 @@ body {
   color: var(--gomoku-dark);
 }
 
+.gomoku-renju-hint {
+  margin: 0 0 0.5rem;
+  font-size: 0.85rem;
+  color: #8d4a2a;
+  text-align: center;
+}
+
 .gomoku-board-wrap {
   flex: 1;
   min-height: 0;
@@ -2908,6 +2915,24 @@ body {
 
 .gomoku-cell-win .gomoku-stone {
   box-shadow: 0 0 0 2px #2d8a4e, 0 1px 3px rgba(0, 0, 0, 0.35);
+}
+
+.gomoku-cell-forbidden {
+  cursor: not-allowed;
+}
+
+.gomoku-cell-forbidden::after {
+  content: "✕";
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: clamp(0.65rem, 2.2vw, 0.95rem);
+  font-weight: 700;
+  color: #c62828;
+  opacity: 0.85;
+  pointer-events: none;
 }
 
 .btn-primary-gomoku {
