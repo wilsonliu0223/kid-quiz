@@ -4,7 +4,7 @@ import {
   getOnlineContext,
   leaveOnlineRoom,
   openDuoModePicker,
-} from "./online-duo.js?v=duo-online-v4";
+} from "./online-duo.js?v=duo-online-v5";
 import { startGameRoom, transactGameState, asFirebaseList } from "./room-service.js";
 
 /** @typedef {'host' | 'guest'} RoomSlot */
@@ -192,7 +192,7 @@ function ensureOnlineGridClick() {
     const btn = e.target instanceof Element ? e.target.closest(".flip-card") : null;
     if (!btn || /** @type {HTMLButtonElement} */ (btn).disabled) return;
     const ctx = getOnlineContext();
-    if (!ctx.roomId || !ctx.slot || !onlineState || onlineState.over) return;
+    if (!ctx.roomId || !ctx.slot || !onlineState || onlineState.over || onlineState.locked) return;
     if (ctx.slot !== onlineState.currentPlayerId) return;
     const idx = Number(btn.dataset.idx);
     if (!Number.isFinite(idx)) return;
@@ -242,6 +242,65 @@ function cardsMatch(a, b) {
   return a.word === b.word && a.kind !== b.kind;
 }
 
+const MISMATCH_MS = 900;
+
+/** @type {ReturnType<typeof setTimeout> | null} */
+let mismatchTimer = null;
+
+function clearMismatchTimer() {
+  if (mismatchTimer) {
+    clearTimeout(mismatchTimer);
+    mismatchTimer = null;
+  }
+}
+
+function isPendingMismatch(state) {
+  if (!state?.locked || state.flippedIdx?.length !== 2) return false;
+  const [i0, i1] = state.flippedIdx;
+  const c0 = state.cards[i0];
+  const c1 = state.cards[i1];
+  if (!c0 || !c1 || c0.matched || c1.matched) return false;
+  return !cardsMatch(c0, c1);
+}
+
+function maybeScheduleMismatchReveal(state, ctx) {
+  clearMismatchTimer();
+  if (!isPendingMismatch(state)) return;
+  if (ctx.slot !== state.currentPlayerId) return;
+  mismatchTimer = setTimeout(() => {
+    mismatchTimer = null;
+    void resolveMismatchFlip();
+  }, MISMATCH_MS);
+}
+
+async function resolveMismatchFlip() {
+  const ctx = getOnlineContext();
+  if (!ctx.roomId || !ctx.slot) return;
+  try {
+    const next = await transactGameState(ctx.roomId, (raw) => {
+      const current = normalizeFlipState(raw);
+      if (!isPendingMismatch(current)) return;
+      const [i0, i1] = current.flippedIdx;
+      const cards = asFirebaseList(current.cards).map((c) => ({ ...c }));
+      if (cards[i0]) cards[i0].faceUp = false;
+      if (cards[i1]) cards[i1].faceUp = false;
+      return {
+        ...current,
+        cards,
+        flippedIdx: [],
+        locked: false,
+        currentPlayerId: otherSlot(current.currentPlayerId),
+      };
+    });
+    if (next) {
+      onlineState = normalizeFlipState(next);
+      renderBoard();
+    }
+  } catch (err) {
+    console.error("flip-zh mismatch resolve failed", err);
+  }
+}
+
 function applyRemoteState(state, snap) {
   ensureOnlineGridClick();
   onlineState = normalizeFlipState(state);
@@ -250,6 +309,7 @@ function applyRemoteState(state, snap) {
     guest: snap.players.guest?.name || "來賓",
   };
   renderBoard();
+  maybeScheduleMismatchReveal(onlineState, getOnlineContext());
   if (onlineState?.over) showOnlineResult();
 }
 
@@ -303,21 +363,21 @@ async function onOnlineCardClick(idx) {
         };
       }
 
-      c0.faceUp = false;
-      c1.faceUp = false;
+      c0.faceUp = true;
+      c1.faceUp = true;
       return {
         ...current,
         cards,
-        flippedIdx: [],
-        locked: false,
+        flippedIdx,
+        locked: true,
         totalClicks,
-        currentPlayerId: otherSlot(ctx.slot),
       };
     });
 
     if (next) {
       onlineState = normalizeFlipState(next);
       renderBoard();
+      maybeScheduleMismatchReveal(onlineState, ctx);
       if (onlineState.over) showOnlineResult();
     }
   } catch (err) {

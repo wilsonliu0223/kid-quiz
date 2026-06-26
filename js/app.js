@@ -68,7 +68,7 @@ import {
 } from "./flip-math-deck30.js?v=duo-active-v1";
 import { initGomoku, renderGomokuHomePlayers } from "./gomoku.js?v=duo-online-v4";
 import { initOnlineDuo } from "./online-duo.js?v=duo-online-v4";
-import "./flip-zh-online.js?v=duo-online-v4";
+import "./flip-zh-online.js?v=duo-online-v5";
 import "./flip-math-online.js?v=duo-online-v4";
 import "./gomoku-online.js?v=duo-online-v4";
 import { initTimesTable, openMulHome } from "./times-table.js?v=mul-pair-v10";
