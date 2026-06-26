@@ -1,5 +1,6 @@
 import { pickRandomQuestions } from "./sheets.js";
 import { englishAnswersMatch } from "./english.js";
+import { fillSentenceContext } from "./sentence.js";
 import { buildMulRaceQuestions } from "./times-table.js";
 import {
   registerOnlineGame,
@@ -305,11 +306,24 @@ function renderQuestionArea(force = false) {
 
   if (activeSubject === "zh") {
     if (inputEl) inputEl.hidden = true;
-    promptEl.innerHTML = `<span class="race-zhuyin">${escapeHtml(q.zhuyin || "")}</span>`;
+    promptEl.replaceChildren();
+
+    const zhuyinTop = document.createElement("p");
+    zhuyinTop.className = "race-zhuyin";
+    zhuyinTop.textContent = q.zhuyin || "";
+    promptEl.appendChild(zhuyinTop);
+
     if (q.sentence) {
-      promptEl.innerHTML += `<p class="race-sentence">${escapeHtml(q.sentence)}</p>`;
+      const sentenceEl = document.createElement("p");
+      sentenceEl.className = "race-sentence";
+      fillSentenceContext(sentenceEl, q.sentence, q.answer, q.zhuyin);
+      promptEl.appendChild(sentenceEl);
     }
-    promptEl.innerHTML += `<p class="race-prompt-sub">選出正確國字，再按搶答</p>`;
+
+    const sub = document.createElement("p");
+    sub.className = "race-prompt-sub";
+    sub.textContent = "選出正確國字，再按搶答";
+    promptEl.appendChild(sub);
     q.choices.forEach((ch) => {
       const btn = document.createElement("button");
       btn.type = "button";

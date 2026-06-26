@@ -3327,8 +3327,20 @@ body {
 
 .race-sentence {
   margin: 8px 0 0;
-  font-size: 1rem;
-  color: var(--muted);
+  font-size: 1.05rem;
+  line-height: 1.65;
+  color: var(--text);
+}
+
+.race-sentence .zhuyin-in-sentence {
+  display: inline-block;
+  min-width: 2.2em;
+  padding: 0 0.15em;
+  font-size: 1.15em;
+  letter-spacing: 0.08em;
+  color: #3d5c32;
+  border-bottom: 2px dashed #8b9a7a;
+  vertical-align: baseline;
 }
 
 .race-en-chinese {
