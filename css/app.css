@@ -65,6 +65,138 @@ body {
 #view-home.view-active {
   position: relative;
   z-index: 2;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.home-settings {
+  margin-bottom: 14px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: #faf8f5;
+  border: 1px solid var(--border);
+}
+
+.home-settings .child-picker {
+  margin-bottom: 12px;
+}
+
+.home-settings .quiz-count-picker {
+  margin-bottom: 0;
+}
+
+.home-zone {
+  margin-bottom: 14px;
+  padding: 14px;
+  border-radius: 16px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.04);
+}
+
+.home-zone-title {
+  margin: 0 0 4px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+}
+
+.home-zone-sub {
+  margin: 0 0 12px;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.home-zone-solo .subject-cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.home-zone-solo .card-mul {
+  grid-column: 1 / -1;
+  margin-bottom: 0;
+}
+
+.home-zone-solo .card {
+  min-height: 76px;
+  padding: 14px 16px;
+}
+
+.home-zone-solo .card-title {
+  font-size: 1.15rem;
+}
+
+.home-zone-solo .card-mul {
+  min-height: 68px;
+}
+
+.home-duo-group + .home-duo-group {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px dashed var(--border);
+}
+
+.home-duo-label {
+  margin: 0 0 8px;
+  font-size: 1.02rem;
+  font-weight: 800;
+}
+
+.home-duo-group-flip .home-duo-label {
+  color: #3d5c32;
+}
+
+.home-duo-group-math .home-duo-label {
+  color: var(--math-dark);
+}
+
+.home-duo-hint {
+  margin: 0 0 10px;
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+.home-zone-duo .flip-players-vs {
+  margin-bottom: 10px;
+}
+
+.home-zone-duo .flip-pair-count-picker,
+.home-zone-duo .math-range-picker {
+  margin-bottom: 10px;
+}
+
+.home-zone-duo .card {
+  width: 100%;
+  min-height: 64px;
+  padding: 14px 16px;
+  margin-bottom: 8px;
+}
+
+.home-zone-duo .card-math-open,
+.home-zone-duo .card-math-flip,
+.home-zone-duo .card-math-guess {
+  margin-top: 0;
+}
+
+.home-zone-duo .card:last-child {
+  margin-bottom: 0;
+}
+
+.home-zone-meta {
+  padding: 0;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+}
+
+.home-zone-meta .mistake-book-home {
+  margin: 0 0 12px;
+}
+
+.home-zone-meta .home-history {
+  margin: 0;
 }
 
 .boot-error {
@@ -267,7 +399,6 @@ body {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  flex: 1;
 }
 
 .card {
@@ -709,8 +840,9 @@ body {
 }
 
 .card-desc {
-  font-size: 0.95rem;
+  font-size: 0.82rem;
   color: var(--muted);
+  line-height: 1.35;
 }
 
 .sheet-status {
@@ -1668,7 +1800,6 @@ body {
   background: linear-gradient(135deg, #f0f4fc 0%, #e2ebfa 100%);
   border: 2px solid var(--math-border);
   width: 100%;
-  margin-bottom: 10px;
 }
 
 .card-math-open .card-title {
@@ -1689,7 +1820,6 @@ body {
   background: linear-gradient(135deg, #f5f0fc 0%, #e8ddf5 100%);
   border: 2px solid #b8a0d8;
   width: 100%;
-  margin-top: 10px;
 }
 
 .card-math-guess .card-title {
@@ -2110,7 +2240,6 @@ body {
   background: linear-gradient(135deg, #eefaf3 0%, #d4efe0 100%);
   border: 2px solid #7cb89a;
   width: 100%;
-  margin-bottom: 12px;
 }
 
 .card-mul .card-title {
