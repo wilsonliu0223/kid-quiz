@@ -5,7 +5,7 @@ import {
   refreshDuoBattleUI,
   renderDuoPickButtons,
 } from "./duo-pick.js";
-import { getOnlineContext, leaveOnlineRoom } from "./online-duo.js";
+import { getOnlineContext, leaveOnlineRoom, rematchOnlineRoom } from "./online-duo.js";
 import { openFlipZhDuoMode } from "./flip-zh-online.js";
 
 const KEY_FLIP_PAIR_COUNT = "kid-quiz-flip-pair-count";
@@ -505,7 +505,11 @@ export function bindFlipEvents() {
     }
     if (confirm("離開對戰？目前進度不會儲存。")) deps.showView("setupZh");
   });
-  $("#btn-flip-replay")?.addEventListener("click", () => {
+  $("#btn-flip-replay")?.addEventListener("click", async () => {
+    if (getOnlineContext().roomId) {
+      await rematchOnlineRoom();
+      return;
+    }
     const pairCount = getFlipPairCountSetting();
     const result = pickFlipWords(deps.getZhBank(), deps.getLessonFilter(), pairCount);
     if (!result.ok) {

@@ -13,6 +13,7 @@ import {
   registerOnlineGame,
   getOnlineContext,
   leaveOnlineRoom,
+  rematchOnlineRoom,
   openDuoModePicker,
 } from "./online-duo.js";
 import { startGomokuRoom, transactGameState } from "./room-service.js";
@@ -359,6 +360,12 @@ function bindGomokuOnlineOnly() {
   });
   $("#btn-gomoku-online-win-dismiss")?.addEventListener("click", () => {
     clearGomokuWinCelebration($("#gomoku-online-board-stage"), $("#gomoku-online-win-overlay"));
+  });
+  $("#btn-gomoku-online-win-rematch")?.addEventListener("click", async () => {
+    onlineGame = null;
+    celebratedWinKey = null;
+    clearGomokuWinCelebration($("#gomoku-online-board-stage"), $("#gomoku-online-win-overlay"));
+    await rematchOnlineRoom();
   });
   $("#btn-gomoku-online-win-home")?.addEventListener("click", async () => {
     await leaveOnlineRoom();

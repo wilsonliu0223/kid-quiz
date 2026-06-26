@@ -487,8 +487,10 @@ function showOnlineResult() {
   } else if (title) title.textContent = "平手！";
 
   if ($("#flip-result-detail")) {
-    $("#flip-result-detail").textContent = `共 ${onlineState.pairCount} 組 · 線上對戰`;
+    $("#flip-result-detail").textContent = `共 ${onlineState.pairCount} 組 · 線上對戰 · 同房間可再玩`;
   }
+  const replayBtn = $("#btn-flip-replay");
+  if (replayBtn) replayBtn.textContent = "同房間再玩一局";
   ctx.deps?.showView("flipResult");
 }
 

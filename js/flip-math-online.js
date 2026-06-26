@@ -326,6 +326,8 @@ function showResult() {
   } else if (onlineState.winner === "guest") {
     title.textContent = ctx.slot === "guest" ? "你贏了！" : `${nameOf("guest")} 獲勝！`;
   } else title.textContent = "平手！";
+  const replayBtn = $("#btn-math-replay");
+  if (replayBtn && ctx.roomId) replayBtn.textContent = "同房間再玩一局";
   ctx.deps?.showView("mathResult");
 }
 

@@ -8,6 +8,7 @@ import {
   getRoomSnapshot,
   clearGuestSlot,
   getOnlineSession,
+  returnRoomToLobby,
 } from "./room-service.js";
 import { getChildName } from "./children.js";
 
@@ -308,6 +309,7 @@ function onRoomSnapshot(snapshot) {
     return;
   }
 
+  deps?.showView("onlineLobby");
   renderLobby(snapshot);
 }
 
@@ -337,6 +339,17 @@ export async function leaveOnlineRoom() {
   }
   activeRoomId = null;
   mySlot = null;
+}
+
+/** 同房間再來一局：回到等候室，保留房間碼 */
+export async function rematchOnlineRoom() {
+  if (!activeRoomId) return;
+  try {
+    await returnRoomToLobby(activeRoomId);
+  } catch (err) {
+    console.error("rematchOnlineRoom failed", err);
+    alert("無法回到等候室，請稍後再試");
+  }
 }
 
 async function onKickGuest() {

@@ -5,7 +5,7 @@ import {
   refreshDuoBattleUI,
   renderDuoPickButtons,
 } from "./duo-pick.js";
-import { getOnlineContext, leaveOnlineRoom } from "./online-duo.js";
+import { getOnlineContext, leaveOnlineRoom, rematchOnlineRoom } from "./online-duo.js";
 import { openMathDuoMode } from "./flip-math-online.js";
 
 const DECK_VERSION = "deck30";
@@ -987,7 +987,11 @@ export function bindMathEvents() {
   });
   $("#btn-math-clear")?.addEventListener("click", clearSelection);
   $("#btn-math-submit")?.addEventListener("click", submitAnswer);
-  $("#btn-math-replay")?.addEventListener("click", () => {
+  $("#btn-math-replay")?.addEventListener("click", async () => {
+    if (getOnlineContext().roomId) {
+      await rematchOnlineRoom();
+      return;
+    }
     const mode = game?.mode || "open";
     pendingMode = mode;
     game = null;

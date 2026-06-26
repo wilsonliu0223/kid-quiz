@@ -213,6 +213,27 @@ export async function clearGuestSlot(roomId) {
   });
 }
 
+/** 對局結束後回到同一房間的等候室（不需重建房間） */
+export async function returnRoomToLobby(roomId) {
+  const r = await roomRef(roomId);
+  const snap = await get(r);
+  if (!snap.exists()) {
+    const err = new Error("ROOM_NOT_FOUND");
+    err.code = "ROOM_NOT_FOUND";
+    throw err;
+  }
+  const data = snap.val();
+  /** @type {Record<string, unknown>} */
+  const updates = {
+    state: null,
+    "meta/status": "lobby",
+    "meta/expiresAt": Date.now() + ROOM_TTL_MS,
+  };
+  if (data.players?.host) updates["players/host/ready"] = false;
+  if (data.players?.guest) updates["players/guest/ready"] = false;
+  await update(r, updates);
+}
+
 /** @param {string} roomId @param {object} state */
 export async function startGameRoom(roomId, state) {
   const r = await roomRef(roomId);
