@@ -95,7 +95,12 @@ export async function createRoom(game, name, childId) {
     };
 
     await set(r, payload);
-    onDisconnect(r).remove();
+    try {
+      const { db } = await ensureFirebase();
+      await onDisconnect(ref(db, `rooms/${roomId}`)).remove();
+    } catch (disconnectErr) {
+      console.warn("onDisconnect host cleanup 未設定", disconnectErr);
+    }
     setOnlineSession({ roomId, slot: "host" });
     return roomId;
   }
@@ -146,8 +151,13 @@ export async function joinRoom(roomId, name, childId) {
   }
 
   const guest = { uid, name, childId, ready: false };
+  const { db } = await ensureFirebase();
   await update(r, { "players/guest": guest });
-  onDisconnect(ref(await roomRef(code), "players/guest")).remove();
+  try {
+    await onDisconnect(ref(db, `rooms/${code}/players/guest`)).remove();
+  } catch (disconnectErr) {
+    console.warn("onDisconnect guest cleanup 未設定", disconnectErr);
+  }
   setOnlineSession({ roomId: code, slot: "guest" });
   return code;
 }

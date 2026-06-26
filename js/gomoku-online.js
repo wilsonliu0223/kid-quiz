@@ -15,7 +15,7 @@ import {
   getOnlineSession,
   getRoomSnapshot,
 } from "./room-service.js";
-import { beginGomokuLocal } from "./gomoku.js?v=gomoku-online-v2";
+import { beginGomokuLocal } from "./gomoku.js?v=gomoku-online-v3";
 import { getChildName } from "./children.js";
 
 const BOARD_SIZE = 15;
@@ -57,6 +57,48 @@ let mySlot = null;
 let onlineGame = null;
 
 const $ = (sel) => document.querySelector(sel);
+
+/** @param {unknown} err */
+function formatOnlineError(err) {
+  const code =
+    typeof err === "object" && err && "code" in err
+      ? String(/** @type {{ code?: string }} */ (err).code)
+      : "";
+  const cause =
+    typeof err === "object" && err && "cause" in err
+      ? /** @type {{ cause?: { code?: string, message?: string } }} */ (err).cause
+      : null;
+  const causeCode = cause?.code || "";
+
+  const map = {
+    ROOM_NOT_FOUND: "找不到這個房間碼（請確認房主還在等候室、房間碼正確）",
+    ROOM_FULL:
+      "房間已有另一位玩家。若那是你的手機，請再按一次「加入」；否則請房主離開後重建房間。",
+    ROOM_EXPIRED: "房間已過期，請房主重新建立",
+    ROOM_ID_INVALID: "房間碼格式不正確",
+    FIREBASE_NOT_CONFIGURED: "尚未設定 Firebase，請見 docs/firebase-setup.md",
+    FIREBASE_AUTH_FAILED:
+      "無法連線 Firebase（請確認已啟用「匿名登入」，並重新整理再試）",
+  };
+  if (map[code]) return map[code];
+
+  if (
+    code === "permission-denied" ||
+    code === "PERMISSION_DENIED" ||
+    causeCode === "permission-denied"
+  ) {
+    return "權限被拒：請到 Firebase → Authentication 啟用「匿名」，並在 Realtime Database → 規則 發布 rooms 規則。";
+  }
+  if (causeCode === "auth/operation-not-allowed") {
+    return "請到 Firebase → Authentication → 登入方式 → 啟用「匿名」。";
+  }
+  if (causeCode === "auth/network-request-failed") {
+    return "網路連線失敗，請檢查 Wi‑Fi 或行動網路後再試。";
+  }
+
+  const detail = cause?.message || (err instanceof Error ? err.message : "");
+  return detail ? `加入失敗：${detail}` : "加入房間失敗，請稍後再試。";
+}
 
 function otherSlot(slot) {
   return slot === "host" ? "guest" : "host";
@@ -183,8 +225,8 @@ async function onCreateRoom() {
     mySlot = "host";
     openLobby(roomId);
   } catch (err) {
-    console.error(err);
-    alert("建立房間失敗，請稍後再試。");
+    console.error("createRoom failed", err);
+    alert(formatOnlineError(err).replace(/^加入/, "建立"));
   }
 }
 
@@ -202,13 +244,8 @@ async function onJoinRoom() {
     mySlot = getOnlineSession()?.slot || "guest";
     openLobby(code);
   } catch (err) {
-    const map = {
-      ROOM_NOT_FOUND: "找不到這個房間碼",
-      ROOM_FULL: "房間已有另一位玩家。若那是你的手機，請再按一次「加入」；否則請房主離開後重建房間。",
-      ROOM_EXPIRED: "房間已過期，請請房主重新建立",
-      ROOM_ID_INVALID: "房間碼格式不正確",
-    };
-    alert(map[err.code] || "加入房間失敗，請稍後再試。");
+    console.error("joinRoom failed", err);
+    alert(formatOnlineError(err));
   }
 }
 

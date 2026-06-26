@@ -55,7 +55,15 @@ export async function ensureFirebase() {
     })();
   }
 
-  await readyPromise;
+  try {
+    await readyPromise;
+  } catch (err) {
+    readyPromise = null;
+    const wrap = new Error("FIREBASE_AUTH_FAILED");
+    wrap.code = "FIREBASE_AUTH_FAILED";
+    wrap.cause = err;
+    throw wrap;
+  }
   if (!db || !auth?.currentUser) {
     throw new Error("FIREBASE_INIT_FAILED");
   }
