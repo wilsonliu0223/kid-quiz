@@ -3,13 +3,6 @@ const PASS_CORRECT = 8;
 const QUIZ_SIZE = 9;
 const DIGITS = [2, 3, 4, 5, 6, 7, 8, 9];
 
-import { createHandwritingCanvas } from "./canvas-handwriting.js";
-import {
-  recognizeNumericCanvas,
-  numericAnswerMatch,
-  normalizeNumericText,
-} from "./numeric-recognize.js";
-
 /** @type {MulDeps | null} */
 let deps = null;
 /** @type {MulSession | null} */
@@ -20,9 +13,6 @@ let learnDigit = null;
 let reciteTimer = null;
 let reciteIndex = 0;
 let revealIndex = 0;
-/** @type {ReturnType<typeof createHandwritingCanvas> | null} */
-let mulHandwriting = null;
-let revealChecking = false;
 
 /**
  * @typedef {object} MulDeps
@@ -279,12 +269,6 @@ function applyMulLearnPanels(mode) {
     sub.style.display = isRecite ? "block" : "none";
   }
   body?.classList.toggle("mul-learn-reveal-active", !isRecite);
-  if (!isRecite) {
-    requestAnimationFrame(() => {
-      ensureMulHandwriting();
-      mulHandwriting?.resize();
-    });
-  }
 }
 
 function resetMulPanels() {
@@ -367,73 +351,36 @@ function startRecite() {
   }, 1500);
 }
 
-function ensureMulHandwriting() {
-  const canvas = $("#mul-reveal-canvas");
-  const wrap = $("#mul-reveal-canvas-wrap");
-  if (!canvas || !wrap) return;
-  if (!mulHandwriting) {
-    mulHandwriting = createHandwritingCanvas(canvas, wrap);
-  }
-  mulHandwriting.resize();
+function renderRevealChoicePad(answer) {
+  const pad = $("#mul-reveal-choice-pad");
+  if (!pad) return;
+  pad.innerHTML = "";
+  const choices = buildChoices(answer, "choices", "digit");
+  choices.forEach((val) => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "mul-choice-key";
+    btn.textContent = String(val);
+    btn.addEventListener("click", () => submitRevealAnswer(val, answer));
+    pad.appendChild(btn);
+  });
 }
 
-async function checkRevealAnswer() {
-  if (!learnDigit || revealChecking) return;
-  const expected = learnDigit * (revealIndex + 1);
-  if (!mulHandwriting) ensureMulHandwriting();
-  if (!mulHandwriting) return;
-
-  if (mulHandwriting.isBlank()) {
-    deps.showWarn("請先寫答案", "在格子裡寫出數字");
-    return;
-  }
-
-  revealChecking = true;
+function submitRevealAnswer(value, expected) {
   const hint = $("#mul-reveal-hint");
-  if (hint) {
-    hint.textContent = "辨識中…";
-    hint.className = "mul-reveal-hint";
-  }
-
-  const canvas = $("#mul-reveal-canvas");
-  let recognized = "";
-  let rawOcr = "";
-  try {
-    const result = await recognizeNumericCanvas(canvas, {
-      expected: String(expected),
-    });
-    recognized = result.text || "";
-    rawOcr = result.raw || "";
-    if (result.skipped) {
-      deps.showWarn("手寫辨識未開啟", "請在設定中啟用 OCR，或改用開始測驗");
-      revealChecking = false;
-      if (hint) hint.textContent = "在格子裡手寫答案，再按確認";
-      return;
-    }
-  } catch {
-    recognized = "";
-  }
-
-  revealChecking = false;
-
-  if (numericAnswerMatch(recognized, expected)) {
-    deps.showOk("寫對了！", `${learnDigit} × ${revealIndex + 1} ＝ ${expected}`, () => {
-      advanceRevealLine();
-    });
+  if (value === expected) {
+    deps.showOk(
+      "答對了！",
+      `${learnDigit} × ${revealIndex + 1} ＝ ${expected}`,
+      () => advanceRevealLine()
+    );
     return;
   }
-
-  const shown = recognized
-    ? `辨識到「${recognized}」`
-    : rawOcr
-      ? `辨識到「${normalizeNumericText(rawOcr) || rawOcr}」`
-      : "辨識不出數字";
   if (hint) {
-    hint.textContent = `${shown}，再試一次`;
+    hint.textContent = "還不對，再選一次";
     hint.className = "mul-reveal-hint mul-reveal-hint-warn";
   }
-  deps.showWarn("還不對喔", `${shown}，正確是 ${expected}`);
-  mulHandwriting.clear();
+  deps.showWarn("還不對喔", `正確是 ${expected}`);
 }
 
 function advanceRevealLine() {
@@ -451,16 +398,17 @@ function advanceRevealLine() {
 function renderRevealCard() {
   if (!learnDigit) return;
   const n = revealIndex + 1;
+  const answer = learnDigit * n;
   const eq = $("#mul-reveal-equation");
   const hint = $("#mul-reveal-hint");
   if (eq) {
     eq.textContent = `${learnDigit} × ${n} ＝ □`;
   }
   if (hint) {
-    hint.textContent = "在格子裡手寫答案，再按確認";
+    hint.textContent = "選出正確答案";
     hint.className = "mul-reveal-hint";
   }
-  mulHandwriting?.clear();
+  renderRevealChoicePad(answer);
 }
 
 function openLearn(digit) {
@@ -478,6 +426,7 @@ function openLearn(digit) {
 }
 
 function openPick() {
+  if (!deps) return;
   learnDigit = null;
   session = null;
   stopRecite();
@@ -717,10 +666,6 @@ function showResult() {
 }
 
 export function bindMulEvents() {
-  $("#btn-start-mul")?.addEventListener("click", (e) => {
-    e.preventDefault();
-    openPick();
-  });
   $("#btn-mul-pick-back")?.addEventListener("click", () => {
     stopRecite();
     session = null;
@@ -741,17 +686,6 @@ export function bindMulEvents() {
     applyMulLearnPanels("reveal");
     revealIndex = 0;
     renderRevealCard();
-  });
-  $("#btn-mul-reveal-clear")?.addEventListener("click", () => {
-    mulHandwriting?.clear();
-    const hint = $("#mul-reveal-hint");
-    if (hint) {
-      hint.textContent = "在格子裡手寫答案，再按確認";
-      hint.className = "mul-reveal-hint";
-    }
-  });
-  $("#btn-mul-reveal-check")?.addEventListener("click", () => {
-    checkRevealAnswer();
   });
   $("#btn-mul-reveal-next")?.addEventListener("click", () => {
     advanceRevealLine();
@@ -791,4 +725,9 @@ export function initTimesTable(d) {
   deps = d;
   resetMulPanels();
   bindMulEvents();
+}
+
+/** 首頁「九九乘法」按鈕 */
+export function openMulHome() {
+  openPick();
 }

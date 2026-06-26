@@ -54,7 +54,7 @@ import {
   initFlipMath,
   renderMathHomePlayers,
 } from "./flip-math-deck30.js?v=guess-hot-lt5";
-import { initTimesTable } from "./times-table.js?v=mul-full-quiz";
+import { initTimesTable, openMulHome } from "./times-table.js?v=mul-reveal-pick-v4";
 import {
   addMistake,
   removeMistake,
@@ -1924,6 +1924,10 @@ async function init() {
         { sub: sub || "" }
       );
     },
+  });
+  $("#btn-start-mul")?.addEventListener("click", (e) => {
+    e.preventDefault();
+    openMulHome();
   });
   await refreshBank();
   renderHomeScoreHistory();
