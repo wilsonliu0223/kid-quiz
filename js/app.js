@@ -66,8 +66,8 @@ import {
   initFlipMath,
   renderMathHomePlayers,
 } from "./flip-math-deck30.js?v=duo-active-v1";
-import { initGomoku, renderGomokuHomePlayers } from "./gomoku.js?v=gomoku-online-v5";
-import { initGomokuOnline } from "./gomoku-online.js?v=gomoku-online-v5";
+import { initGomoku, renderGomokuHomePlayers } from "./gomoku.js?v=gomoku-online-v6";
+import { initGomokuOnline } from "./gomoku-online.js?v=gomoku-online-v6";
 import { initTimesTable, openMulHome } from "./times-table.js?v=mul-pair-v10";
 import {
   addMistake,

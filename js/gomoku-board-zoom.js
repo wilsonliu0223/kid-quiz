@@ -16,6 +16,10 @@ const pointers = new Map();
 let panStart = null;
 /** @type {{ distance: number, scale: number, centerX: number, centerY: number } | null} */
 let pinchStart = null;
+/** @type {{ distance: number, scale: number, centerX: number, centerY: number } | null} */
+let touchPinchStart = null;
+/** @type {{ x: number, y: number, tx: number, ty: number, moved?: boolean } | null} */
+let touchPanStart = null;
 
 let bound = false;
 let suppressCellTapUntil = 0;
@@ -45,6 +49,10 @@ function teardownGomokuBoardZoom() {
   viewportEl.removeEventListener("pointercancel", onPointerUp);
   viewportEl.removeEventListener("contextmenu", onContextMenu);
   viewportEl.removeEventListener("click", onCaptureClick, true);
+  viewportEl.removeEventListener("touchstart", onTouchStart);
+  viewportEl.removeEventListener("touchmove", onTouchMove);
+  viewportEl.removeEventListener("touchend", onTouchEnd);
+  viewportEl.removeEventListener("touchcancel", onTouchEnd);
   bound = false;
   viewportEl = null;
   stageEl = null;
@@ -66,7 +74,14 @@ function applyTransform() {
 }
 
 function isCellTarget(e) {
-  return e.target instanceof Element && !!e.target.closest(".gomoku-cell");
+  const target = e.target;
+  return target instanceof Element && !!target.closest(".gomoku-cell");
+}
+
+function isInsideViewport(e) {
+  const target = e.target;
+  if (!(target instanceof Node) || !viewportEl) return false;
+  return viewportEl.contains(target);
 }
 
 function getPinchMetrics() {
@@ -77,6 +92,19 @@ function getPinchMetrics() {
     distance: Math.hypot(dx, dy) || 1,
     centerX: (pts[0].x + pts[1].x) / 2,
     centerY: (pts[0].y + pts[1].y) / 2,
+  };
+}
+
+/** @param {TouchList} touches */
+function touchPinchMetrics(touches) {
+  const a = touches[0];
+  const b = touches[1];
+  const dx = b.clientX - a.clientX;
+  const dy = b.clientY - a.clientY;
+  return {
+    distance: Math.hypot(dx, dy) || 1,
+    centerX: (a.clientX + b.clientX) / 2,
+    centerY: (a.clientY + b.clientY) / 2,
   };
 }
 
@@ -127,8 +155,10 @@ export function resetGomokuBoardZoom() {
   zoomState.y = 0;
   panStart = null;
   pinchStart = null;
+  touchPinchStart = null;
+  touchPanStart = null;
   pointers.clear();
-  viewportEl?.classList.remove("is-panning", "can-pan");
+  viewportEl?.classList.remove("is-panning", "is-pinching", "can-pan");
   applyTransform();
 }
 
@@ -145,13 +175,99 @@ function onWheel(e) {
 
 function shouldPanPointer(e, onCell) {
   if (e.button === 1 || e.button === 2) return true;
-  if (zoomState.scale > 1 && e.button === 0 && !onCell) return true;
-  if (e.pointerType === "touch" && zoomState.scale > 1 && !onCell) return true;
+  if (zoomState.scale > 1 && e.button === 0) return true;
+  if (e.pointerType === "touch" && zoomState.scale > 1) return true;
   return false;
+}
+
+function onTouchStart(e) {
+  if (!viewportEl || !isInsideViewport(e)) return;
+
+  if (e.touches.length >= 2) {
+    e.preventDefault();
+    suppressCellTapBriefly();
+    viewportEl.classList.add("is-pinching");
+    panStart = null;
+    touchPanStart = null;
+    pinchStart = null;
+    pointers.clear();
+    const m = touchPinchMetrics(e.touches);
+    touchPinchStart = {
+      distance: m.distance,
+      centerX: m.centerX,
+      centerY: m.centerY,
+      scale: zoomState.scale,
+    };
+    return;
+  }
+
+  if (e.touches.length === 1 && zoomState.scale > 1) {
+    touchPanStart = {
+      x: e.touches[0].clientX,
+      y: e.touches[0].clientY,
+      tx: zoomState.x,
+      ty: zoomState.y,
+      moved: false,
+    };
+  }
+}
+
+function onTouchMove(e) {
+  if (!viewportEl) return;
+
+  if (e.touches.length >= 2 && touchPinchStart) {
+    e.preventDefault();
+    suppressCellTapBriefly();
+    viewportEl.classList.add("is-pinching");
+    const m = touchPinchMetrics(e.touches);
+    const factor = m.distance / touchPinchStart.distance;
+    setScaleAt(touchPinchStart.scale * factor, m.centerX, m.centerY);
+    return;
+  }
+
+  if (e.touches.length === 1 && touchPanStart && zoomState.scale > 1 && !touchPinchStart) {
+    const dx = e.touches[0].clientX - touchPanStart.x;
+    const dy = e.touches[0].clientY - touchPanStart.y;
+    if (!touchPanStart.moved) {
+      if (Math.hypot(dx, dy) < PAN_THRESHOLD) return;
+      touchPanStart.moved = true;
+      suppressCellTapBriefly();
+      viewportEl.classList.add("is-panning");
+    }
+    e.preventDefault();
+    zoomState.x = touchPanStart.tx + dx;
+    zoomState.y = touchPanStart.ty + dy;
+    clampPan();
+    applyTransform();
+  }
+}
+
+function onTouchEnd(e) {
+  if (!viewportEl) return;
+  if (e.touches.length < 2) {
+    touchPinchStart = null;
+    pinchStart = null;
+  }
+  if (e.touches.length === 0) {
+    touchPanStart = null;
+    touchPinchStart = null;
+    panStart = null;
+    pointers.clear();
+    viewportEl.classList.remove("is-panning", "is-pinching");
+  } else if (e.touches.length === 1 && zoomState.scale > 1) {
+    touchPanStart = {
+      x: e.touches[0].clientX,
+      y: e.touches[0].clientY,
+      tx: zoomState.x,
+      ty: zoomState.y,
+      moved: false,
+    };
+  }
 }
 
 function onPointerDown(e) {
   if (!viewportEl) return;
+  if (e.pointerType === "touch") return;
 
   const onCell = isCellTarget(e);
   pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
@@ -173,7 +289,6 @@ function onPointerDown(e) {
   }
 
   if (pointers.size === 1) {
-    // 棋格上仍追蹤第一指，第二指才能雙指縮放
     if (onCell && e.button === 0) {
       return;
     }
@@ -196,6 +311,7 @@ function onPointerDown(e) {
 
 function onPointerMove(e) {
   if (!pointers.has(e.pointerId)) return;
+  if (e.pointerType === "touch") return;
   pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
 
   if (pointers.size === 2 && pinchStart) {
@@ -225,6 +341,7 @@ function onPointerMove(e) {
 }
 
 function onPointerUp(e) {
+  if (e.pointerType === "touch") return;
   pointers.delete(e.pointerId);
   if (pointers.size < 2) {
     pinchStart = null;
@@ -282,4 +399,8 @@ export function initGomokuBoardZoom(viewportSelector, stageSelector) {
   viewportEl.addEventListener("pointercancel", onPointerUp);
   viewportEl.addEventListener("contextmenu", onContextMenu);
   viewportEl.addEventListener("click", onCaptureClick, true);
+  viewportEl.addEventListener("touchstart", onTouchStart, { passive: false });
+  viewportEl.addEventListener("touchmove", onTouchMove, { passive: false });
+  viewportEl.addEventListener("touchend", onTouchEnd);
+  viewportEl.addEventListener("touchcancel", onTouchEnd);
 }

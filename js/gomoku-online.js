@@ -17,7 +17,7 @@ import {
   getRoomSnapshot,
   clearGuestSlot,
 } from "./room-service.js";
-import { beginGomokuLocal } from "./gomoku.js?v=gomoku-online-v4";
+import { beginGomokuLocal } from "./gomoku.js?v=gomoku-online-v6";
 import { getChildName } from "./children.js";
 
 const BOARD_SIZE = 15;

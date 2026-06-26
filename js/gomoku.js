@@ -1,7 +1,7 @@
 import { forbiddenLabel, wouldBlackForbidden } from "./gomoku-renju.js?v=gomoku-v2";
 import {
-  initGomokuBoardZoom,
   resetGomokuBoardZoom,
+  rebindGomokuBoardZoom,
   shouldSuppressGomokuCellTap,
 } from "./gomoku-board-zoom.js";
 import { getChildName, otherDuoPlayer } from "./children.js";
@@ -335,6 +335,7 @@ function startWithBlackPlayer(blackPlayerId) {
   const grid = $("#gomoku-board");
   if (grid) delete grid.dataset.built;
   deps.showView("gomokuPlay");
+  rebindGomokuBoardZoom("#gomoku-board-viewport", "#gomoku-board-stage");
   resetGomokuBoardZoom();
   renderBoard();
 }
@@ -383,5 +384,4 @@ export function initGomoku(d) {
   deps = d;
   renderGomokuHomePlayers();
   bindGomokuEvents();
-  initGomokuBoardZoom("#gomoku-board-viewport", "#gomoku-board-stage");
 }
