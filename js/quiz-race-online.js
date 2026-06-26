@@ -1,6 +1,6 @@
 import { pickRandomQuestions } from "./sheets.js";
 import { englishAnswersMatch } from "./english.js";
-import { blankSentenceForRace, raceSentenceHtml } from "./sentence.js";
+import { blankSentenceForRace, raceSentenceHtml, ensureRaceSentenceSafe } from "./sentence.js?v=quiz-race-zh-blank-v3";
 import { buildMulRaceQuestions } from "./times-table.js";
 import {
   registerOnlineGame,
@@ -318,9 +318,11 @@ function renderQuestionArea(force = false) {
     if (q.sentence || q.sentenceHtml) {
       const sentenceEl = document.createElement("p");
       sentenceEl.className = "race-sentence";
-      const html = q.sentenceHtml || raceSentenceHtml(q.sentence, q.answer);
-      if (html) sentenceEl.innerHTML = html;
-      else sentenceEl.textContent = blankSentenceForRace(q.sentence, q.answer);
+      sentenceEl.innerHTML = ensureRaceSentenceSafe(
+        q.sentenceHtml || "",
+        q.sentence || "",
+        q.answer
+      );
       promptEl.appendChild(sentenceEl);
     }
 

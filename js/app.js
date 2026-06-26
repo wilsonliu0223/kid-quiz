@@ -71,8 +71,12 @@ import { initOnlineDuo } from "./online-duo.js";
 import "./flip-zh-online.js";
 import "./flip-math-online.js";
 import "./gomoku-online.js";
-import "./quiz-race-online.js";
-import { initRaceDuo, openZhRaceDuoMode, openEnRaceDuoMode, openMulRaceDuoMode } from "./quiz-race-online.js";
+import {
+  initRaceDuo,
+  openZhRaceDuoMode,
+  openEnRaceDuoMode,
+  openMulRaceDuoMode,
+} from "./quiz-race-online.js?v=quiz-race-zh-blank-v3";
 import { initTimesTable, openMulHome } from "./times-table.js?v=mul-pair-v10";
 import {
   addMistake,

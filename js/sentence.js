@@ -94,3 +94,25 @@ export function raceSentenceHtml(sentence, word) {
     })
     .join("");
 }
+
+/** 顯示前最後一道防線：絕不露出答案國字 */
+export function ensureRaceSentenceSafe(html, sentence, answer) {
+  const w = String(answer || "").trim();
+  if (!w) return html || raceSentenceHtml(sentence, w);
+  let out = html || raceSentenceHtml(sentence, w);
+  const markers = [`【${w}】`, `［${w}］`, `[${w}]`, `〔${w}〕`];
+  for (const marker of markers) {
+    if (out.includes(marker)) out = out.split(marker).join(RACE_BLANK);
+  }
+  const escaped = escapeHtmlText(w);
+  if (escaped && out.includes(escaped)) {
+    out = out.replaceAll(
+      escaped,
+      `<span class="race-char-blank">${RACE_BLANK}</span>`
+    );
+  }
+  if (out.includes(w)) {
+    out = raceSentenceHtml(blankSentenceForRace(sentence, w), w);
+  }
+  return out;
+}
