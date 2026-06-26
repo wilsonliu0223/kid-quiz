@@ -2778,3 +2778,145 @@ body {
   font-weight: 600;
   color: #8a4030;
 }
+
+/* ── 五子棋 ── */
+:root {
+  --gomoku: #6b4423;
+  --gomoku-dark: #4a2f18;
+  --gomoku-line: rgba(74, 47, 24, 0.55);
+}
+
+.home-duo-group-gomoku .home-duo-label {
+  color: var(--gomoku-dark);
+}
+
+.card-gomoku {
+  background: linear-gradient(135deg, #faf3e8 0%, #edd9b8 100%);
+  border: 2px solid #c9a66b;
+  width: 100%;
+}
+
+.card-gomoku .card-title {
+  color: var(--gomoku-dark);
+}
+
+.quiz-header-gomoku .quiz-subject {
+  color: var(--gomoku-dark);
+}
+
+.gomoku-pick-a {
+  background: linear-gradient(135deg, #3a3a3a 0%, #1a1a1a 100%);
+  border-color: #000;
+  color: #fff;
+}
+
+.gomoku-pick-b {
+  background: linear-gradient(135deg, #f8f8f8 0%, #d8d8d8 100%);
+  border-color: #aaa;
+  color: #333;
+}
+
+#view-gomoku-play.view-active {
+  overflow: hidden;
+}
+
+.gomoku-play-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  gap: 6px;
+}
+
+.gomoku-meta,
+.gomoku-turn-label {
+  margin: 0;
+  text-align: center;
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+.gomoku-turn-label {
+  font-weight: 700;
+  color: var(--gomoku-dark);
+}
+
+.gomoku-board-wrap {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px 0 8px;
+}
+
+.gomoku-board {
+  display: grid;
+  grid-template-columns: repeat(var(--gomoku-size, 15), 1fr);
+  gap: 0;
+  width: 100%;
+  max-width: min(100%, 420px);
+  aspect-ratio: 1;
+  background-color: #dcb35c;
+  background-image:
+    linear-gradient(var(--gomoku-line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--gomoku-line) 1px, transparent 1px);
+  background-size: calc(100% / 15) calc(100% / 15);
+  border: 3px solid var(--gomoku-dark);
+  border-radius: 6px;
+  box-shadow: inset 0 0 12px rgba(0, 0, 0, 0.1);
+  touch-action: manipulation;
+}
+
+.gomoku-cell {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1;
+  padding: 0;
+  margin: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.gomoku-cell-filled {
+  cursor: default;
+}
+
+.gomoku-stone {
+  position: absolute;
+  inset: 10%;
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.gomoku-stone-black .gomoku-stone {
+  background: radial-gradient(circle at 35% 30%, #555, #111);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.45);
+}
+
+.gomoku-stone-white .gomoku-stone {
+  background: radial-gradient(circle at 35% 30%, #fff, #ccc);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+  border: 1px solid #bbb;
+}
+
+.gomoku-cell-last .gomoku-stone {
+  box-shadow: 0 0 0 2px #e85d2a, 0 1px 3px rgba(0, 0, 0, 0.35);
+}
+
+.gomoku-cell-win .gomoku-stone {
+  box-shadow: 0 0 0 2px #2d8a4e, 0 1px 3px rgba(0, 0, 0, 0.35);
+}
+
+.btn-primary-gomoku {
+  background: var(--gomoku);
+  border-color: var(--gomoku-dark);
+}
+
+.gomoku-result-detail {
+  text-align: center;
+  color: var(--muted);
+  margin: 0 0 8px;
+}

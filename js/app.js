@@ -60,6 +60,7 @@ import {
   initFlipMath,
   renderMathHomePlayers,
 } from "./flip-math-deck30.js?v=guess-hot-lt5";
+import { initGomoku, renderGomokuHomePlayers } from "./gomoku.js?v=gomoku-v1";
 import { initTimesTable, openMulHome } from "./times-table.js?v=mul-pair-v10";
 import {
   addMistake,
@@ -151,6 +152,9 @@ const views = {
   mulLearn: $("#view-mul-learn"),
   mulQuiz: $("#view-mul-quiz"),
   mulResult: $("#view-mul-result"),
+  gomokuFirst: $("#view-gomoku-first"),
+  gomokuPlay: $("#view-gomoku-play"),
+  gomokuResult: $("#view-gomoku-result"),
   result: $("#view-result"),
   parent: $("#view-parent"),
 };
@@ -175,6 +179,7 @@ function showView(name) {
     renderResumeBanner();
     renderMistakeBookHome();
     renderMathHomePlayers();
+    renderGomokuHomePlayers();
   }
   if (name === "setupZh") {
     renderFlipHomePlayers();
@@ -499,6 +504,7 @@ function renderChildChips() {
   });
   renderFlipHomePlayers();
   renderMathHomePlayers();
+  renderGomokuHomePlayers();
 }
 
 function initChildPicker() {
@@ -2019,6 +2025,10 @@ async function init() {
         { sub: sub || "" }
       );
     },
+  });
+  initGomoku({
+    showView,
+    getChildNames,
   });
   initTimesTable({
     showView,

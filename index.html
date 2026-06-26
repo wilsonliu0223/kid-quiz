@@ -11,7 +11,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <title>家裡練習</title>
     <link rel="manifest" href="manifest.json" />
-    <link rel="stylesheet" href="css/app.css?v=flip-clicks-v1" />
+    <link rel="stylesheet" href="css/app.css?v=gomoku-v1" />
     <script type="importmap">
       {
         "imports": {
@@ -120,6 +120,20 @@
             <button type="button" class="card card-math-guess" id="btn-start-math-guess">
               <span class="card-title">猜數字</span>
               <span class="card-desc">比大小猜秘密數</span>
+            </button>
+          </div>
+
+          <div class="home-duo-group home-duo-group-gomoku">
+            <h3 class="home-duo-label">五子棋</h3>
+            <div class="flip-players-vs gomoku-players-vs" id="gomoku-players-vs">
+              <span id="gomoku-player-a-name">思妘</span>
+              <span class="flip-vs">vs</span>
+              <span id="gomoku-player-b-name">思妤</span>
+            </div>
+            <p class="home-duo-hint">15×15 · 先連五子勝 · 黑先</p>
+            <button type="button" class="card card-gomoku" id="btn-start-gomoku">
+              <span class="card-title">開始五子棋</span>
+              <span class="card-desc">兩人同機輪流下棋</span>
             </button>
           </div>
         </div>
@@ -485,6 +499,50 @@
         </footer>
       </section>
 
+      <!-- 五子棋：選黑先 -->
+      <section id="view-gomoku-first" class="view view-hidden" aria-label="五子棋誰先">
+        <header class="quiz-header quiz-header-gomoku">
+          <button type="button" class="btn-text" id="btn-gomoku-first-back">← 返回</button>
+          <span class="quiz-subject">五子棋</span>
+        </header>
+        <div class="flip-first-body">
+          <h2 class="flip-first-title">誰拿黑子？</h2>
+          <p class="flip-first-meta">15×15 棋盤 · 先連成五子獲勝</p>
+          <p class="flip-first-hint">黑子先手，點名字開始</p>
+          <div class="flip-pick-btns">
+            <button type="button" class="flip-pick-btn flip-pick-a gomoku-pick-a" id="gomoku-pick-a">思妘（黑先）</button>
+            <button type="button" class="flip-pick-btn flip-pick-b gomoku-pick-b" id="gomoku-pick-b">思妤（黑先）</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- 五子棋：對局 -->
+      <section id="view-gomoku-play" class="view view-hidden" aria-label="五子棋對局">
+        <header class="quiz-header quiz-header-gomoku">
+          <button type="button" class="btn-text" id="btn-gomoku-play-back">← 返回</button>
+          <span class="quiz-subject">五子棋</span>
+        </header>
+        <div class="gomoku-play-body">
+          <p class="gomoku-meta" id="gomoku-black-tag">黑子：思妘</p>
+          <p class="gomoku-turn-label" id="gomoku-turn-label">輪到：思妘 · 黑子</p>
+          <div class="gomoku-board-wrap">
+            <div class="gomoku-board" id="gomoku-board" role="grid" aria-label="五子棋棋盤"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 五子棋：結算 -->
+      <section id="view-gomoku-result" class="view view-hidden" aria-label="五子棋結算">
+        <header class="app-header">
+          <h2 class="result-title" id="gomoku-result-title">完成</h2>
+          <p class="gomoku-result-detail" id="gomoku-result-detail"></p>
+        </header>
+        <footer class="result-footer">
+          <button type="button" class="btn btn-primary btn-block btn-primary-gomoku" id="btn-gomoku-replay">再玩一局</button>
+          <button type="button" class="btn btn-secondary btn-block" id="btn-gomoku-home">回首頁</button>
+        </footer>
+      </section>
+
       <!-- 九九乘法：選數字 -->
       <section id="view-mul-pick" class="view view-hidden" aria-label="九九乘法選數字">
         <header class="quiz-header quiz-header-mul">
@@ -708,6 +766,6 @@
       </div>
     </div>
 
-    <script type="module" src="js/app.js?v=setup-v2"></script>
+    <script type="module" src="js/app.js?v=gomoku-v1"></script>
   </body>
 </html>
