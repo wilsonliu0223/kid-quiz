@@ -2,6 +2,7 @@ import { forbiddenLabel, wouldBlackForbidden } from "./gomoku-renju.js?v=gomoku-
 import {
   resetGomokuBoardZoom,
   rebindGomokuBoardZoom,
+  shouldSuppressGomokuCellTap,
 } from "./gomoku-board-zoom.js";
 import { isFirebaseConfigured, ensureFirebase } from "./firebase-app.js";
 import {
@@ -525,6 +526,7 @@ function renderOnlineBoard() {
 }
 
 async function onOnlineCellClick(row, col) {
+  if (shouldSuppressGomokuCellTap()) return;
   if (!activeRoomId || !mySlot || !onlineGame || onlineGame.over) return;
   if (onlineGame.currentPlayerId !== mySlot) return;
   if (onlineGame.cells[row][col]) return;

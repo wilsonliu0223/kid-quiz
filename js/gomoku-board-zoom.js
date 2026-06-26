@@ -18,6 +18,23 @@ let panStart = null;
 let pinchStart = null;
 
 let bound = false;
+let suppressCellTapUntil = 0;
+
+function suppressCellTapBriefly() {
+  suppressCellTapUntil = Date.now() + 280;
+}
+
+function shouldSuppressCellTap() {
+  return (
+    Date.now() < suppressCellTapUntil ||
+    !!viewportEl?.classList.contains("is-pinching")
+  );
+}
+
+/** 雙指縮放後避免誤觸下棋 */
+export function shouldSuppressGomokuCellTap() {
+  return shouldSuppressCellTap();
+}
 
 function teardownGomokuBoardZoom() {
   if (!viewportEl || !bound) return;
@@ -27,6 +44,7 @@ function teardownGomokuBoardZoom() {
   viewportEl.removeEventListener("pointerup", onPointerUp);
   viewportEl.removeEventListener("pointercancel", onPointerUp);
   viewportEl.removeEventListener("contextmenu", onContextMenu);
+  viewportEl.removeEventListener("click", onCaptureClick, true);
   bound = false;
   viewportEl = null;
   stageEl = null;
@@ -140,6 +158,8 @@ function onPointerDown(e) {
 
   if (pointers.size === 2) {
     panStart = null;
+    suppressCellTapBriefly();
+    viewportEl.classList.add("is-pinching");
     const m = getPinchMetrics();
     pinchStart = {
       distance: m.distance,
@@ -147,13 +167,14 @@ function onPointerDown(e) {
       centerY: m.centerY,
       scale: zoomState.scale,
     };
+    e.preventDefault();
     viewportEl.setPointerCapture(e.pointerId);
     return;
   }
 
   if (pointers.size === 1) {
+    // 棋格上仍追蹤第一指，第二指才能雙指縮放
     if (onCell && e.button === 0) {
-      pointers.delete(e.pointerId);
       return;
     }
 
@@ -179,6 +200,8 @@ function onPointerMove(e) {
 
   if (pointers.size === 2 && pinchStart) {
     e.preventDefault();
+    suppressCellTapBriefly();
+    viewportEl?.classList.add("is-pinching");
     const m = getPinchMetrics();
     const factor = m.distance / pinchStart.distance;
     setScaleAt(pinchStart.scale * factor, m.centerX, m.centerY);
@@ -203,10 +226,15 @@ function onPointerMove(e) {
 
 function onPointerUp(e) {
   pointers.delete(e.pointerId);
-  if (pointers.size < 2) pinchStart = null;
+  if (pointers.size < 2) {
+    pinchStart = null;
+    if (pointers.size === 0) {
+      viewportEl?.classList.remove("is-pinching");
+    }
+  }
   if (pointers.size === 0) {
     panStart = null;
-    viewportEl?.classList.remove("is-panning");
+    viewportEl?.classList.remove("is-panning", "is-pinching");
   } else if (pointers.size === 1 && zoomState.scale > 1) {
     const remaining = [...pointers.values()][0];
     panStart = {
@@ -228,6 +256,13 @@ function onContextMenu(e) {
   if (zoomState.scale > 1) e.preventDefault();
 }
 
+function onCaptureClick(e) {
+  if (shouldSuppressCellTap() && e.target instanceof Element && e.target.closest(".gomoku-cell")) {
+    e.preventDefault();
+    e.stopPropagation();
+  }
+}
+
 /**
  * @param {string} viewportSelector
  * @param {string} stageSelector
@@ -241,9 +276,10 @@ export function initGomokuBoardZoom(viewportSelector, stageSelector) {
   resetGomokuBoardZoom();
 
   viewportEl.addEventListener("wheel", onWheel, { passive: false });
-  viewportEl.addEventListener("pointerdown", onPointerDown);
-  viewportEl.addEventListener("pointermove", onPointerMove);
+  viewportEl.addEventListener("pointerdown", onPointerDown, { passive: false });
+  viewportEl.addEventListener("pointermove", onPointerMove, { passive: false });
   viewportEl.addEventListener("pointerup", onPointerUp);
   viewportEl.addEventListener("pointercancel", onPointerUp);
   viewportEl.addEventListener("contextmenu", onContextMenu);
+  viewportEl.addEventListener("click", onCaptureClick, true);
 }

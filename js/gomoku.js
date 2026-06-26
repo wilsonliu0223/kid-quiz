@@ -2,6 +2,7 @@ import { forbiddenLabel, wouldBlackForbidden } from "./gomoku-renju.js?v=gomoku-
 import {
   initGomokuBoardZoom,
   resetGomokuBoardZoom,
+  shouldSuppressGomokuCellTap,
 } from "./gomoku-board-zoom.js";
 import { getChildName, otherDuoPlayer } from "./children.js";
 import {
@@ -252,6 +253,7 @@ function renderBoard() {
 }
 
 function onCellClick(row, col) {
+  if (shouldSuppressGomokuCellTap()) return;
   if (!game || game.over) return;
   if (game.cells[row][col]) return;
 
