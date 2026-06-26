@@ -54,7 +54,7 @@ import {
   initFlipMath,
   renderMathHomePlayers,
 } from "./flip-math-deck30.js?v=guess-hot-lt5";
-import { initTimesTable, openMulHome } from "./times-table.js?v=mul-pair-v9";
+import { initTimesTable, openMulHome } from "./times-table.js?v=mul-pair-v10";
 import {
   addMistake,
   removeMistake,

@@ -24,6 +24,9 @@ let revealIndex = 0;
 let revealLifePrompt = "";
 /** @type {number[]} */
 let pairPicks = [];
+/** @type {Set<string>} */
+let foundPairKeys = new Set();
+let pairTapLock = false;
 
 /**
  * @typedef {object} MulDeps
@@ -197,6 +200,32 @@ function pairLabel(a, b) {
 
 function factorPairKey(product) {
   return `pair${product}`;
+}
+
+function pairUnorderedKey(a, b) {
+  return `${Math.min(a, b)}x${Math.max(a, b)}`;
+}
+
+/** 這個積在九九表內有幾種不同的因數組合 */
+function getRequiredPairKeys(q, quizMode) {
+  const minF = isDigitKeypadMode(quizMode) ? 1 : 2;
+  const keys = new Set();
+  for (let a = minF; a <= 9; a++) {
+    if (q.product % a !== 0) continue;
+    const b = q.product / a;
+    if (b < minF || b > 9) continue;
+    keys.add(pairUnorderedKey(a, b));
+  }
+  return keys;
+}
+
+function formatFoundPairsList(keys) {
+  return [...keys]
+    .map((k) => {
+      const [a, b] = k.split("x").map((s) => parseInt(s, 10));
+      return pairLabel(a, b);
+    })
+    .join("、");
 }
 
 /** 積的所有合法「□ × □」寫法（因數在 min～max） */
@@ -493,6 +522,7 @@ function resetMulPanels() {
     pairClear.style.display = "none";
   }
   pairPicks = [];
+  foundPairKeys = new Set();
 }
 
 function renderDigitGrid() {
@@ -784,10 +814,12 @@ function renderQuizQuestion() {
   const promptEl = $("#mul-prompt");
   const badgeEl = $("#mul-pair-badge");
   pairPicks = [];
+  foundPairKeys = new Set();
   if (badgeEl) badgeEl.hidden = !q.isFactorPair;
   if (q.isFactorPair && promptEl) {
     promptEl.textContent = `${q.product} ＝ □ × □`;
     if (lifeEl) lifeEl.hidden = true;
+    updatePairProgressHint(q);
   } else if (q.isLife && q.lifePrompt && lifeEl && promptEl) {
     lifeEl.textContent = q.lifePrompt;
     lifeEl.hidden = false;
@@ -801,7 +833,7 @@ function renderQuizQuestion() {
   const hintEl = $("#mul-quiz-hint");
   if (hintEl) {
     if (q.isFactorPair) {
-      hintEl.textContent = "多選題：點兩個因數，相乘要等於上面的數";
+      hintEl.textContent = pairMainHint(q);
     } else if (isHardQuizMode(session.quizMode)) {
       hintEl.textContent = "進階題：想想生活題，選因數";
     } else if (q.isLife) {
@@ -833,15 +865,38 @@ function updatePairPrompt(q) {
   }
 }
 
+function pairMainHint(q) {
+  const required = getRequiredPairKeys(q, session.quizMode);
+  const total = required.size;
+  const found = foundPairKeys.size;
+  if (total <= 1) {
+    return "多選題：點兩個因數，相乘要等於上面的數";
+  }
+  if (found === 0) {
+    return `多選題：找出全部 ${total} 組因數（每組點兩個數字）`;
+  }
+  return `已找到 ${found} / ${total} 組，繼續找剩下的組合`;
+}
+
+function updatePairProgressHint(q) {
+  const hintEl = $("#mul-quiz-hint");
+  if (!hintEl || !q.isFactorPair) return;
+  hintEl.textContent = pairMainHint(q);
+  hintEl.className =
+    foundPairKeys.size > 0 ? "mul-quiz-hint mul-quiz-hint-warm" : "mul-quiz-hint";
+}
+
 function updatePairHintAfterPick() {
   const hintEl = $("#mul-quiz-hint");
-  if (!hintEl) return;
-  if (pairPicks.length === 0) {
-    hintEl.textContent = "多選題：點兩個因數，相乘要等於上面的數";
-  } else if (pairPicks.length === 1) {
+  if (!hintEl || !session) return;
+  const q = session.questions[session.index];
+  if (!q?.isFactorPair) return;
+  if (pairPicks.length === 1) {
     hintEl.textContent = `已選 ${pairPicks[0]}，再選第二個因數`;
+    hintEl.className = "mul-quiz-hint";
+    return;
   }
-  hintEl.className = "mul-quiz-hint";
+  updatePairProgressHint(q);
 }
 
 function isPairProductCorrect(q, a, b) {
@@ -878,7 +933,12 @@ function clearPairPicks(q) {
 }
 
 function onPairFactorTap(n, q) {
-  if (!session) return;
+  if (!session || pairTapLock) return;
+  pairTapLock = true;
+  setTimeout(() => {
+    pairTapLock = false;
+  }, 280);
+
   if (pairPicks.length >= 2) {
     pairPicks = [n];
     renderFactorPairPad(q);
@@ -893,16 +953,46 @@ function onPairFactorTap(n, q) {
     updatePairHintAfterPick();
     return;
   }
+
   const [a, b] = pairPicks;
-  if (isPairProductCorrect(q, a, b)) {
+  pairPicks = [];
+
+  if (!isPairProductCorrect(q, a, b)) {
+    pairWrongAttempt(q);
+    return;
+  }
+
+  const key = pairUnorderedKey(a, b);
+  if (foundPairKeys.has(key)) {
+    renderFactorPairPad(q);
+    updatePairPrompt(q);
+    updatePairProgressHint(q);
+    deps.showWarn("這組找過了", "試試別的因數組合");
+    return;
+  }
+
+  foundPairKeys.add(key);
+  const required = getRequiredPairKeys(q, session.quizMode);
+
+  if (foundPairKeys.size >= required.size) {
     session.correct += 1;
-    deps.showOk("答對了！", `${q.product} ＝ ${a} × ${b}`, () => {
-      pairPicks = [];
+    const allPairs = formatFoundPairsList(required);
+    deps.showOk("全部找齊了！", `${q.product} ＝ ${allPairs}`, () => {
+      foundPairKeys = new Set();
       goNextQuestion();
     });
     return;
   }
-  pairWrongAttempt(q);
+
+  renderFactorPairPad(q);
+  updatePairPrompt(q);
+  updatePairProgressHint(q);
+  const left = required.size - foundPairKeys.size;
+  deps.showOk(
+    "找到一組！",
+    `${a} × ${b} ＝ ${q.product}，還有 ${left} 組沒找到`,
+    () => {}
+  );
 }
 
 function pairWrongAttempt(q) {
@@ -910,6 +1000,7 @@ function pairWrongAttempt(q) {
   pairPicks = [];
   renderFactorPairPad(q);
   updatePairPrompt(q);
+  updatePairProgressHint(q);
   const hintEl = $("#mul-quiz-hint");
   const hintsLeft = maxHints(session.quizMode);
   if (session.hintCount < hintsLeft) {
@@ -925,6 +1016,7 @@ function pairWrongAttempt(q) {
   }
   deps.showWarn("這題是", formatQuestionReveal(q), () => {
     pairPicks = [];
+    foundPairKeys = new Set();
     goNextQuestion();
   });
 }
@@ -964,10 +1056,14 @@ function hintText(q) {
   const { a, b, product, blank } = q;
   if (q.isFactorPair) {
     if (session.hintCount === 0) {
+      const required = getRequiredPairKeys(q, session.quizMode);
+      if (required.size > 1) {
+        return `想想看，${q.product} 可以拆成哪幾組乘法？`;
+      }
       return "想想看，九九表裡哪兩個數相乘會等於這個積？";
     }
     const eg = q.validPairLabels?.[0] || "";
-    return eg ? `例如 ${eg} 可以，請選兩個因數` : "兩個因數都在 1～9 之間";
+    return eg ? `例如 ${eg} 是一組，請找齊全部組合` : "兩個因數都在 1～9 之間";
   }
   if (q.isLife && session.hintCount === 0) {
     return `想想：${a} 和 ${b} 相乘`;
@@ -993,8 +1089,8 @@ function isAnswerCorrect(q, value) {
 
 function formatQuestionReveal(q) {
   if (q.isFactorPair) {
-    const opts = q.validPairLabels?.slice(0, 3).join(" 或 ") || "";
-    return `${q.product} ＝ ${opts}`;
+    const keys = getRequiredPairKeys(q, session?.quizMode ?? "full");
+    return `${q.product} ＝ ${formatFoundPairsList(keys)}`;
   }
   return `${q.a} × ${q.b} ＝ ${q.product}`;
 }
@@ -1166,6 +1262,7 @@ export function bindMulEvents() {
     if (confirm("離開測驗？進度不會儲存。")) {
       session = null;
       pairPicks = [];
+      foundPairKeys = new Set();
       resetMulPanels();
       openPick();
     }
