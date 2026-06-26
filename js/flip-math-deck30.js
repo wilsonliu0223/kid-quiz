@@ -1,5 +1,10 @@
-import { duoScores, getChildName, getDuoPlayerIds, otherDuoPlayer } from "./children.js";
-import { renderDuoPickButtons } from "./duo-pick.js";
+import { duoScores, getChildName, otherDuoPlayer } from "./children.js";
+import {
+  canStartDuoBattle,
+  getActiveDuoPlayerIds,
+  refreshDuoBattleUI,
+  renderDuoPickButtons,
+} from "./duo-pick.js";
 
 const DECK_VERSION = "deck30";
 const KEY_MATH_RANGE = "kid-quiz-math-range";
@@ -102,11 +107,7 @@ export function initMathRangePicker() {
 }
 
 export function renderMathHomePlayers() {
-  const ids = getDuoPlayerIds();
-  const aEl = $("#math-setup-player-a-name");
-  const bEl = $("#math-setup-player-b-name");
-  if (aEl) aEl.textContent = ids[0] ? getChildName(ids[0]) : "—";
-  if (bEl) bEl.textContent = ids[1] ? getChildName(ids[1]) : "—";
+  refreshDuoBattleUI();
 }
 
 function mathModeTitle(mode) {
@@ -122,7 +123,7 @@ function renderMathSetupView() {
   const headerEl = $("#math-setup-header");
   if (titleEl) titleEl.textContent = title;
   if (headerEl) headerEl.textContent = title;
-  renderMathHomePlayers();
+  refreshDuoBattleUI();
   syncMathRangeChips();
 }
 
@@ -384,7 +385,7 @@ function startNewRound(keepScores = true) {
   const prev = game;
   const mode = pendingMode || prev?.mode || "open";
   const playerIds =
-    prev?.playerIds?.length === 2 ? prev.playerIds : getDuoPlayerIds();
+    prev?.playerIds?.length === 2 ? prev.playerIds : getActiveDuoPlayerIds();
 
   if (mode === "guess") {
     game = {
@@ -889,7 +890,7 @@ export function beginMathGuess() {
 }
 
 function startWithFirstPlayer(firstPlayerId) {
-  const playerIds = getDuoPlayerIds();
+  const playerIds = getActiveDuoPlayerIds();
   if (playerIds.length < 2 || !playerIds.includes(firstPlayerId)) return;
 
   game = null;
@@ -941,10 +942,10 @@ export function bindMathEvents() {
   });
   $("#btn-math-setup-continue")?.addEventListener("click", () => {
     if (!pendingMode) return;
-    if (getDuoPlayerIds().length < 2) {
+    if (!canStartDuoBattle()) {
       deps.showWarn(
-        "需要兩位小孩",
-        "請在家長區新增至少兩位，並把要對戰的兩位排在最上面"
+        "需要兩位才能對戰",
+        "請在首頁選「誰在練習」，並挑選對戰對象"
       );
       return;
     }

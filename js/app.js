@@ -61,12 +61,12 @@ import {
 import {
   initFlipZh,
   renderFlipHomePlayers,
-} from "./flip-zh.js?v=children-v1";
+} from "./flip-zh.js?v=duo-active-v1";
 import {
   initFlipMath,
   renderMathHomePlayers,
-} from "./flip-math-deck30.js?v=children-v1";
-import { initGomoku, renderGomokuHomePlayers } from "./gomoku.js?v=children-v1";
+} from "./flip-math-deck30.js?v=duo-active-v1";
+import { initGomoku, renderGomokuHomePlayers } from "./gomoku.js?v=duo-active-v1";
 import { initTimesTable, openMulHome } from "./times-table.js?v=mul-pair-v10";
 import {
   addMistake,

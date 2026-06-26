@@ -1,6 +1,7 @@
 const KEY_PENDING = "kid-quiz-pending";
 const KEY_CHILD = "kid-quiz-child";
 const KEY_QUIZ_DRAFT = "kid-quiz-draft";
+const KEY_DUO_OPPONENT = "kid-quiz-duo-opponent";
 
 export function getSelectedChild() {
   return sessionStorage.getItem(KEY_CHILD) || "A";
@@ -8,6 +9,14 @@ export function getSelectedChild() {
 
 export function setSelectedChild(id) {
   sessionStorage.setItem(KEY_CHILD, id);
+}
+
+export function getDuoOpponent(activeChildId) {
+  return sessionStorage.getItem(`${KEY_DUO_OPPONENT}:${activeChildId}`);
+}
+
+export function setDuoOpponent(activeChildId, opponentId) {
+  sessionStorage.setItem(`${KEY_DUO_OPPONENT}:${activeChildId}`, opponentId);
 }
 
 export function loadPending() {

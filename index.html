@@ -11,7 +11,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <title>家裡練習</title>
     <link rel="manifest" href="manifest.json" />
-    <link rel="stylesheet" href="css/app.css?v=duo-desc-v1" />
+    <link rel="stylesheet" href="css/app.css?v=duo-active-v1" />
     <script type="importmap">
       {
         "imports": {
@@ -340,6 +340,19 @@
           </p>
           <p class="flip-first-hint">點一下你的名字，你先翻牌</p>
 
+          <p class="flip-first-meta duo-active-line">
+            誰在練習：<strong id="flip-duo-active-name">思妘</strong>
+          </p>
+          <div class="duo-opponent-picker" role="group" aria-label="對戰對象">
+            <span class="label">對戰對象</span>
+            <div class="lesson-chips" id="flip-duo-opponent-chips"></div>
+          </div>
+          <div class="flip-players-vs math-players-vs" id="flip-duo-matchup">
+            <span id="flip-duo-matchup-a">思妘</span>
+            <span class="flip-vs">vs</span>
+            <span id="flip-duo-matchup-b">思妤</span>
+          </div>
+
           <div class="flip-pick-btns" id="flip-pick-btns"></div>
         </div>
       </section>
@@ -397,6 +410,13 @@
         </header>
         <div class="flip-first-body math-setup-body">
           <h2 class="flip-first-title" id="math-setup-title">數學攤牌</h2>
+          <p class="flip-first-meta duo-active-line">
+            誰在練習：<strong id="math-duo-active-name">思妘</strong>
+          </p>
+          <div class="duo-opponent-picker math-duo-opponent-picker" role="group" aria-label="對戰對象">
+            <span class="label">對戰對象</span>
+            <div class="lesson-chips" id="math-duo-opponent-chips"></div>
+          </div>
           <div class="flip-players-vs math-players-vs" id="math-setup-players-vs">
             <span id="math-setup-player-a-name">思妘</span>
             <span class="flip-vs">vs</span>
@@ -503,6 +523,18 @@
           <h2 class="flip-first-title">誰拿黑子？</h2>
           <p class="flip-first-meta">15×15 · 先連五子獲勝 · 連珠規則</p>
           <p class="flip-first-hint">黑子先手須遵守禁手（三三、四四、長連）；白棋無禁手</p>
+          <p class="flip-first-meta duo-active-line">
+            誰在練習：<strong id="gomoku-duo-active-name">思妘</strong>
+          </p>
+          <div class="duo-opponent-picker" role="group" aria-label="對戰對象">
+            <span class="label">對戰對象</span>
+            <div class="lesson-chips" id="gomoku-duo-opponent-chips"></div>
+          </div>
+          <div class="flip-players-vs gomoku-players-vs" id="gomoku-duo-matchup">
+            <span id="gomoku-duo-matchup-a">思妘</span>
+            <span class="flip-vs">vs</span>
+            <span id="gomoku-duo-matchup-b">思妤</span>
+          </div>
           <div class="flip-pick-btns" id="gomoku-pick-btns"></div>
         </div>
       </section>
@@ -666,7 +698,7 @@
         <div class="parent-body">
           <div id="parent-names" class="parent-names" hidden>
           <h3 class="parent-heading">小孩名字</h3>
-          <p class="parent-note parent-names-hint">可新增多位；雙人對戰使用列表最上面兩位（可用 ↑↓ 調整順序）</p>
+          <p class="parent-note parent-names-hint">可新增多位；雙人對戰會依首頁「誰在練習」配對，再選對戰對象</p>
           <div id="parent-name-list" class="parent-name-list"></div>
           <button type="button" class="btn btn-secondary btn-block" id="btn-add-child-name">
             ＋ 新增小孩
@@ -757,6 +789,6 @@
       </div>
     </div>
 
-    <script type="module" src="js/app.js?v=duo-desc-v1"></script>
+    <script type="module" src="js/app.js?v=duo-active-v1"></script>
   </body>
 </html>

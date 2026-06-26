@@ -1,5 +1,10 @@
-import { duoScores, getChildName, getDuoPlayerIds, otherDuoPlayer } from "./children.js";
-import { renderDuoPickButtons } from "./duo-pick.js";
+import { duoScores, getChildName, otherDuoPlayer } from "./children.js";
+import {
+  canStartDuoBattle,
+  getActiveDuoPlayerIds,
+  refreshDuoBattleUI,
+  renderDuoPickButtons,
+} from "./duo-pick.js";
 
 const KEY_FLIP_PAIR_COUNT = "kid-quiz-flip-pair-count";
 const FLIP_PAIR_OPTIONS = [5, 10, 15, 20];
@@ -92,11 +97,7 @@ export function initFlipPairCountPicker() {
 }
 
 export function renderFlipHomePlayers() {
-  const ids = getDuoPlayerIds();
-  const aEl = $("#flip-player-a-name");
-  const bEl = $("#flip-player-b-name");
-  if (aEl) aEl.textContent = ids[0] ? getChildName(ids[0]) : "—";
-  if (bEl) bEl.textContent = ids[1] ? getChildName(ids[1]) : "—";
+  refreshDuoBattleUI();
 }
 
 /** @returns {{ ok: true, words: object[] } | { ok: false, available: number }} */
@@ -170,6 +171,7 @@ function flipMinClicks(pairCount) {
 }
 
 function renderFirstPicker() {
+  refreshDuoBattleUI();
   renderDuoPickButtons("#flip-pick-btns", {
     onPick: startGameWithFirstPlayer,
   });
@@ -413,11 +415,11 @@ function startGameWithFirstPlayer(firstPlayerId) {
 }
 
 function createFlipLobby(words, pairCount) {
-  const playerIds = getDuoPlayerIds();
+  const playerIds = getActiveDuoPlayerIds();
   if (playerIds.length < 2) {
     deps.showWarn(
-      "需要兩位小孩",
-      "請在家長區新增至少兩位，並把要對戰的兩位排在最上面"
+      "需要兩位才能對戰",
+      "請在首頁選「誰在練習」，並挑選對戰對象"
     );
     return null;
   }

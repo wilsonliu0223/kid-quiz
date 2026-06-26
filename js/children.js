@@ -96,7 +96,12 @@ export function getChildLabel(id) {
   return getChildName(id);
 }
 
-/** 雙人對戰使用列表前兩位 */
+/** 除 active 以外的人，可作為對戰對象 */
+export function getDuoOpponentCandidates(activeChildId) {
+  return getChildren().filter((c) => c.id !== activeChildId);
+}
+
+/** @deprecated 請改用 duo-pick.js 的 getActiveDuoPlayerIds */
 export function getDuoPlayerIds() {
   const kids = getChildren();
   if (kids.length < 2) return [];

@@ -1,6 +1,11 @@
 import { forbiddenLabel, wouldBlackForbidden } from "./gomoku-renju.js?v=gomoku-v2";
-import { getChildName, getDuoPlayerIds, otherDuoPlayer } from "./children.js";
-import { renderDuoPickButtons } from "./duo-pick.js";
+import { getChildName, otherDuoPlayer } from "./children.js";
+import {
+  canStartDuoBattle,
+  getActiveDuoPlayerIds,
+  refreshDuoBattleUI,
+  renderDuoPickButtons,
+} from "./duo-pick.js";
 
 const BOARD_SIZE = 15;
 /** @type {string[]} */
@@ -44,14 +49,11 @@ function otherPlayer(id) {
 }
 
 export function renderGomokuHomePlayers() {
-  const ids = getDuoPlayerIds();
-  const aEl = $("#gomoku-player-a-name");
-  const bEl = $("#gomoku-player-b-name");
-  if (aEl) aEl.textContent = ids[0] ? getChildName(ids[0]) : "—";
-  if (bEl) bEl.textContent = ids[1] ? getChildName(ids[1]) : "—";
+  refreshDuoBattleUI();
 }
 
 function renderFirstPicker() {
+  refreshDuoBattleUI();
   renderDuoPickButtons("#gomoku-pick-btns", {
     onPick: startWithBlackPlayer,
     labelSuffix: "（黑先）",
@@ -271,7 +273,7 @@ function showResult() {
 }
 
 function startWithBlackPlayer(blackPlayerId) {
-  const playerIds = getDuoPlayerIds();
+  const playerIds = getActiveDuoPlayerIds();
   if (playerIds.length < 2 || !playerIds.includes(blackPlayerId)) return;
   duoPlayerIds = playerIds;
   game = {
@@ -289,11 +291,11 @@ function startWithBlackPlayer(blackPlayerId) {
 }
 
 export function beginGomokuFromHome() {
-  duoPlayerIds = getDuoPlayerIds();
-  if (duoPlayerIds.length < 2) {
-    alert("至少需要兩位小孩才能下五子棋，請在家長區新增並把對戰的兩位排在最上面");
+  if (!canStartDuoBattle()) {
+    alert("請在首頁選「誰在練習」，並在對戰設定中挑選對戰對象（至少需要兩位）");
     return;
   }
+  duoPlayerIds = getActiveDuoPlayerIds();
   renderFirstPicker();
   deps.showView("gomokuFirst");
 }

@@ -262,6 +262,23 @@ body {
   font-size: 0.82rem;
 }
 
+.duo-opponent-picker {
+  margin-bottom: 12px;
+}
+
+.duo-opponent-picker .label {
+  display: block;
+  margin-bottom: 6px;
+}
+
+.duo-active-line {
+  margin: 0 0 8px;
+}
+
+.duo-active-line strong {
+  color: var(--math-dark);
+}
+
 .home-zone-meta {
   padding: 0;
   background: transparent;
