@@ -11,7 +11,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <title>家裡練習</title>
     <link rel="manifest" href="manifest.json" />
-    <link rel="stylesheet" href="css/app.css?v=duo-active-v1" />
+    <link rel="stylesheet" href="css/app.css?v=gomoku-zoom-v1" />
     <script type="importmap">
       {
         "imports": {
@@ -549,8 +549,11 @@
           <p class="gomoku-meta" id="gomoku-black-tag">黑子：思妘</p>
           <p class="gomoku-turn-label" id="gomoku-turn-label">輪到：思妘 · 黑子</p>
           <p class="gomoku-renju-hint" id="gomoku-renju-hint">黑棋禁手格會標示 ✕</p>
-          <div class="gomoku-board-wrap">
-            <div class="gomoku-board" id="gomoku-board" role="grid" aria-label="五子棋棋盤"></div>
+          <p class="gomoku-zoom-hint">雙指縮放棋盤 · 滾輪上滾放大</p>
+          <div class="gomoku-board-wrap" id="gomoku-board-viewport">
+            <div class="gomoku-board-stage" id="gomoku-board-stage">
+              <div class="gomoku-board" id="gomoku-board" role="grid" aria-label="五子棋棋盤"></div>
+            </div>
           </div>
         </div>
       </section>
@@ -789,6 +792,6 @@
       </div>
     </div>
 
-    <script type="module" src="js/app.js?v=duo-active-v1"></script>
+    <script type="module" src="js/app.js?v=gomoku-zoom-v1"></script>
   </body>
 </html>

@@ -2971,28 +2971,50 @@ body {
 }
 
 .gomoku-renju-hint {
-  margin: 0 0 0.5rem;
+  margin: 0 0 0.25rem;
   font-size: 0.85rem;
   color: #8d4a2a;
+  text-align: center;
+}
+
+.gomoku-zoom-hint {
+  margin: 0 0 0.35rem;
+  font-size: 0.72rem;
+  color: var(--muted);
   text-align: center;
 }
 
 .gomoku-board-wrap {
   flex: 1;
   min-height: 0;
+  overflow: hidden;
+  touch-action: none;
+  cursor: grab;
+  padding: 2px 0 8px;
+}
+
+.gomoku-board-wrap.is-panning {
+  cursor: grabbing;
+}
+
+.gomoku-board-stage {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 2px 0 8px;
+  width: 100%;
+  height: 100%;
+  transform-origin: center center;
+  will-change: transform;
 }
 
 .gomoku-board {
   display: grid;
   grid-template-columns: repeat(var(--gomoku-size, 15), 1fr);
   gap: 0;
-  width: 100%;
-  max-width: min(100%, 420px);
+  width: min(100%, 420px);
+  max-width: 420px;
   aspect-ratio: 1;
+  flex-shrink: 0;
   background-color: #dcb35c;
   background-image:
     linear-gradient(var(--gomoku-line) 1px, transparent 1px),
@@ -3001,7 +3023,6 @@ body {
   border: 3px solid var(--gomoku-dark);
   border-radius: 6px;
   box-shadow: inset 0 0 12px rgba(0, 0, 0, 0.1);
-  touch-action: manipulation;
 }
 
 .gomoku-cell {

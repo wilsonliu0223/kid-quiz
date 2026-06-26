@@ -1,4 +1,9 @@
 import { forbiddenLabel, wouldBlackForbidden } from "./gomoku-renju.js?v=gomoku-v2";
+import {
+  initGomokuBoardZoom,
+  resetGomokuBoardZoom,
+  wasGomokuBoardPanned,
+} from "./gomoku-board-zoom.js";
 import { getChildName, otherDuoPlayer } from "./children.js";
 import {
   canStartDuoBattle,
@@ -209,6 +214,7 @@ function renderBoard() {
 }
 
 function onCellClick(row, col) {
+  if (wasGomokuBoardPanned()) return;
   if (!game || game.over) return;
   if (game.cells[row][col]) return;
 
@@ -287,6 +293,7 @@ function startWithBlackPlayer(blackPlayerId) {
     winLine: null,
   };
   deps.showView("gomokuPlay");
+  resetGomokuBoardZoom();
   renderBoard();
 }
 
@@ -330,4 +337,5 @@ export function initGomoku(d) {
   deps = d;
   renderGomokuHomePlayers();
   bindGomokuEvents();
+  initGomokuBoardZoom("#gomoku-board-viewport", "#gomoku-board-stage");
 }
