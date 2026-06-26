@@ -113,14 +113,11 @@ function pickBlankTypes(count) {
   return shuffle(out);
 }
 
-function factsForDigit(digit, phase) {
+function allFactsPool() {
   const facts = [];
-  for (let n = 1; n <= 9; n++) {
-    facts.push({ a: digit, b: n, product: digit * n });
-  }
-  if (phase === "B") {
-    for (let n = 1; n <= 9; n++) {
-      facts.push({ a: n, b: digit, product: n * digit });
+  for (const a of DIGITS) {
+    for (const b of DIGITS) {
+      facts.push({ a, b, product: a * b });
     }
   }
   return facts;
@@ -128,7 +125,7 @@ function factsForDigit(digit, phase) {
 
 function buildChoices(answer, inputMode) {
   if (inputMode === "digit19") {
-    const pool = [1, 2, 3, 4, 5, 6, 7, 8, 9].filter((n) => n !== answer);
+    const pool = DIGITS.filter((n) => n !== answer);
     const picks = shuffle(pool).slice(0, 3);
     return shuffle([answer, ...picks]);
   }
@@ -179,12 +176,10 @@ function toQuestion(fact, blank) {
   };
 }
 
-function buildQuiz(digit, phase, onlyKeys = null) {
-  let facts = factsForDigit(digit, phase);
+function buildRandomQuiz(onlyKeys = null) {
+  let facts = allFactsPool();
   if (onlyKeys) {
     facts = facts.filter((f) => onlyKeys.includes(factKey(f.a, f.b)));
-  } else if (phase === "A") {
-    facts = facts.slice(0, 9);
   } else {
     facts = shuffle(facts).slice(0, QUIZ_SIZE);
   }
@@ -342,18 +337,16 @@ function openPick() {
 
 function startQuiz(retryWrongs = false) {
   if (!learnDigit) return;
-  const prog = getDigitProgress(learnDigit);
-  const phase = prog.phaseB ? "B" : "A";
   let questions;
   if (retryWrongs && session?.wrongs?.length) {
     const keys = session.wrongs.map((w) => w.question.factKey);
-    questions = buildQuiz(learnDigit, phase, keys);
+    questions = buildRandomQuiz(keys);
   } else {
-    questions = buildQuiz(learnDigit, phase);
+    questions = buildRandomQuiz();
   }
   session = {
     digit: learnDigit,
-    phase,
+    phase: "random",
     questions,
     index: 0,
     correct: 0,
@@ -371,7 +364,7 @@ function renderQuizQuestion() {
   const q = session.questions[session.index];
   if (!q) return;
   session.hintCount = 0;
-  $("#mul-quiz-title").textContent = `背 ${session.digit} · 測驗`;
+  $("#mul-quiz-title").textContent = `背 ${session.digit} · 隨機 2～9`;
   $("#mul-quiz-progress").textContent = `第 ${session.index + 1} / ${session.questions.length} 題`;
   $("#mul-prompt").textContent = q.prompt;
   const hintEl = $("#mul-quiz-hint");
@@ -391,14 +384,14 @@ function renderFactorPad() {
   const pad = $("#mul-factor-pad");
   if (!pad || pad.dataset.built === "1") return;
   pad.innerHTML = "";
-  for (let n = 1; n <= 9; n++) {
+  DIGITS.forEach((n) => {
     const btn = document.createElement("button");
     btn.type = "button";
     btn.className = "mul-factor-key";
     btn.textContent = String(n);
     btn.addEventListener("click", () => submitAnswer(n));
     pad.appendChild(btn);
-  }
+  });
   pad.dataset.built = "1";
 }
 
@@ -420,12 +413,12 @@ function hintText(q) {
   const { a, b, product, blank } = q;
   if (session.hintCount === 0) {
     if (blank === "product") return `想想 ${a} 個 ${b} 相加會是多少？`;
-    return `這句在背誦的 ${session.digit} 那一列裡`;
+    return `在九九表裡找 ${a} 和 ${b} 那一格`;
   }
   if (blank === "product") {
-    return `答案比 ${product} ${product > 20 ? "小" : "大"} 一點或接近`;
+    return `答案在 ${Math.max(4, product - 10)}～${Math.min(81, product + 10)} 之間`;
   }
-  return `答案在 1～9 之間`;
+  return `答案在 2～9 之間`;
 }
 
 function submitAnswer(value) {
@@ -480,15 +473,15 @@ function showResult() {
     learned: true,
     bestCorrect: Math.max(prog.bestCorrect, correct),
     passed: prog.passed || passed,
-    phaseB: prog.phaseB || (passed && session.phase === "A"),
+    phaseB: prog.phaseB,
   });
 
   $("#mul-result-title").textContent = passed ? "過關了！" : "再練一次";
   $("#mul-result-score").textContent = `${correct} / ${total} 題正確`;
   const sub = $("#mul-result-sub");
   if (sub) {
-    if (passed && session.phase === "A") {
-      sub.textContent = `「${session.digit}」的乘法背好了！之後測驗會混 n×${session.digit}`;
+    if (passed && session.phase === "random") {
+      sub.textContent = `「${session.digit}」背誦過關！隨機測驗也達標`;
     } else if (passed) {
       sub.textContent = `「${session.digit}」已熟練`;
     } else {

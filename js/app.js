@@ -54,7 +54,7 @@ import {
   initFlipMath,
   renderMathHomePlayers,
 } from "./flip-math-deck30.js?v=guess-hot-lt5";
-import { initTimesTable } from "./times-table.js?v=times-table-v1";
+import { initTimesTable } from "./times-table.js?v=mul-random-quiz";
 import {
   addMistake,
   removeMistake,
