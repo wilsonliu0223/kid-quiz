@@ -11,7 +11,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <title>家裡練習</title>
     <link rel="manifest" href="manifest.json" />
-    <link rel="stylesheet" href="css/app.css?v=duo-four-v1" />
+    <link rel="stylesheet" href="css/app.css?v=gomoku-note-v1" />
     <script type="importmap">
       {
         "imports": {
@@ -99,8 +99,11 @@
             <button type="button" class="card card-math-guess" id="btn-start-math-guess">
               <span class="card-title">猜數字</span>
             </button>
-            <button type="button" class="card card-gomoku" id="btn-start-gomoku">
-              <span class="card-title">五子棋</span>
+            <button type="button" class="card card-gomoku card-gomoku-home" id="btn-start-gomoku">
+              <span class="card-gomoku-head">
+                <span class="card-title">五子棋</span>
+                <span class="card-gomoku-note">15×15 · 連珠規則 · 黑先禁手（三三、四四、長連）</span>
+              </span>
             </button>
           </div>
         </div>

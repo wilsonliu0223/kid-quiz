@@ -2867,6 +2867,34 @@ body {
   color: var(--gomoku-dark);
 }
 
+.home-zone-duo .card-gomoku-home {
+  align-items: stretch;
+  justify-content: flex-start;
+  min-height: 52px;
+  padding: 12px 14px;
+}
+
+.card-gomoku-home .card-gomoku-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 8px;
+  width: 100%;
+  text-align: left;
+}
+
+.card-gomoku-home .card-title {
+  flex-shrink: 0;
+}
+
+.card-gomoku-note {
+  font-size: 0.72rem;
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--gomoku-dark);
+  opacity: 0.88;
+}
+
 .card-gomoku {
   background: linear-gradient(135deg, #faf3e8 0%, #edd9b8 100%);
   border: 2px solid #c9a66b;
