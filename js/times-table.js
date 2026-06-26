@@ -19,6 +19,7 @@ let learnDigit = null;
 let reciteTimer = null;
 let reciteIndex = 0;
 let revealIndex = 0;
+let revealLifePrompt = "";
 
 /**
  * @typedef {object} MulDeps
@@ -425,11 +426,10 @@ function renderRevealChoicePad(answer) {
 function submitRevealAnswer(value, expected) {
   const hint = $("#mul-reveal-hint");
   if (value === expected) {
-    deps.showOk(
-      "答對了！",
-      `${learnDigit} × ${revealIndex + 1} ＝ ${expected}`,
-      () => advanceRevealLine()
-    );
+    const lifeLine = revealLifePrompt
+      ? revealLifePrompt.replace("□", String(expected))
+      : `${learnDigit} × ${revealIndex + 1} ＝ ${expected}`;
+    deps.showOk("答對了！", lifeLine, () => advanceRevealLine());
     return;
   }
   if (hint) {
@@ -457,6 +457,12 @@ function renderRevealCard() {
   const answer = learnDigit * n;
   const eq = $("#mul-reveal-equation");
   const hint = $("#mul-reveal-hint");
+  const lifeEl = $("#mul-reveal-life-story");
+  revealLifePrompt = lifeQuestionText(learnDigit, n, answer, "product");
+  if (lifeEl) {
+    lifeEl.textContent = revealLifePrompt;
+    lifeEl.hidden = false;
+  }
   if (eq) {
     eq.textContent = `${learnDigit} × ${n} ＝ □`;
   }

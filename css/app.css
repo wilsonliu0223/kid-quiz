@@ -2295,6 +2295,10 @@ body {
   cursor: default;
 }
 
+#mul-reveal-life-story {
+  margin-bottom: 8px;
+}
+
 #mul-reveal-choice-pad {
   margin-top: 8px;
 }
