@@ -32,8 +32,8 @@ let revealLifePrompt = "";
  */
 
 /**
- * @typedef {'product'|'factorA'|'factorB'} MulBlank
- * @typedef {'choices'|'digit19'} MulInputMode
+ * @typedef {'product'|'factorA'|'factorB'|'factorPair'} MulBlank
+ * @typedef {'choices'|'digit19'|'factorPair'} MulInputMode
  * @typedef {object} MulQuestion
  * @property {number} a
  * @property {number} b
@@ -46,6 +46,8 @@ let revealLifePrompt = "";
  * @property {string} factKey
  * @property {boolean} [isLife]
  * @property {string} [lifePrompt]
+ * @property {boolean} [isFactorPair]
+ * @property {string[]} [validPairLabels]
  *
  * @typedef {object} MulWrong
  * @property {MulQuestion} question
@@ -184,6 +186,152 @@ function quizTitle(session) {
   return `背 ${session.digit} · 測驗`;
 }
 
+const HARD_PAIR_COUNT_FULL = 6;
+const HARD_PAIR_COUNT_DIGIT = 3;
+
+function pairLabel(a, b) {
+  return `${a} × ${b}`;
+}
+
+function factorPairKey(product) {
+  return `pair${product}`;
+}
+
+/** 積的所有合法「□ × □」寫法（因數在 min～max） */
+function allValidPairLabels(product, minF, maxF) {
+  const labels = new Set();
+  for (let a = minF; a <= maxF; a++) {
+    if (product % a !== 0) continue;
+    const b = product / a;
+    if (b >= minF && b <= maxF) labels.add(pairLabel(a, b));
+  }
+  return [...labels];
+}
+
+function unorderedPairCount(product, minF, maxF) {
+  const seen = new Set();
+  for (let a = minF; a <= maxF; a++) {
+    if (product % a !== 0) continue;
+    const b = product / a;
+    if (b < minF || b > maxF) continue;
+    seen.add(`${Math.min(a, b)}x${Math.max(a, b)}`);
+  }
+  return seen.size;
+}
+
+function pickFactorPairProducts(quizMode, count, digit = null) {
+  const minF = isDigitKeypadMode(quizMode) ? 1 : 2;
+  let pool = [];
+  for (let p = 4; p <= 81; p++) {
+    if (unorderedPairCount(p, minF, 9) >= 2) pool.push(p);
+  }
+  if (digit) {
+    const filtered = pool.filter((p) => p % digit === 0);
+    if (filtered.length >= Math.min(count, 1)) pool = filtered;
+  }
+  return shuffle(pool).slice(0, count);
+}
+
+function buildFactorPairChoices(product, validLabels, quizMode) {
+  const minF = isDigitKeypadMode(quizMode) ? 1 : 2;
+  const maxF = 9;
+  const wrong = new Set();
+  let tries = 0;
+  while (wrong.size < 3 && tries < 100) {
+    tries += 1;
+    const a = minF + Math.floor(Math.random() * (maxF - minF + 1));
+    const b = minF + Math.floor(Math.random() * (maxF - minF + 1));
+    const label = pairLabel(a, b);
+    if (a * b !== product && !validLabels.includes(label)) wrong.add(label);
+  }
+  for (let d = 1; wrong.size < 3 && d <= 12; d++) {
+    for (const sign of [1, -1]) {
+      const p2 = product + sign * d;
+      if (p2 < 4 || p2 > 81) continue;
+      const a = minF + Math.floor(Math.random() * (maxF - minF + 1));
+      if (p2 % a !== 0) continue;
+      const b = p2 / a;
+      if (b >= minF && b <= maxF) wrong.add(pairLabel(a, b));
+    }
+  }
+  const correct = validLabels[Math.floor(Math.random() * validLabels.length)];
+  return shuffle([correct, ...[...wrong].slice(0, 3)]);
+}
+
+function toFactorPairQuestion(product, quizMode) {
+  const minF = isDigitKeypadMode(quizMode) ? 1 : 2;
+  const validLabels = allValidPairLabels(product, minF, 9);
+  if (!validLabels.length) return null;
+  const choices = buildFactorPairChoices(product, validLabels, quizMode);
+  const [a, b] = validLabels[0].split("×").map((s) => parseInt(s.trim(), 10));
+  return {
+    a,
+    b,
+    product,
+    blank: /** @type {MulBlank} */ ("factorPair"),
+    prompt: `${product} ＝ □ × □`,
+    answer: 0,
+    inputMode: /** @type {MulInputMode} */ ("factorPair"),
+    choices,
+    validPairLabels: validLabels,
+    factKey: factorPairKey(product),
+    isFactorPair: true,
+  };
+}
+
+function rebuildHardFromKeys(onlyKeys, quizMode, digit) {
+  const qs = [];
+  let factIdx = 0;
+  onlyKeys.forEach((key) => {
+    if (key.startsWith("pair")) {
+      const product = parseInt(key.slice(4), 10);
+      const q = toFactorPairQuestion(product, quizMode);
+      if (q) qs.push(q);
+      return;
+    }
+    const m = key.match(/^(\d+)x(\d+)$/);
+    if (!m) return;
+    const fact = {
+      a: parseInt(m[1], 10),
+      b: parseInt(m[2], 10),
+      product: parseInt(m[1], 10) * parseInt(m[2], 10),
+    };
+    if (digit && fact.a !== digit) return;
+    const blank = /** @type {MulBlank[]} */ (["factorA", "factorB"])[
+      factIdx % 2
+    ];
+    factIdx += 1;
+    qs.push(toQuestion(fact, blank, quizMode, { isLife: true }));
+  });
+  return qs;
+}
+
+function mixHardQuestions(quizMode, digit = null, onlyKeys = null) {
+  if (onlyKeys) return rebuildHardFromKeys(onlyKeys, quizMode, digit);
+
+  const isFull = quizMode === "full";
+  const total = isFull ? HARD_QUIZ_SIZE : QUIZ_SIZE;
+  const pairCount = isFull ? HARD_PAIR_COUNT_FULL : HARD_PAIR_COUNT_DIGIT;
+  const regularCount = total - pairCount;
+
+  const pairProducts = pickFactorPairProducts(quizMode, pairCount, digit);
+  const pairQs = pairProducts
+    .map((p) => toFactorPairQuestion(p, quizMode))
+    .filter(Boolean);
+
+  let facts =
+    digit !== null ? factsForDigit(digit) : shuffle(allFactsPool()).slice(0, regularCount);
+  if (digit !== null) {
+    facts = shuffle(facts).slice(0, regularCount);
+  }
+  const blanks = pickFactorOnlyBlanks(facts.length);
+  const regularQs = facts.map((f, i) =>
+    toQuestion(f, blanks[i], quizMode, { isLife: true })
+  );
+
+  return shuffle([...pairQs, ...regularQs]);
+}
+
 function allFactsPool() {
   const facts = [];
   for (const a of DIGITS) {
@@ -284,14 +432,7 @@ function buildDigitQuiz(digit, onlyKeys = null) {
 }
 
 function buildHardDigitQuiz(digit, onlyKeys = null) {
-  let facts = factsForDigit(digit);
-  if (onlyKeys) {
-    facts = facts.filter((f) => onlyKeys.includes(factKey(f.a, f.b)));
-  }
-  const blanks = pickFactorOnlyBlanks(facts.length);
-  return facts.map((f, i) =>
-    toQuestion(f, blanks[i], "digit", { isLife: true })
-  );
+  return mixHardQuestions("digit", digit, onlyKeys);
 }
 
 function buildRandomQuiz(onlyKeys = null) {
@@ -309,16 +450,7 @@ function buildRandomQuiz(onlyKeys = null) {
 }
 
 function buildHardRandomQuiz(onlyKeys = null) {
-  let facts = allFactsPool();
-  if (onlyKeys) {
-    facts = facts.filter((f) => onlyKeys.includes(factKey(f.a, f.b)));
-  } else {
-    facts = shuffle(facts).slice(0, HARD_QUIZ_SIZE);
-  }
-  const blanks = pickFactorOnlyBlanks(facts.length);
-  return facts.map((f, i) =>
-    toQuestion(f, blanks[i], "full", { isLife: true })
-  );
+  return mixHardQuestions("full", null, onlyKeys);
 }
 
 function stopRecite() {
@@ -339,9 +471,10 @@ function setMulPanelVisible(el, show, display = "flex") {
 function applyMulQuizAnswerPanels(inputMode) {
   const factorPad = $("#mul-factor-pad");
   const choicePad = $("#mul-choice-pad");
-  const isFactor = inputMode === "digit19";
-  setMulPanelVisible(factorPad, isFactor, "grid");
-  setMulPanelVisible(choicePad, !isFactor, "grid");
+  const pairPad = $("#mul-pair-pad");
+  setMulPanelVisible(factorPad, inputMode === "digit19", "grid");
+  setMulPanelVisible(choicePad, inputMode === "choices", "grid");
+  setMulPanelVisible(pairPad, inputMode === "factorPair", "grid");
 }
 
 function applyMulLearnPanels(mode) {
@@ -376,6 +509,7 @@ function resetMulPanels() {
   applyMulQuizAnswerPanels("digit19");
   setMulPanelVisible($("#mul-factor-pad"), false, "grid");
   setMulPanelVisible($("#mul-choice-pad"), false, "grid");
+  setMulPanelVisible($("#mul-pair-pad"), false, "grid");
 }
 
 function renderDigitGrid() {
@@ -573,7 +707,7 @@ function renderHardFullBlock() {
       ? `已過關 · 最佳 ${prog.hardBestCorrect}/${HARD_QUIZ_SIZE}`
       : prog.hardBestCorrect > 0
         ? `最佳 ${prog.hardBestCorrect}/${HARD_QUIZ_SIZE}`
-        : "18 題 · 全生活題 · 求因數";
+        : "18 題 · 生活題 · 因數分解";
   }
   const btn = $("#btn-mul-hard-full-quiz");
   if (btn) btn.classList.toggle("mul-hard-passed", !!prog.hardPassed);
@@ -677,16 +811,22 @@ function renderQuizQuestion() {
   }
   const hintEl = $("#mul-quiz-hint");
   if (hintEl) {
-    hintEl.textContent = isHardQuizMode(session.quizMode)
-      ? "進階題：想想生活題，選因數"
-      : q.isLife
-        ? "想想生活題，再選答案"
-        : "選出正確答案";
+    if (q.isFactorPair) {
+      hintEl.textContent = "選一組乘法，兩個數相乘要等於上面的數";
+    } else if (isHardQuizMode(session.quizMode)) {
+      hintEl.textContent = "進階題：想想生活題，選因數";
+    } else if (q.isLife) {
+      hintEl.textContent = "想想生活題，再選答案";
+    } else {
+      hintEl.textContent = "選出正確答案";
+    }
     hintEl.className = "mul-quiz-hint";
   }
   applyMulQuizAnswerPanels(q.inputMode);
   if (q.inputMode === "digit19") {
     renderFactorPad(session.quizMode);
+  } else if (q.inputMode === "factorPair") {
+    renderPairPad(q);
   } else {
     renderChoicePad(q);
   }
@@ -709,6 +849,20 @@ function renderFactorPad(quizMode = "full") {
   });
 }
 
+function renderPairPad(q) {
+  const pad = $("#mul-pair-pad");
+  if (!pad) return;
+  pad.innerHTML = "";
+  q.choices.forEach((label) => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "mul-pair-key";
+    btn.textContent = label;
+    btn.addEventListener("click", () => submitAnswer(label));
+    pad.appendChild(btn);
+  });
+}
+
 function renderChoicePad(q) {
   const pad = $("#mul-choice-pad");
   if (!pad) return;
@@ -725,6 +879,15 @@ function renderChoicePad(q) {
 
 function hintText(q) {
   const { a, b, product, blank } = q;
+  if (q.isFactorPair) {
+    if (session.hintCount === 0) {
+      return "想想看，九九表裡哪兩個數相乘會等於這個積？";
+    }
+    const eg = q.validPairLabels?.[0] || "";
+    return eg
+      ? `例如 ${eg} 就是一種答案，也可能有別的組合`
+      : "兩個因數都在 1～9 之間";
+  }
   if (q.isLife && session.hintCount === 0) {
     return `想想：${a} 和 ${b} 相乘`;
   }
@@ -743,14 +906,34 @@ function hintText(q) {
     : `答案在 2～9 之間`;
 }
 
+function isAnswerCorrect(q, value) {
+  if (q.inputMode === "factorPair") {
+    return q.validPairLabels?.includes(String(value)) ?? false;
+  }
+  return value === q.answer;
+}
+
+function formatQuestionReveal(q) {
+  if (q.isFactorPair) {
+    const opts = q.validPairLabels?.slice(0, 3).join(" 或 ") || "";
+    return `${q.product} ＝ ${opts}`;
+  }
+  return `${q.a} × ${q.b} ＝ ${q.product}`;
+}
+
 function submitAnswer(value) {
   if (!session) return;
   const q = session.questions[session.index];
-  if (value === q.answer) {
+  if (isAnswerCorrect(q, value)) {
     session.correct += 1;
-    const okSub = q.isLife && q.lifePrompt
-      ? `${q.lifePrompt.replace("□", String(q.answer))}`
-      : q.prompt.replace("□", String(q.answer));
+    let okSub;
+    if (q.isFactorPair) {
+      okSub = `${q.product} ＝ ${value}`;
+    } else if (q.isLife && q.lifePrompt) {
+      okSub = `${q.lifePrompt.replace("□", String(q.answer))}`;
+    } else {
+      okSub = q.prompt.replace("□", String(q.answer));
+    }
     deps.showOk("答對了！", okSub, () => {
       goNextQuestion();
     });
@@ -772,11 +955,7 @@ function submitAnswer(value) {
   if (!session.wrongs.find((w) => w.question.factKey === q.factKey)) {
     session.wrongs.push({ question: q, attempts: session.hintCount });
   }
-  deps.showWarn(
-    "這題是",
-    `${q.a} × ${q.b} ＝ ${q.product}`,
-    () => goNextQuestion()
-  );
+  deps.showWarn("這題是", formatQuestionReveal(q), () => goNextQuestion());
 }
 
 function goNextQuestion() {
@@ -862,7 +1041,7 @@ function showResult() {
       wrongList.hidden = false;
       session.wrongs.forEach((w) => {
         const li = document.createElement("li");
-        li.textContent = `${w.question.a} × ${w.question.b} ＝ ${w.question.product}`;
+        li.textContent = formatQuestionReveal(w.question);
         wrongList.appendChild(li);
       });
     }

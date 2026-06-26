@@ -2460,8 +2460,16 @@ body {
 }
 
 .mul-factor-pad[hidden],
-.mul-choice-pad[hidden] {
+.mul-choice-pad[hidden],
+.mul-pair-pad[hidden] {
   display: none !important;
+}
+
+.mul-pair-pad {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  padding-bottom: 8px;
 }
 
 .mul-factor-key,
@@ -2473,6 +2481,17 @@ body {
   border: 2px solid #9ccfb0;
   background: #fff;
   color: #2d6b4a;
+  touch-action: manipulation;
+}
+
+.mul-pair-key {
+  min-height: 52px;
+  font-size: 1.15rem;
+  font-weight: 700;
+  border-radius: 12px;
+  border: 2px solid #d4a060;
+  background: #fffaf5;
+  color: #8a4a12;
   touch-action: manipulation;
 }
 
