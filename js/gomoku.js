@@ -127,85 +127,124 @@ function renderPlayHeader() {
   }
   if (renjuHint) {
     const isBlackTurn = game.currentPlayerId === game.blackPlayerId;
-    renjuHint.hidden = !isBlackTurn;
-    renjuHint.textContent = isBlackTurn
-      ? "黑棋禁手格會標示 ✕（三三、四四、長連）"
-      : "";
+    renjuHint.classList.toggle("is-visible", isBlackTurn);
+    renjuHint.setAttribute("aria-hidden", String(!isBlackTurn));
   }
 }
 
-function renderBoard() {
+function getCellBtn(row, col) {
   const grid = $("#gomoku-board");
-  if (!grid || !game) return;
+  return grid?.querySelector(`[data-row="${row}"][data-col="${col}"]`) || null;
+}
+
+function buildCellButton(row, col) {
+  const btn = document.createElement("button");
+  btn.type = "button";
+  btn.className = "gomoku-cell";
+  btn.dataset.row = String(row);
+  btn.dataset.col = String(col);
+  return btn;
+}
+
+function forbiddenAt(row, col) {
+  if (!game || game.over || game.currentPlayerId !== game.blackPlayerId) return null;
+  if (game.cells[row][col]) return null;
+  const whiteId = otherPlayer(game.blackPlayerId);
+  return wouldBlackForbidden(
+    game.cells,
+    row,
+    col,
+    game.blackPlayerId,
+    whiteId,
+    hasFiveWin
+  );
+}
+
+function applyCellState(btn, row, col) {
+  if (!game || !btn) return;
+  const cell = game.cells[row][col];
+  const idx = row * BOARD_SIZE + col;
+
+  btn.className = "gomoku-cell";
+  btn.replaceChildren();
+  btn.onclick = null;
+
+  if (cell) {
+    btn.classList.add("gomoku-cell-filled");
+    btn.classList.add(
+      cell === game.blackPlayerId ? "gomoku-stone-black" : "gomoku-stone-white"
+    );
+    btn.disabled = true;
+    const stone = document.createElement("span");
+    stone.className = "gomoku-stone";
+    stone.setAttribute("aria-hidden", "true");
+    btn.appendChild(stone);
+    btn.setAttribute("aria-label", `${playerName(cell)} ${stoneLabel(cell)}`);
+  } else {
+    btn.disabled = game.over;
+    const forbidden = forbiddenAt(row, col);
+    if (forbidden) {
+      btn.classList.add("gomoku-cell-forbidden");
+      btn.setAttribute("aria-label", `禁手：${forbiddenLabel(forbidden)}`);
+      btn.onclick = () => alert(`不能下這裡：${forbiddenLabel(forbidden)}`);
+    } else if (!game.over) {
+      btn.setAttribute("aria-label", `第 ${row + 1} 行第 ${col + 1} 列`);
+      btn.onclick = () => onCellClick(row, col);
+    }
+  }
+
+  if (game.lastMove && game.lastMove[0] === row && game.lastMove[1] === col) {
+    btn.classList.add("gomoku-cell-last");
+  }
+  if (game.winLine?.has(idx)) {
+    btn.classList.add("gomoku-cell-win");
+  }
+}
+
+function ensureBoardGrid() {
+  const grid = $("#gomoku-board");
+  if (!grid || !game) return null;
+  if (grid.dataset.built === "1") return grid;
 
   grid.innerHTML = "";
   grid.style.setProperty("--gomoku-size", String(BOARD_SIZE));
+  for (let row = 0; row < BOARD_SIZE; row++) {
+    for (let col = 0; col < BOARD_SIZE; col++) {
+      grid.appendChild(buildCellButton(row, col));
+    }
+  }
+  grid.dataset.built = "1";
+  return grid;
+}
+
+function syncBoardAfterMove(changedRow, changedCol, prevLastMove) {
+  applyCellState(getCellBtn(changedRow, changedCol), changedRow, changedCol);
+
+  if (prevLastMove) {
+    const [pr, pc] = prevLastMove;
+    if (pr !== changedRow || pc !== changedCol) {
+      applyCellState(getCellBtn(pr, pc), pr, pc);
+    }
+  }
 
   for (let row = 0; row < BOARD_SIZE; row++) {
     for (let col = 0; col < BOARD_SIZE; col++) {
-      const idx = row * BOARD_SIZE + col;
-      const cell = game.cells[row][col];
-      const btn = document.createElement("button");
-      btn.type = "button";
-      btn.className = "gomoku-cell";
-      btn.dataset.row = String(row);
-      btn.dataset.col = String(col);
-      btn.setAttribute(
-        "aria-label",
-        cell
-          ? `${playerName(cell)} ${stoneLabel(cell)}`
-          : `第 ${row + 1} 行第 ${col + 1} 列`
-      );
+      if (game.cells[row][col]) continue;
+      if (row === changedRow && col === changedCol) continue;
+      applyCellState(getCellBtn(row, col), row, col);
+    }
+  }
 
-      if (cell) {
-        btn.classList.add("gomoku-cell-filled");
-        btn.classList.add(cell === game.blackPlayerId ? "gomoku-stone-black" : "gomoku-stone-white");
-        btn.disabled = true;
-        const stone = document.createElement("span");
-        stone.className = "gomoku-stone";
-        stone.setAttribute("aria-hidden", "true");
-        btn.appendChild(stone);
-      } else {
-        btn.disabled = game.over;
-        const isBlackTurn =
-          !game.over && game.currentPlayerId === game.blackPlayerId;
-        if (isBlackTurn) {
-          const whiteId = otherPlayer(game.blackPlayerId);
-          const forbidden = wouldBlackForbidden(
-            game.cells,
-            row,
-            col,
-            game.blackPlayerId,
-            whiteId,
-            hasFiveWin
-          );
-          if (forbidden) {
-            btn.classList.add("gomoku-cell-forbidden");
-            btn.setAttribute(
-              "aria-label",
-              `禁手：${forbiddenLabel(forbidden)}`
-            );
-          }
-        }
-      }
+  renderPlayHeader();
+}
 
-      if (game.lastMove && game.lastMove[0] === row && game.lastMove[1] === col) {
-        btn.classList.add("gomoku-cell-last");
-      }
-      if (game.winLine?.has(idx)) {
-        btn.classList.add("gomoku-cell-win");
-      }
+function renderBoard() {
+  const grid = ensureBoardGrid();
+  if (!grid || !game) return;
 
-      if (!game.over && !cell) {
-        if (btn.classList.contains("gomoku-cell-forbidden")) {
-          const label = btn.getAttribute("aria-label") || "禁手";
-          btn.addEventListener("click", () => alert(`不能下這裡：${label.replace(/^禁手：/, "")}`));
-        } else {
-          btn.addEventListener("click", () => onCellClick(row, col));
-        }
-      }
-
-      grid.appendChild(btn);
+  for (let row = 0; row < BOARD_SIZE; row++) {
+    for (let col = 0; col < BOARD_SIZE; col++) {
+      applyCellState(getCellBtn(row, col), row, col);
     }
   }
 
@@ -233,6 +272,7 @@ function onCellClick(row, col) {
     }
   }
 
+  const prevLastMove = game.lastMove;
   game.cells[row][col] = player;
   game.lastMove = [row, col];
 
@@ -255,7 +295,7 @@ function onCellClick(row, col) {
   }
 
   game.currentPlayerId = otherPlayer(player);
-  renderBoard();
+  syncBoardAfterMove(row, col, prevLastMove);
 }
 
 function showResult() {
@@ -290,6 +330,8 @@ function startWithBlackPlayer(blackPlayerId) {
     lastMove: null,
     winLine: null,
   };
+  const grid = $("#gomoku-board");
+  if (grid) delete grid.dataset.built;
   deps.showView("gomokuPlay");
   resetGomokuBoardZoom();
   renderBoard();

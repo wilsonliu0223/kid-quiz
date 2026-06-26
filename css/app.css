@@ -2954,7 +2954,18 @@ body {
   display: flex;
   flex-direction: column;
   min-height: 0;
-  gap: 6px;
+  gap: 4px;
+}
+
+.gomoku-status-bar {
+  flex-shrink: 0;
+  min-height: 4.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: 0 8px;
 }
 
 .gomoku-meta,
@@ -2963,6 +2974,8 @@ body {
   text-align: center;
   font-size: 0.78rem;
   color: var(--muted);
+  line-height: 1.35;
+  min-height: 1.35em;
 }
 
 .gomoku-turn-label {
@@ -2971,15 +2984,25 @@ body {
 }
 
 .gomoku-renju-hint {
-  margin: 0 0 0.25rem;
+  margin: 0;
+  min-height: 1.35em;
   font-size: 0.85rem;
+  line-height: 1.35;
   color: #8d4a2a;
   text-align: center;
+  visibility: hidden;
+}
+
+.gomoku-renju-hint.is-visible {
+  visibility: visible;
 }
 
 .gomoku-zoom-hint {
-  margin: 0 0 0.35rem;
+  flex-shrink: 0;
+  margin: 0;
+  min-height: 1.35em;
   font-size: 0.72rem;
+  line-height: 1.35;
   color: var(--muted);
   text-align: center;
 }
