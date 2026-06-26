@@ -11,7 +11,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <title>家裡練習</title>
     <link rel="manifest" href="manifest.json" />
-    <link rel="stylesheet" href="css/app.css?v=gomoku-v2" />
+    <link rel="stylesheet" href="css/app.css?v=math-setup-v1" />
     <script type="importmap">
       {
         "imports": {
@@ -96,19 +96,7 @@
 
           <div class="home-duo-group home-duo-group-math">
             <h3 class="home-duo-label">數學對戰</h3>
-            <div class="flip-players-vs math-players-vs" id="math-players-vs">
-              <span id="math-player-a-name">思妘</span>
-              <span class="flip-vs">vs</span>
-              <span id="math-player-b-name">思妤</span>
-            </div>
-            <div class="math-range-picker" role="group" aria-label="目標範圍">
-              <span class="label">目標範圍</span>
-              <div class="lesson-chips" id="math-range-chips">
-                <button type="button" class="chip chip-active" data-math-range="100">10～100</button>
-                <button type="button" class="chip" data-math-range="1000">100～1000</button>
-              </div>
-            </div>
-            <p class="home-duo-hint">先 5 分勝 · 攤牌／翻牌／猜數字</p>
+            <p class="home-duo-hint">兩人同機 · 先 5 分勝</p>
             <button type="button" class="card card-math-open" id="btn-start-math-open">
               <span class="card-title">數學攤牌</span>
               <span class="card-desc">全部攤開選牌</span>
@@ -417,6 +405,33 @@
           <button type="button" class="btn btn-primary btn-block" id="btn-flip-replay">再玩一局</button>
           <button type="button" class="btn btn-secondary btn-block" id="btn-flip-home">回首頁</button>
         </footer>
+      </section>
+
+      <!-- 數學：選模式後設定（目標範圍） -->
+      <section id="view-math-setup" class="view view-hidden" aria-label="數學對戰設定">
+        <header class="quiz-header quiz-header-math">
+          <button type="button" class="btn-text" id="btn-math-setup-back">← 返回</button>
+          <span class="quiz-subject" id="math-setup-header">數學對戰</span>
+        </header>
+        <div class="flip-first-body math-setup-body">
+          <h2 class="flip-first-title" id="math-setup-title">數學攤牌</h2>
+          <div class="flip-players-vs math-players-vs" id="math-setup-players-vs">
+            <span id="math-setup-player-a-name">思妘</span>
+            <span class="flip-vs">vs</span>
+            <span id="math-setup-player-b-name">思妤</span>
+          </div>
+          <div class="math-range-picker math-setup-range-picker" role="group" aria-label="目標範圍">
+            <span class="label">目標範圍</span>
+            <div class="lesson-chips" id="math-setup-range-chips">
+              <button type="button" class="chip chip-active" data-math-range="100">10～100</button>
+              <button type="button" class="chip" data-math-range="1000">100～1000</button>
+            </div>
+          </div>
+          <p class="flip-first-meta">先 5 分勝</p>
+          <button type="button" class="btn btn-primary btn-block btn-primary-math" id="btn-math-setup-continue">
+            選誰先
+          </button>
+        </div>
       </section>
 
       <!-- 數學：選先手 -->
@@ -767,6 +782,6 @@
       </div>
     </div>
 
-    <script type="module" src="js/app.js?v=gomoku-v2"></script>
+    <script type="module" src="js/app.js?v=math-setup-v1"></script>
   </body>
 </html>

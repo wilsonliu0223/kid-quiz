@@ -1874,6 +1874,14 @@ body {
   margin-bottom: 10px;
 }
 
+.math-setup-body .math-setup-range-picker {
+  margin: 12px 0 16px;
+}
+
+.math-setup-body .flip-first-meta {
+  margin-bottom: 20px;
+}
+
 .math-players-vs {
   margin-bottom: 4px;
   color: var(--math-dark);

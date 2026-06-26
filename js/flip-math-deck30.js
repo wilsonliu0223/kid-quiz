@@ -74,7 +74,7 @@ function setMathRangeSetting(key) {
 }
 
 export function syncMathRangeChips() {
-  const container = $("#math-range-chips");
+  const container = $("#math-setup-range-chips");
   if (!container) return;
   const current = getMathRangeSetting();
   container.querySelectorAll(".chip").forEach((btn) => {
@@ -83,7 +83,7 @@ export function syncMathRangeChips() {
 }
 
 export function initMathRangePicker() {
-  const container = $("#math-range-chips");
+  const container = $("#math-setup-range-chips");
   if (!container) return;
   container.querySelectorAll(".chip").forEach((btn) => {
     btn.addEventListener("click", () => {
@@ -99,10 +99,27 @@ export function initMathRangePicker() {
 
 export function renderMathHomePlayers() {
   const names = deps?.getChildNames() || { A: "A", B: "B" };
-  const aEl = $("#math-player-a-name");
-  const bEl = $("#math-player-b-name");
+  const aEl = $("#math-setup-player-a-name");
+  const bEl = $("#math-setup-player-b-name");
   if (aEl) aEl.textContent = names.A;
   if (bEl) bEl.textContent = names.B;
+}
+
+function mathModeTitle(mode) {
+  if (mode === "flip") return "數學翻牌";
+  if (mode === "guess") return "猜數字";
+  return "數學攤牌";
+}
+
+function renderMathSetupView() {
+  const mode = pendingMode || "open";
+  const title = mathModeTitle(mode);
+  const titleEl = $("#math-setup-title");
+  const headerEl = $("#math-setup-header");
+  if (titleEl) titleEl.textContent = title;
+  if (headerEl) headerEl.textContent = title;
+  renderMathHomePlayers();
+  syncMathRangeChips();
 }
 
 function buildDeck() {
@@ -842,8 +859,8 @@ function renderMathFirstPicker() {
 function beginMath(mode) {
   pendingMode = mode;
   applyMathPlayPanels(mode);
-  renderMathFirstPicker();
-  deps.showView("mathFirst");
+  renderMathSetupView();
+  deps.showView("mathSetup");
 }
 
 export function beginMathOpen() {
@@ -900,13 +917,25 @@ export function bindMathEvents() {
     e.preventDefault();
     beginMathGuess();
   });
+  $("#btn-math-setup-back")?.addEventListener("click", () => {
+    pendingMode = null;
+    applyMathPlayPanels(null);
+    deps.showView("home");
+  });
+  $("#btn-math-setup-continue")?.addEventListener("click", () => {
+    if (!pendingMode) return;
+    renderMathFirstPicker();
+    deps.showView("mathFirst");
+  });
   $("#math-pick-a")?.addEventListener("click", () => startWithFirstPlayer("A"));
   $("#math-pick-b")?.addEventListener("click", () => startWithFirstPlayer("B"));
   $("#btn-math-first-back")?.addEventListener("click", () => {
-    pendingMode = null;
-    game = null;
-    applyMathPlayPanels(null);
-    deps.showView("home");
+    if (!pendingMode) {
+      deps.showView("home");
+      return;
+    }
+    renderMathSetupView();
+    deps.showView("mathSetup");
   });
   $("#btn-math-play-back")?.addEventListener("click", () => {
     if (confirm("離開對戰？進度不會儲存。")) {

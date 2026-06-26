@@ -59,7 +59,7 @@ import {
 import {
   initFlipMath,
   renderMathHomePlayers,
-} from "./flip-math-deck30.js?v=guess-hot-lt5";
+} from "./flip-math-deck30.js?v=math-setup-v1";
 import { initGomoku, renderGomokuHomePlayers } from "./gomoku.js?v=gomoku-v2";
 import { initTimesTable, openMulHome } from "./times-table.js?v=mul-pair-v10";
 import {
@@ -145,6 +145,7 @@ const views = {
   flipFirst: $("#view-flip-first"),
   flipPlay: $("#view-flip-play"),
   flipResult: $("#view-flip-result"),
+  mathSetup: $("#view-math-setup"),
   mathFirst: $("#view-math-first"),
   mathPlay: $("#view-math-play"),
   mathResult: $("#view-math-result"),
