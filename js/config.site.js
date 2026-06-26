@@ -51,4 +51,18 @@ export const CONFIG = {
   /** 答錯複寫：HanziWriter 疊在手寫格底層（opacity 約 0.32） */
   STROKE_ORDER_ENABLED: true,
   STROKE_ORDER_DELAY: 500,
+
+  /**
+   * Firebase 兩台手機對戰（見 docs/firebase-setup.md）
+   * 未填寫時「兩台手機」會顯示設定教學。
+   */
+  FIREBASE: {
+    apiKey: "",
+    authDomain: "",
+    databaseURL: "",
+    projectId: "",
+    storageBucket: "",
+    messagingSenderId: "",
+    appId: "",
+  },
 };

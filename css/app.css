@@ -3122,3 +3122,78 @@ body {
   color: var(--muted);
   margin: 0 0 8px;
 }
+
+.gomoku-mode-body .gomoku-mode-btns {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 20px 0 12px;
+}
+
+.gomoku-mode-note {
+  font-size: 0.85rem;
+  color: var(--muted);
+  margin: 0;
+}
+
+.online-setup-body .online-setup-steps {
+  margin: 16px 0;
+  padding-left: 1.25rem;
+  line-height: 1.65;
+}
+
+.online-setup-steps code {
+  font-size: 0.9em;
+}
+
+.online-join-row {
+  margin-top: 24px;
+}
+
+.online-join-inputs {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.online-room-input {
+  flex: 1;
+  font-size: 1.25rem;
+  letter-spacing: 0.2em;
+  text-align: center;
+}
+
+.online-room-code-label {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--muted);
+  text-align: center;
+}
+
+.online-room-code {
+  font-size: clamp(2.5rem, 12vw, 3.5rem);
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  text-align: center;
+  margin: 8px 0 16px;
+  color: var(--gomoku-dark);
+}
+
+.online-lobby-body .online-lobby-players {
+  margin: 16px 0;
+  line-height: 1.8;
+}
+
+.online-lobby-start {
+  margin-top: 16px;
+}
+
+.gomoku-lobby-black-btn {
+  width: 100%;
+  margin-bottom: 8px;
+}
+
+#view-gomoku-online-play.view-active {
+  display: flex;
+  flex-direction: column;
+}

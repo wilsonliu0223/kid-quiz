@@ -338,6 +338,10 @@ function startWithBlackPlayer(blackPlayerId) {
 }
 
 export function beginGomokuFromHome() {
+  deps.showView("gomokuMode");
+}
+
+export function beginGomokuLocal() {
   if (!canStartDuoBattle()) {
     alert("請在首頁選「誰在練習」，並在對戰設定中挑選對戰對象（至少需要兩位）");
     return;

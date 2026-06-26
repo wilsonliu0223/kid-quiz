@@ -19,6 +19,28 @@ let pinchStart = null;
 
 let bound = false;
 
+function teardownGomokuBoardZoom() {
+  if (!viewportEl || !bound) return;
+  viewportEl.removeEventListener("wheel", onWheel);
+  viewportEl.removeEventListener("pointerdown", onPointerDown);
+  viewportEl.removeEventListener("pointermove", onPointerMove);
+  viewportEl.removeEventListener("pointerup", onPointerUp);
+  viewportEl.removeEventListener("pointercancel", onPointerUp);
+  viewportEl.removeEventListener("contextmenu", onContextMenu);
+  bound = false;
+  viewportEl = null;
+  stageEl = null;
+}
+
+/**
+ * @param {string} viewportSelector
+ * @param {string} stageSelector
+ */
+export function rebindGomokuBoardZoom(viewportSelector, stageSelector) {
+  teardownGomokuBoardZoom();
+  initGomokuBoardZoom(viewportSelector, stageSelector);
+}
+
 function applyTransform() {
   if (!stageEl) return;
   stageEl.style.transform = `translate(${zoomState.x}px, ${zoomState.y}px) scale(${zoomState.scale})`;

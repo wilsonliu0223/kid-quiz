@@ -66,7 +66,8 @@ import {
   initFlipMath,
   renderMathHomePlayers,
 } from "./flip-math-deck30.js?v=duo-active-v1";
-import { initGomoku, renderGomokuHomePlayers } from "./gomoku.js?v=gomoku-stable-v1";
+import { initGomoku, renderGomokuHomePlayers } from "./gomoku.js?v=gomoku-online-v1";
+import { initGomokuOnline } from "./gomoku-online.js?v=gomoku-online-v1";
 import { initTimesTable, openMulHome } from "./times-table.js?v=mul-pair-v10";
 import {
   addMistake,
@@ -159,9 +160,15 @@ const views = {
   mulLearn: $("#view-mul-learn"),
   mulQuiz: $("#view-mul-quiz"),
   mulResult: $("#view-mul-result"),
+  gomokuMode: $("#view-gomoku-mode"),
+  gomokuFirebaseSetup: $("#view-gomoku-firebase-setup"),
+  gomokuRoomEntry: $("#view-gomoku-room-entry"),
+  gomokuLobby: $("#view-gomoku-lobby"),
   gomokuFirst: $("#view-gomoku-first"),
   gomokuPlay: $("#view-gomoku-play"),
   gomokuResult: $("#view-gomoku-result"),
+  gomokuOnlinePlay: $("#view-gomoku-online-play"),
+  gomokuOnlineResult: $("#view-gomoku-online-result"),
   result: $("#view-result"),
   parent: $("#view-parent"),
 };
@@ -2155,6 +2162,18 @@ async function init() {
   initGomoku({
     showView,
     getChildNames,
+  });
+  initGomokuOnline({
+    showView,
+    getSelectedChild,
+    showWarn: (title, sub) => {
+      showFeedback(
+        "warn",
+        title,
+        [{ label: "好的", primary: true }],
+        { sub: sub || "" }
+      );
+    },
   });
   initTimesTable({
     showView,
