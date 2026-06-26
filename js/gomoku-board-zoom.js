@@ -14,15 +14,19 @@ const zoomState = { scale: 1, x: 0, y: 0 };
 const pointers = new Map();
 /** @type {{ x: number, y: number, tx: number, ty: number, moved?: boolean } | null} */
 let panStart = null;
-/** @type {{ distance: number, scale: number, x: number, y: number, centerX: number, centerY: number } | null} */
+/** @type {{ distance: number, scale: number, centerX: number, centerY: number } | null} */
 let pinchStart = null;
 
 let bound = false;
-let panSuppressUntil = 0;
 
 function applyTransform() {
   if (!stageEl) return;
   stageEl.style.transform = `translate(${zoomState.x}px, ${zoomState.y}px) scale(${zoomState.scale})`;
+  viewportEl?.classList.toggle("can-pan", zoomState.scale > 1);
+}
+
+function isCellTarget(e) {
+  return e.target instanceof Element && !!e.target.closest(".gomoku-cell");
 }
 
 function getPinchMetrics() {
@@ -84,12 +88,13 @@ export function resetGomokuBoardZoom() {
   panStart = null;
   pinchStart = null;
   pointers.clear();
-  viewportEl?.classList.remove("is-panning");
+  viewportEl?.classList.remove("is-panning", "can-pan");
   applyTransform();
 }
 
+/** @deprecated 左鍵下棋不再與拖曳衝突 */
 export function wasGomokuBoardPanned() {
-  return Date.now() < panSuppressUntil;
+  return false;
 }
 
 function onWheel(e) {
@@ -98,10 +103,18 @@ function onWheel(e) {
   setScaleAt(zoomState.scale * factor, e.clientX, e.clientY);
 }
 
+function shouldPanPointer(e, onCell) {
+  if (e.button === 1 || e.button === 2) return true;
+  if (zoomState.scale > 1 && e.button === 0 && !onCell) return true;
+  if (e.pointerType === "touch" && zoomState.scale > 1 && !onCell) return true;
+  return false;
+}
+
 function onPointerDown(e) {
   if (!viewportEl) return;
+
+  const onCell = isCellTarget(e);
   pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
-  viewportEl.setPointerCapture(e.pointerId);
 
   if (pointers.size === 2) {
     panStart = null;
@@ -111,10 +124,23 @@ function onPointerDown(e) {
       centerX: m.centerX,
       centerY: m.centerY,
       scale: zoomState.scale,
-      x: zoomState.x,
-      y: zoomState.y,
     };
-  } else if (pointers.size === 1 && zoomState.scale > 1) {
+    viewportEl.setPointerCapture(e.pointerId);
+    return;
+  }
+
+  if (pointers.size === 1) {
+    if (onCell && e.button === 0) {
+      pointers.delete(e.pointerId);
+      return;
+    }
+
+    if (!shouldPanPointer(e, onCell)) {
+      pointers.delete(e.pointerId);
+      return;
+    }
+
+    viewportEl.setPointerCapture(e.pointerId);
     panStart = {
       x: e.clientX,
       y: e.clientY,
@@ -133,8 +159,7 @@ function onPointerMove(e) {
     e.preventDefault();
     const m = getPinchMetrics();
     const factor = m.distance / pinchStart.distance;
-    const nextScale = pinchStart.scale * factor;
-    setScaleAt(nextScale, m.centerX, m.centerY);
+    setScaleAt(pinchStart.scale * factor, m.centerX, m.centerY);
     return;
   }
 
@@ -155,9 +180,6 @@ function onPointerMove(e) {
 }
 
 function onPointerUp(e) {
-  if (panStart?.moved) {
-    panSuppressUntil = Date.now() + 320;
-  }
   pointers.delete(e.pointerId);
   if (pointers.size < 2) pinchStart = null;
   if (pointers.size === 0) {
@@ -180,6 +202,10 @@ function onPointerUp(e) {
   }
 }
 
+function onContextMenu(e) {
+  if (zoomState.scale > 1) e.preventDefault();
+}
+
 /**
  * @param {string} viewportSelector
  * @param {string} stageSelector
@@ -197,4 +223,5 @@ export function initGomokuBoardZoom(viewportSelector, stageSelector) {
   viewportEl.addEventListener("pointermove", onPointerMove);
   viewportEl.addEventListener("pointerup", onPointerUp);
   viewportEl.addEventListener("pointercancel", onPointerUp);
+  viewportEl.addEventListener("contextmenu", onContextMenu);
 }

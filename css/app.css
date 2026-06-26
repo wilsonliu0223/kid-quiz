@@ -2989,8 +2989,11 @@ body {
   min-height: 0;
   overflow: hidden;
   touch-action: none;
-  cursor: grab;
   padding: 2px 0 8px;
+}
+
+.gomoku-board-wrap.can-pan {
+  cursor: grab;
 }
 
 .gomoku-board-wrap.is-panning {
@@ -3034,6 +3037,7 @@ body {
   border: none;
   background: transparent;
   cursor: pointer;
+  touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
 }
 
