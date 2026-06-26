@@ -765,6 +765,17 @@ body {
   padding-bottom: 8px;
 }
 
+.flip-card-grid.flip-grid-locked .flip-card,
+.flip-card.flip-card-no-tap {
+  cursor: default;
+  pointer-events: none;
+}
+
+.flip-card-grid.flip-grid-my-turn .flip-card:not(.flip-card-no-tap) {
+  pointer-events: auto;
+  cursor: pointer;
+}
+
 .flip-card {
   container-type: size;
   container-name: flip-cell;

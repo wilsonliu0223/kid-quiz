@@ -93,9 +93,13 @@ async function startFlipZhGame(roomId, firstSlot, snap) {
   const ctx = getOnlineContext();
   const getZhBank = ctx.deps?.getZhBank;
   const zhBank = typeof getZhBank === "function" ? getZhBank() : [];
+  if (!zhBank.length) {
+    alert("題庫尚未載入，請稍候或重新整理後再開局");
+    return;
+  }
   const result = pickFlipWords(zhBank, lessonFilter, pairCount);
   if (!result.ok) {
-    alert(`無法開局：字庫不足（需要 ${pairCount} 組）`);
+    alert(`無法開局：字庫不足（需要 ${pairCount} 組，目前 ${result.available} 個字）`);
     return;
   }
   const state = createInitialFlipState(result.words, pairCount, firstSlot);
@@ -186,6 +190,10 @@ let onlineGridBound = false;
 let txBusy = false;
 /** @type {number | null} */
 let queuedFlipIdx = null;
+/** @type {number} */
+let lastFlipTapAt = 0;
+/** @type {number} */
+let lastFlipTapIdx = -1;
 
 function canTakeFlipTurn() {
   const ctx = getOnlineContext();
@@ -194,12 +202,31 @@ function canTakeFlipTurn() {
   return true;
 }
 
+function resetOnlineFlipSession() {
+  txBusy = false;
+  queuedFlipIdx = null;
+  clearMismatchTimer();
+}
+
+async function forceResyncFlipState(roomId) {
+  const snap = await getRoomSnapshot(roomId);
+  if (snap?.state) {
+    onlineState = normalizeFlipState(snap.state);
+    names = {
+      host: snap.players.host?.name || "房主",
+      guest: snap.players.guest?.name || "來賓",
+    };
+    renderBoard();
+  }
+}
+
 function shouldApplyRemoteState(incoming) {
   if (!incoming || !onlineState) return true;
+  if (!txBusy) return true;
   const remoteClicks = incoming.totalClicks ?? 0;
   const localClicks = onlineState.totalClicks ?? 0;
   if (remoteClicks < localClicks) return false;
-  if (txBusy && remoteClicks === localClicks) {
+  if (remoteClicks === localClicks) {
     const remoteFlipped = asFirebaseList(incoming.flippedIdx).length;
     const localFlipped = onlineState.flippedIdx?.length ?? 0;
     if (remoteFlipped < localFlipped) return false;
@@ -225,12 +252,16 @@ function applyOptimisticFlip(idx) {
 
 function handleFlipGridTap(e) {
   const btn = e.target instanceof Element ? e.target.closest(".flip-card") : null;
-  if (!btn || /** @type {HTMLButtonElement} */ (btn).disabled) return;
+  if (!btn || btn.classList.contains("flip-card-no-tap")) return;
   if (!canTakeFlipTurn()) return;
   const idx = Number(btn.dataset.idx);
   if (!Number.isFinite(idx)) return;
   const card = onlineState?.cards[idx];
   if (!card || card.matched || card.faceUp) return;
+  const now = Date.now();
+  if (idx === lastFlipTapIdx && now - lastFlipTapAt < 350) return;
+  lastFlipTapIdx = idx;
+  lastFlipTapAt = now;
   void enqueueFlipClick(idx);
 }
 
@@ -238,18 +269,14 @@ function ensureOnlineGridClick() {
   const grid = $("#flip-card-grid");
   if (!grid || onlineGridBound) return;
   onlineGridBound = true;
+  grid.addEventListener("click", handleFlipGridTap);
   grid.addEventListener(
-    "pointerup",
+    "touchend",
     (e) => {
-      if (e.pointerType === "mouse" && e.button !== 0) return;
       handleFlipGridTap(e);
     },
     { passive: true }
   );
-  grid.addEventListener("click", (e) => {
-    if (e.pointerType === "touch") return;
-    handleFlipGridTap(e);
-  });
 }
 
 async function enqueueFlipClick(idx) {
@@ -284,13 +311,16 @@ function renderBoard() {
   const myTurn =
     ctx.slot === onlineState.currentPlayerId && !onlineState.over && !onlineState.locked;
 
+  grid.classList.toggle("flip-grid-my-turn", myTurn);
+  grid.classList.toggle("flip-grid-locked", onlineState.locked || onlineState.over);
+
   onlineState.cards.forEach((card, idx) => {
     const btn = document.createElement("button");
     btn.type = "button";
     btn.className = "flip-card";
     btn.dataset.idx = String(idx);
-    btn.disabled =
-      !myTurn || card.matched || onlineState.locked || (card.faceUp && !card.matched);
+    const canTap = myTurn && !card.matched && !card.faceUp && !onlineState.locked;
+    if (!canTap) btn.classList.add("flip-card-no-tap");
 
     if (card.matched) {
       btn.classList.add("flip-card-matched", "flip-card-face-up");
@@ -373,10 +403,10 @@ async function resolveMismatchFlip() {
   }
 }
 
-function applyRemoteState(state, snap) {
+function applyRemoteState(state, snap, force = false) {
   ensureOnlineGridClick();
   const normalized = normalizeFlipState(state);
-  if (!shouldApplyRemoteState(normalized)) return;
+  if (!force && !shouldApplyRemoteState(normalized)) return;
   onlineState = normalized;
   names = {
     host: snap.players.host?.name || "房主",
@@ -389,8 +419,11 @@ function applyRemoteState(state, snap) {
 
 function enterPlay(snap) {
   clearLocalFlipGame();
+  resetOnlineFlipSession();
+  lastFlipTapAt = 0;
+  lastFlipTapIdx = -1;
   getOnlineContext().deps?.showView("flipPlay");
-  applyRemoteState(snap.state, snap);
+  applyRemoteState(snap.state, snap, true);
 }
 
 async function runFlipTransaction(idx) {
@@ -455,14 +488,12 @@ async function runFlipTransaction(idx) {
       maybeScheduleMismatchReveal(onlineState, ctx);
       if (onlineState.over) showOnlineResult();
     } else {
-      const snap = await getRoomSnapshot(ctx.roomId);
-      if (snap?.state) applyRemoteState(snap.state, snap);
+      await forceResyncFlipState(ctx.roomId);
     }
   } catch (err) {
     console.error("flip-zh online click failed", err);
     alert("翻牌失敗，請再試一次");
-    const snap = await getRoomSnapshot(ctx.roomId);
-    if (snap?.state) applyRemoteState(snap.state, snap);
+    await forceResyncFlipState(ctx.roomId);
   }
 }
 
@@ -499,10 +530,11 @@ registerOnlineGame("flip-zh", {
   renderStartButtons: renderSlotStartButtons,
   startGame: startFlipZhGame,
   onPlaying(snap) {
-    const onPlay = $("#view-flip-play")?.classList.contains("view-active");
-    const onResult = $("#view-flip-result")?.classList.contains("view-active");
-    if (!onPlay && !onResult) enterPlay(snap);
-    else applyRemoteState(snap.state, snap);
+    if (!$("#view-flip-play")?.classList.contains("view-active")) {
+      enterPlay(snap);
+      return;
+    }
+    applyRemoteState(snap.state, snap);
   },
 });
 
