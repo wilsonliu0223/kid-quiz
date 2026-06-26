@@ -11,7 +11,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <title>家裡練習</title>
     <link rel="manifest" href="manifest.json" />
-    <link rel="stylesheet" href="css/app.css?v=times-table-v8" />
+    <link rel="stylesheet" href="css/app.css?v=times-table-v9" />
     <script type="importmap">
       {
         "imports": {
@@ -498,12 +498,13 @@
         </header>
         <div class="mul-body mul-quiz-body">
           <p class="mul-life-story mul-quiz-life" id="mul-quiz-life-story" hidden></p>
+          <p class="mul-pair-badge" id="mul-pair-badge" hidden>多選題 · 選兩個因數</p>
           <p class="mul-prompt" id="mul-prompt">3 × □ ＝ 21</p>
           <p class="mul-quiz-hint" id="mul-quiz-hint">選出正確答案</p>
           <div class="mul-answer-area">
             <div class="mul-factor-pad" id="mul-factor-pad" hidden></div>
             <div class="mul-choice-pad" id="mul-choice-pad" hidden></div>
-            <div class="mul-pair-pad" id="mul-pair-pad" hidden></div>
+            <button type="button" class="btn btn-text mul-pair-clear" id="btn-mul-pair-clear" hidden>清除重選</button>
           </div>
         </div>
       </section>
@@ -654,6 +655,6 @@
       </div>
     </div>
 
-    <script type="module" src="js/app.js?v=times-table-v8"></script>
+    <script type="module" src="js/app.js?v=times-table-v9"></script>
   </body>
 </html>

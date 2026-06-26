@@ -2459,6 +2459,37 @@ body {
   grid-template-columns: repeat(2, 1fr);
 }
 
+.mul-pair-badge {
+  display: inline-block;
+  margin: 0 auto 6px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: #fff3e0;
+  border: 1px solid #e8b060;
+  color: #9a5a10;
+  font-size: 0.8rem;
+  font-weight: 800;
+  text-align: center;
+  align-self: center;
+}
+
+.mul-pair-badge[hidden] {
+  display: none !important;
+}
+
+.mul-pair-clear {
+  margin-top: 4px;
+  color: #9a5a10;
+  font-size: 0.85rem;
+}
+
+.mul-factor-key-picked {
+  background: #fff3e0 !important;
+  border-color: #d4a060 !important;
+  color: #8a4a12 !important;
+  box-shadow: inset 0 0 0 2px #e8b060;
+}
+
 .mul-factor-pad[hidden],
 .mul-choice-pad[hidden],
 .mul-pair-pad[hidden] {
