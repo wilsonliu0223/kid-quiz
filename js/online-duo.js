@@ -134,6 +134,9 @@ const GAME_TITLES = {
   "math-open": "數學攤牌",
   "math-flip": "數學翻牌",
   "math-guess": "猜數字",
+  "race-zh": "國語搶答對戰",
+  "race-en": "英語搶答對戰",
+  "race-mul": "九九搶答對戰",
 };
 
 /**

@@ -182,6 +182,10 @@
           開始測驗
         </button>
 
+        <button type="button" class="btn btn-secondary btn-block" id="btn-setup-zh-race">
+          搶答對戰（兩台手機）
+        </button>
+
         <div class="setup-divider" aria-hidden="true"></div>
 
         <div class="setup-section setup-section-flip">
@@ -235,6 +239,10 @@
 
         <button type="button" class="btn btn-primary btn-block btn-primary-en" id="btn-setup-en-start">
           開始測驗
+        </button>
+
+        <button type="button" class="btn btn-secondary btn-block" id="btn-setup-en-race">
+          搶答對戰（兩台手機）
         </button>
       </section>
 
@@ -513,6 +521,59 @@
         </footer>
       </section>
 
+      <!-- 搶答對戰（線上） -->
+      <section id="view-race-play" class="view view-hidden" aria-label="搶答對戰">
+        <header class="quiz-header quiz-header-gomoku">
+          <button type="button" class="btn-text" id="btn-race-play-back">← 返回</button>
+          <span class="quiz-subject" id="race-room-tag">搶答對戰</span>
+          <span class="quiz-progress" id="race-round-label">第 1 / 10 題</span>
+        </header>
+        <div class="race-play-body">
+          <div class="flip-scorebar race-scorebar">
+            <div class="flip-score-block" id="race-score-block-a">
+              <span class="flip-score-name" id="race-play-name-a">房主</span>
+              <span class="flip-score-num" id="race-score-a">0</span>
+            </div>
+            <div class="race-timer-block">
+              <span class="race-timer-label" id="race-timer-label">作答 10 秒</span>
+            </div>
+            <div class="flip-score-block" id="race-score-block-b">
+              <span class="flip-score-name" id="race-play-name-b">來賓</span>
+              <span class="flip-score-num" id="race-score-b">0</span>
+            </div>
+          </div>
+          <div class="race-question-wrap">
+            <div id="race-question-prompt" class="race-question-prompt"></div>
+            <div class="mul-choice-pad race-choice-pad" id="race-choices"></div>
+            <input
+              type="text"
+              id="race-answer-input"
+              class="input race-answer-input"
+              hidden
+              autocomplete="off"
+              autocapitalize="off"
+              spellcheck="false"
+            />
+          </div>
+          <p class="race-status-hint" id="race-status-hint">請先選好或輸入答案</p>
+          <button type="button" class="btn btn-race-buzz" id="btn-race-buzz" disabled>搶答！</button>
+        </div>
+      </section>
+
+      <section id="view-race-result" class="view view-hidden" aria-label="搶答對戰結算">
+        <header class="app-header">
+          <h2 class="result-title" id="race-result-title">完成</h2>
+          <p class="flip-result-scores" id="race-result-scores">0 ：0</p>
+          <p class="flip-result-detail" id="race-result-detail"></p>
+        </header>
+        <footer class="result-footer">
+          <button type="button" class="btn btn-primary btn-block btn-primary-gomoku" id="btn-race-replay">
+            同房間再玩一局
+          </button>
+          <button type="button" class="btn btn-secondary btn-block" id="btn-race-home">回首頁</button>
+        </footer>
+      </section>
+
       <!-- 對戰：同機 / 兩台手機（共用） -->
       <section id="view-duo-mode" class="view view-hidden" aria-label="對戰模式">
         <header class="quiz-header quiz-header-gomoku">
@@ -766,6 +827,9 @@
               <span class="mul-hard-meta" id="mul-hard-meta">18 題 · 生活題 · 因數分解</span>
             </button>
           </div>
+          <button type="button" class="btn btn-secondary btn-block mul-race-duo-btn" id="btn-mul-race-duo">
+            搶答對戰（兩台手機）
+          </button>
         </div>
       </section>
 
@@ -964,6 +1028,6 @@
       </div>
     </div>
 
-    <script type="module" src="js/app.js?v=flip-zh-clear-board-v1"></script>
+    <script type="module" src="js/app.js?v=quiz-race-v1"></script>
   </body>
 </html>

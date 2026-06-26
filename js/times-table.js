@@ -456,6 +456,24 @@ function buildHardRandomQuiz(onlyKeys = null) {
   return mixHardQuestions("full", null, onlyKeys);
 }
 
+/** 線上搶答對戰用題目（不含生活題進階，以選項作答為主） */
+export function buildMulRaceQuestions({ quizMode = "full", digit = null, count = 10 } = {}) {
+  let list;
+  if (quizMode === "digit" && digit) {
+    list = buildDigitQuiz(digit);
+  } else {
+    list = buildRandomQuiz();
+  }
+  const n = count > 0 ? Math.min(count, list.length) : list.length;
+  return shuffle([...list]).slice(0, n).map((q, i) => ({
+    id: `mul-${i}`,
+    prompt: q.prompt,
+    answer: q.answer,
+    choices: q.choices,
+    inputMode: q.inputMode,
+  }));
+}
+
 function stopRecite() {
   if (reciteTimer) {
     clearInterval(reciteTimer);

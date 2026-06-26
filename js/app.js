@@ -71,6 +71,8 @@ import { initOnlineDuo } from "./online-duo.js";
 import "./flip-zh-online.js";
 import "./flip-math-online.js";
 import "./gomoku-online.js";
+import "./quiz-race-online.js";
+import { initRaceDuo, openZhRaceDuoMode, openEnRaceDuoMode, openMulRaceDuoMode } from "./quiz-race-online.js";
 import { initTimesTable, openMulHome } from "./times-table.js?v=mul-pair-v10";
 import {
   addMistake,
@@ -172,6 +174,8 @@ const views = {
   gomokuResult: $("#view-gomoku-result"),
   gomokuOnlinePlay: $("#view-gomoku-online-play"),
   gomokuOnlineResult: $("#view-gomoku-online-result"),
+  racePlay: $("#view-race-play"),
+  raceResult: $("#view-race-result"),
   result: $("#view-result"),
   parent: $("#view-parent"),
 };
@@ -2010,12 +2014,24 @@ function bindEvents() {
   $("#btn-setup-zh-back")?.addEventListener("click", () => showView("home"));
   $("#btn-setup-en-back")?.addEventListener("click", () => showView("home"));
   $("#btn-setup-zh-start")?.addEventListener("click", () => startZhQuiz());
+  $("#btn-setup-zh-race")?.addEventListener("click", (e) => {
+    e.preventDefault();
+    openZhRaceDuoMode();
+  });
   $("#btn-setup-en-start")?.addEventListener("click", () => {
     primeSpeech();
     enMode =
       document.querySelector(".en-mode-picker .chip-active")?.dataset.enMode ||
       "meaning";
     startEnQuiz();
+  });
+  $("#btn-setup-en-race")?.addEventListener("click", (e) => {
+    e.preventDefault();
+    primeSpeech();
+    enMode =
+      document.querySelector(".en-mode-picker .chip-active")?.dataset.enMode ||
+      "meaning";
+    openEnRaceDuoMode();
   });
 
   $("#btn-review-zh-mistakes")?.addEventListener("click", () => {
@@ -2178,6 +2194,14 @@ async function init() {
       );
     },
   });
+  initRaceDuo({
+    getZhBank: () => zhBank,
+    getEnBank: () => enBank,
+    getLessonFilter: () => zhLessonFilter,
+    getEnLessonFilter: () => enLessonFilter,
+    getEnMode: () => enMode,
+    getQuizCountSetting,
+  });
   initTimesTable({
     showView,
     getSelectedChild,
@@ -2201,6 +2225,10 @@ async function init() {
   $("#btn-start-mul")?.addEventListener("click", (e) => {
     e.preventDefault();
     openMulHome();
+  });
+  $("#btn-mul-race-duo")?.addEventListener("click", (e) => {
+    e.preventDefault();
+    openMulRaceDuoMode();
   });
   await refreshBank();
   renderHomeScoreHistory();
