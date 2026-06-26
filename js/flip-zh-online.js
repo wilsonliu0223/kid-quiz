@@ -5,7 +5,7 @@ import {
   leaveOnlineRoom,
   openDuoModePicker,
 } from "./online-duo.js";
-import { startGameRoom, transactGameState, asFirebaseList } from "./room-service.js";
+import { startGameRoom, transactGameState, asFirebaseList, getRoomSnapshot } from "./room-service.js";
 
 /** @typedef {'host' | 'guest'} RoomSlot */
 
@@ -183,23 +183,94 @@ function normalizeFlipState(state) {
 }
 
 let onlineGridBound = false;
+let txBusy = false;
+/** @type {number | null} */
+let queuedFlipIdx = null;
+
+function canTakeFlipTurn() {
+  const ctx = getOnlineContext();
+  if (!ctx.roomId || !ctx.slot || !onlineState || onlineState.over || onlineState.locked) return false;
+  if (ctx.slot !== onlineState.currentPlayerId) return false;
+  return true;
+}
+
+function shouldApplyRemoteState(incoming) {
+  if (!incoming || !onlineState) return true;
+  const remoteClicks = incoming.totalClicks ?? 0;
+  const localClicks = onlineState.totalClicks ?? 0;
+  if (remoteClicks < localClicks) return false;
+  if (txBusy && remoteClicks === localClicks) {
+    const remoteFlipped = asFirebaseList(incoming.flippedIdx).length;
+    const localFlipped = onlineState.flippedIdx?.length ?? 0;
+    if (remoteFlipped < localFlipped) return false;
+  }
+  return true;
+}
+
+function applyOptimisticFlip(idx) {
+  if (!onlineState) return;
+  const cards = onlineState.cards.map((c) => ({ ...c }));
+  const card = cards[idx];
+  if (!card || card.matched || card.faceUp) return;
+  if ((onlineState.flippedIdx?.length ?? 0) >= 2) return;
+  card.faceUp = true;
+  onlineState = {
+    ...onlineState,
+    cards,
+    flippedIdx: [...(onlineState.flippedIdx || []), idx],
+    totalClicks: (onlineState.totalClicks ?? 0) + 1,
+  };
+  renderBoard();
+}
+
+function handleFlipGridTap(e) {
+  const btn = e.target instanceof Element ? e.target.closest(".flip-card") : null;
+  if (!btn || /** @type {HTMLButtonElement} */ (btn).disabled) return;
+  if (!canTakeFlipTurn()) return;
+  const idx = Number(btn.dataset.idx);
+  if (!Number.isFinite(idx)) return;
+  const card = onlineState?.cards[idx];
+  if (!card || card.matched || card.faceUp) return;
+  void enqueueFlipClick(idx);
+}
 
 function ensureOnlineGridClick() {
   const grid = $("#flip-card-grid");
   if (!grid || onlineGridBound) return;
   onlineGridBound = true;
+  grid.addEventListener(
+    "pointerup",
+    (e) => {
+      if (e.pointerType === "mouse" && e.button !== 0) return;
+      handleFlipGridTap(e);
+    },
+    { passive: true }
+  );
   grid.addEventListener("click", (e) => {
-    const btn = e.target instanceof Element ? e.target.closest(".flip-card") : null;
-    if (!btn || /** @type {HTMLButtonElement} */ (btn).disabled) return;
-    const ctx = getOnlineContext();
-    if (!ctx.roomId || !ctx.slot || !onlineState || onlineState.over || onlineState.locked) return;
-    if (ctx.slot !== onlineState.currentPlayerId) return;
-    const idx = Number(btn.dataset.idx);
-    if (!Number.isFinite(idx)) return;
-    const card = onlineState.cards[idx];
-    if (!card || card.matched || card.faceUp) return;
-    void onOnlineCardClick(idx);
+    if (e.pointerType === "touch") return;
+    handleFlipGridTap(e);
   });
+}
+
+async function enqueueFlipClick(idx) {
+  if (txBusy) {
+    queuedFlipIdx = idx;
+    applyOptimisticFlip(idx);
+    return;
+  }
+  txBusy = true;
+  applyOptimisticFlip(idx);
+  try {
+    await runFlipTransaction(idx);
+    while (queuedFlipIdx !== null) {
+      const nextIdx = queuedFlipIdx;
+      queuedFlipIdx = null;
+      applyOptimisticFlip(nextIdx);
+      await runFlipTransaction(nextIdx);
+    }
+  } finally {
+    txBusy = false;
+  }
 }
 
 function renderBoard() {
@@ -218,7 +289,8 @@ function renderBoard() {
     btn.type = "button";
     btn.className = "flip-card";
     btn.dataset.idx = String(idx);
-    btn.disabled = !myTurn || card.matched || onlineState.locked;
+    btn.disabled =
+      !myTurn || card.matched || onlineState.locked || (card.faceUp && !card.matched);
 
     if (card.matched) {
       btn.classList.add("flip-card-matched", "flip-card-face-up");
@@ -303,7 +375,9 @@ async function resolveMismatchFlip() {
 
 function applyRemoteState(state, snap) {
   ensureOnlineGridClick();
-  onlineState = normalizeFlipState(state);
+  const normalized = normalizeFlipState(state);
+  if (!shouldApplyRemoteState(normalized)) return;
+  onlineState = normalized;
   names = {
     host: snap.players.host?.name || "房主",
     guest: snap.players.guest?.name || "來賓",
@@ -319,7 +393,7 @@ function enterPlay(snap) {
   applyRemoteState(snap.state, snap);
 }
 
-async function onOnlineCardClick(idx) {
+async function runFlipTransaction(idx) {
   const ctx = getOnlineContext();
   if (!ctx.roomId || !ctx.slot || !onlineState || onlineState.over) return;
 
@@ -331,17 +405,18 @@ async function onOnlineCardClick(idx) {
       const cards = asFirebaseList(current.cards).map((c) => ({ ...c }));
       const card = cards[idx];
       if (!card || card.matched || card.faceUp) return;
-      if (current.flippedIdx.length >= 2) return;
+      const flippedIdx = asFirebaseList(current.flippedIdx).map((n) => Number(n));
+      if (flippedIdx.length >= 2) return;
 
       card.faceUp = true;
-      const flippedIdx = [...current.flippedIdx, idx];
-      const totalClicks = current.totalClicks + 1;
+      const nextFlipped = [...flippedIdx, idx];
+      const totalClicks = (current.totalClicks ?? 0) + 1;
 
-      if (flippedIdx.length < 2) {
-        return { ...current, cards, flippedIdx, totalClicks };
+      if (nextFlipped.length < 2) {
+        return { ...current, cards, flippedIdx: nextFlipped, totalClicks };
       }
 
-      const [i0, i1] = flippedIdx;
+      const [i0, i1] = nextFlipped;
       const c0 = cards[i0];
       const c1 = cards[i1];
 
@@ -368,7 +443,7 @@ async function onOnlineCardClick(idx) {
       return {
         ...current,
         cards,
-        flippedIdx,
+        flippedIdx: nextFlipped,
         locked: true,
         totalClicks,
       };
@@ -379,10 +454,15 @@ async function onOnlineCardClick(idx) {
       renderBoard();
       maybeScheduleMismatchReveal(onlineState, ctx);
       if (onlineState.over) showOnlineResult();
+    } else {
+      const snap = await getRoomSnapshot(ctx.roomId);
+      if (snap?.state) applyRemoteState(snap.state, snap);
     }
   } catch (err) {
     console.error("flip-zh online click failed", err);
     alert("翻牌失敗，請再試一次");
+    const snap = await getRoomSnapshot(ctx.roomId);
+    if (snap?.state) applyRemoteState(snap.state, snap);
   }
 }
 

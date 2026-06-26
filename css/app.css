@@ -761,6 +761,7 @@ body {
   min-height: 0;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
+  touch-action: manipulation;
   padding-bottom: 8px;
 }
 
