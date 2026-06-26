@@ -3382,6 +3382,20 @@ body {
   font-size: 1.4rem;
 }
 
+.race-en-choice {
+  font-size: 1rem;
+  line-height: 1.25;
+  white-space: normal;
+  word-break: break-word;
+  min-height: 52px;
+}
+
+.race-en-hint {
+  margin: 6px 0 0;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
 .race-answer-input {
   width: 100%;
   font-size: 1.2rem;

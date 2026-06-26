@@ -1,6 +1,6 @@
 import { pickRandomQuestions } from "./sheets.js";
 import { englishAnswersMatch } from "./english.js";
-import { blankSentenceForRace, raceSentenceHtml, ensureRaceSentenceSafe } from "./sentence.js?v=quiz-race-en-buzz-v1";
+import { blankSentenceForRace, raceSentenceHtml, ensureRaceSentenceSafe } from "./sentence.js?v=quiz-race-en-choice-v1";
 import { buildMulRaceQuestions } from "./times-table.js";
 import {
   registerOnlineGame,
@@ -100,48 +100,7 @@ function questionRenderKey() {
   return `${onlineState.round}-${onlineState.phase}-${activeSubject}-${q?.id || ""}`;
 }
 
-function syncLocalDraftFromInput() {
-  if (activeSubject !== "en") return;
-  const el = /** @type {HTMLInputElement | null} */ ($("#race-answer-input"));
-  if (el && !el.hidden) localDraft = el.value;
-}
-
-function clearEnInput() {
-  localDraft = null;
-  const inputEl = /** @type {HTMLInputElement | null} */ ($("#race-answer-input"));
-  if (inputEl) {
-    inputEl.value = "";
-    inputEl.disabled = false;
-  }
-}
-
-function updateEnInputField() {
-  const inputEl = /** @type {HTMLInputElement | null} */ ($("#race-answer-input"));
-  if (!inputEl || activeSubject !== "en") return;
-  const submitted = mySubmission();
-  const canType = onlineState?.phase === "open" && !submitted && !onlineState?.over;
-  inputEl.hidden = false;
-  inputEl.placeholder = "輸入答案";
-  inputEl.disabled = !canType;
-  if (canType) {
-    if (document.activeElement !== inputEl) {
-      inputEl.value = String(localDraft ?? "");
-    }
-  } else if (submitted) {
-    inputEl.value = String(submitted.answer ?? "");
-  } else {
-    inputEl.value = "";
-  }
-}
-
 function highlightChoice(selected) {
-  document.querySelectorAll(".race-choice-btn").forEach((btn) => {
-    const val = btn.textContent ?? "";
-    const match =
-      activeSubject === "mul" ? Number(val) === Number(selected) : val === String(selected);
-    btn.classList.toggle("race-choice-selected", match);
-  });
-}
   document.querySelectorAll(".race-choice-btn").forEach((btn) => {
     const val = btn.textContent ?? "";
     const match =
@@ -192,14 +151,36 @@ function buildZhRaceQuestions(zhBank, lessonFilter, count) {
 function buildEnRaceQuestions(enBank, lessonFilter, count, mode) {
   const picked = pickRandomQuestions(enBank, count, lessonFilter);
   if (!picked.length) return { ok: false, available: 0, questions: [] };
-  const questions = picked.map((item, i) => ({
-    id: `en-${i}`,
-    mode,
-    chinese: item.chinese || "",
-    english: item.english || "",
-    hint: item.hint || "",
-  }));
+  const questions = picked.map((item, i) => {
+    const english = String(item.english || "").trim();
+    const choices = buildEnChoices(english, enBank);
+    return {
+      id: `en-${i}`,
+      mode,
+      chinese: item.chinese || "",
+      english,
+      answer: english,
+      choices,
+      hint: item.hint || "",
+    };
+  });
   return { ok: true, available: picked.length, questions };
+}
+
+function buildEnChoices(correct, bank) {
+  const answer = String(correct || "").trim();
+  const picked = new Set([answer]);
+  const pool = shuffle(
+    bank.filter((item) => {
+      const e = String(item.english || "").trim();
+      return e && !englishAnswersMatch(e, answer);
+    })
+  );
+  for (const item of pool) {
+    if (picked.size >= 4) break;
+    picked.add(String(item.english).trim());
+  }
+  return shuffle([...picked]);
 }
 
 function checkRaceAnswer(subject, q, answer) {
@@ -389,13 +370,34 @@ function renderQuestionArea(force = false) {
   }
 
   if (activeSubject === "en") {
+    if (inputEl) inputEl.hidden = true;
     const mode = q.mode || "meaning";
+    let promptHtml = "";
     if (mode === "meaning") {
-      promptEl.innerHTML = `<p class="race-en-chinese">${escapeHtml(q.chinese || "")}</p><p class="race-prompt-sub">輸入英文，再按搶答</p>`;
-    } else {
-      promptEl.innerHTML = `<p class="race-prompt-sub">聽音拼字（請輸入英文後搶答）</p>`;
+      promptHtml = `<p class="race-en-chinese">${escapeHtml(q.chinese || "")}</p>`;
+    } else if (q.chinese) {
+      promptHtml = `<p class="race-en-chinese">${escapeHtml(q.chinese)}</p>`;
     }
-    updateEnInputField();
+    if (q.hint) {
+      promptHtml += `<p class="race-en-hint">${escapeHtml(q.hint)}</p>`;
+    }
+    promptHtml += `<p class="race-prompt-sub">選出英文，再按搶答</p>`;
+    promptEl.innerHTML = promptHtml;
+    asFirebaseList(q.choices).forEach((choice) => {
+      const label = String(choice);
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "btn race-choice-btn race-en-choice";
+      btn.textContent = label;
+      btn.classList.toggle("race-choice-selected", localDraft === label);
+      btn.addEventListener("click", () => {
+        if (onlineState?.phase !== "open" || mySubmission()) return;
+        localDraft = label;
+        highlightChoice(label);
+        updateBuzzButton();
+      });
+      choicesEl.appendChild(btn);
+    });
     return;
   }
 
@@ -427,7 +429,6 @@ function escapeHtml(s) {
 }
 
 function updateBuzzButton() {
-  syncLocalDraftFromInput();
   const buzz = $("#btn-race-buzz");
   const hint = $("#race-status-hint");
   const ctx = getOnlineContext();
@@ -458,12 +459,10 @@ function updateBuzzButton() {
       ? "你已搶答且答對，等候揭曉…"
       : "你已搶答，等候對方或揭曉…";
   } else if (onlineState.phase === "open") {
-    hint.textContent = hasDraft ? "確認答案後，按搶答送出！" : "請先選好或輸入答案";
+    hint.textContent = hasDraft ? "確認答案後，按搶答送出！" : "請先選好答案";
   } else {
     hint.textContent = "";
   }
-
-  if (activeSubject === "en") updateEnInputField();
 }
 
 function formatExpected(q) {
@@ -501,7 +500,6 @@ function applyRemoteState(state, snap, force = false) {
   if (phaseRoundChanged) {
     localDraft = null;
     lastQuestionKey = "";
-    clearEnInput();
   }
 
   renderRaceUi({ forceQuestion: phaseRoundChanged });
@@ -598,7 +596,6 @@ async function tryAdvancePhase() {
 
 async function onBuzz() {
   const ctx = getOnlineContext();
-  syncLocalDraftFromInput();
   if (!ctx.roomId || !ctx.slot || !onlineState || onlineState.phase !== "open") return;
   if (mySubmission()) return;
   const draft = localDraft;
@@ -648,7 +645,6 @@ async function onBuzz() {
     if (next) {
       localDraft = null;
       onlineState = normalizeRaceState(next);
-      updateEnInputField();
       renderRaceUi({ forceQuestion: onlineState.phase !== "open" });
       if (onlineState.over) showRaceResult();
     }
@@ -751,18 +747,6 @@ export function bindRaceEvents() {
     getOnlineContext().deps?.showView(back);
   });
   $("#btn-race-buzz")?.addEventListener("click", () => void onBuzz());
-  $("#race-answer-input")?.addEventListener("input", () => {
-    const el = /** @type {HTMLInputElement | null} */ ($("#race-answer-input"));
-    if (!el) return;
-    localDraft = el.value;
-    updateBuzzButton();
-  });
-  $("#race-answer-input")?.addEventListener("keydown", (e) => {
-    if (e.key !== "Enter") return;
-    e.preventDefault();
-    syncLocalDraftFromInput();
-    void onBuzz();
-  });
   $("#btn-race-replay")?.addEventListener("click", async () => {
     if (getOnlineContext().roomId) {
       await rematchOnlineRoom();

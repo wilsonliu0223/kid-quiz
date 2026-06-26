@@ -76,7 +76,7 @@ import {
   openZhRaceDuoMode,
   openEnRaceDuoMode,
   openMulRaceDuoMode,
-} from "./quiz-race-online.js?v=quiz-race-en-buzz-v1";
+} from "./quiz-race-online.js?v=quiz-race-en-choice-v1";
 import { initTimesTable, openMulHome } from "./times-table.js?v=mul-pair-v10";
 import {
   addMistake,
