@@ -11,7 +11,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <title>家裡練習</title>
     <link rel="manifest" href="manifest.json" />
-    <link rel="stylesheet" href="css/app.css?v=times-table-v6" />
+    <link rel="stylesheet" href="css/app.css?v=times-table-v7" />
     <script type="importmap">
       {
         "imports": {
@@ -449,6 +449,13 @@
               <span class="mul-full-meta" id="mul-full-meta">9 題 · 三種空格</span>
             </button>
           </div>
+          <div class="mul-hard-block">
+            <p class="mul-hard-label">進階挑戰</p>
+            <button type="button" class="mul-hard-btn" id="btn-mul-hard-full-quiz">
+              <span class="mul-hard-title">2～9 進階測驗</span>
+              <span class="mul-hard-meta" id="mul-hard-meta">18 題 · 全生活題 · 求因數</span>
+            </button>
+          </div>
         </div>
       </section>
 
@@ -477,6 +484,7 @@
             <button type="button" class="btn btn-secondary" id="btn-mul-reveal-mode">遮答案練習</button>
             <button type="button" class="btn btn-primary btn-primary-mul" id="btn-mul-to-quiz">開始測驗</button>
           </div>
+          <button type="button" class="btn btn-secondary btn-block mul-hard-quiz-btn" id="btn-mul-hard-quiz">進階測驗（生活題 · 求因數）</button>
           <button type="button" class="btn btn-text btn-block" id="btn-mul-skip-learn">我已經會了，直接考這一數</button>
         </div>
       </section>
@@ -645,6 +653,6 @@
       </div>
     </div>
 
-    <script type="module" src="js/app.js?v=times-table-v6"></script>
+    <script type="module" src="js/app.js?v=times-table-v7"></script>
   </body>
 </html>

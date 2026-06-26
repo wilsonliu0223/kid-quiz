@@ -1,6 +1,8 @@
 const KEY_MUL_PROGRESS = "kid-quiz-mul-progress";
 const PASS_CORRECT = 8;
 const QUIZ_SIZE = 9;
+const HARD_QUIZ_SIZE = 18;
+const HARD_PASS_CORRECT = 16;
 const DIGITS = [2, 3, 4, 5, 6, 7, 8, 9];
 
 import {
@@ -51,7 +53,7 @@ let revealLifePrompt = "";
  *
  * @typedef {object} MulSession
  * @property {number} [digit]
- * @property {'digit'|'full'} quizMode
+ * @property {'digit'|'full'|'hard-digit'|'hard-full'} quizMode
  * @property {MulQuestion[]} questions
  * @property {number} index
  * @property {number} correct
@@ -90,11 +92,18 @@ function saveProgressRoot(root) {
 }
 
 function defaultDigitProgress() {
-  return { learned: false, bestCorrect: 0, passed: false, phaseB: false };
+  return {
+    learned: false,
+    bestCorrect: 0,
+    passed: false,
+    phaseB: false,
+    hardBestCorrect: 0,
+    hardPassed: false,
+  };
 }
 
 function defaultFullQuizProgress() {
-  return { bestCorrect: 0, passed: false };
+  return { bestCorrect: 0, passed: false, hardBestCorrect: 0, hardPassed: false };
 }
 
 function getFullQuizProgress() {
@@ -140,6 +149,39 @@ function pickBlankTypes(count) {
     out.push(pool[i % pool.length]);
   }
   return shuffle(out);
+}
+
+/** 進階：只考求因數（較難） */
+function pickFactorOnlyBlanks(count) {
+  const types = /** @type {MulBlank[]} */ (["factorA", "factorB"]);
+  const out = [];
+  for (let i = 0; i < count; i++) {
+    out.push(types[i % 2]);
+  }
+  return shuffle(out);
+}
+
+function isHardQuizMode(mode) {
+  return mode === "hard-digit" || mode === "hard-full";
+}
+
+function isDigitKeypadMode(mode) {
+  return mode === "digit" || mode === "hard-digit";
+}
+
+function passThreshold(mode) {
+  return mode === "hard-full" ? HARD_PASS_CORRECT : PASS_CORRECT;
+}
+
+function maxHints(mode) {
+  return isHardQuizMode(mode) ? 2 : 3;
+}
+
+function quizTitle(session) {
+  if (session.quizMode === "full") return "全部測驗 · 2～9";
+  if (session.quizMode === "hard-full") return "進階挑戰 · 2～9";
+  if (session.quizMode === "hard-digit") return `背 ${session.digit} · 進階`;
+  return `背 ${session.digit} · 測驗`;
 }
 
 function allFactsPool() {
@@ -241,6 +283,17 @@ function buildDigitQuiz(digit, onlyKeys = null) {
   );
 }
 
+function buildHardDigitQuiz(digit, onlyKeys = null) {
+  let facts = factsForDigit(digit);
+  if (onlyKeys) {
+    facts = facts.filter((f) => onlyKeys.includes(factKey(f.a, f.b)));
+  }
+  const blanks = pickFactorOnlyBlanks(facts.length);
+  return facts.map((f, i) =>
+    toQuestion(f, blanks[i], "digit", { isLife: true })
+  );
+}
+
 function buildRandomQuiz(onlyKeys = null) {
   let facts = allFactsPool();
   if (onlyKeys) {
@@ -252,6 +305,19 @@ function buildRandomQuiz(onlyKeys = null) {
   const lifeFlags = pickLifeQuestionFlags(facts.length);
   return facts.map((f, i) =>
     toQuestion(f, blanks[i], "full", { isLife: lifeFlags[i] })
+  );
+}
+
+function buildHardRandomQuiz(onlyKeys = null) {
+  let facts = allFactsPool();
+  if (onlyKeys) {
+    facts = facts.filter((f) => onlyKeys.includes(factKey(f.a, f.b)));
+  } else {
+    facts = shuffle(facts).slice(0, HARD_QUIZ_SIZE);
+  }
+  const blanks = pickFactorOnlyBlanks(facts.length);
+  return facts.map((f, i) =>
+    toQuestion(f, blanks[i], "full", { isLife: true })
   );
 }
 
@@ -495,7 +561,22 @@ function openPick() {
   resetMulPanels();
   renderDigitGrid();
   renderFullQuizBlock();
+  renderHardFullBlock();
   deps.showView("mulPick");
+}
+
+function renderHardFullBlock() {
+  const prog = getFullQuizProgress();
+  const meta = $("#mul-hard-meta");
+  if (meta) {
+    meta.textContent = prog.hardPassed
+      ? `已過關 · 最佳 ${prog.hardBestCorrect}/${HARD_QUIZ_SIZE}`
+      : prog.hardBestCorrect > 0
+        ? `最佳 ${prog.hardBestCorrect}/${HARD_QUIZ_SIZE}`
+        : "18 題 · 全生活題 · 求因數";
+  }
+  const btn = $("#btn-mul-hard-full-quiz");
+  if (btn) btn.classList.toggle("mul-hard-passed", !!prog.hardPassed);
 }
 
 function renderFullQuizBlock() {
@@ -512,18 +593,27 @@ function renderFullQuizBlock() {
   if (btn) btn.classList.toggle("mul-full-passed", prog.passed);
 }
 
-function startQuiz(retryWrongs = false) {
+function startQuiz(retryWrongs = false, hard = false) {
   if (!learnDigit) return;
+  const mode = hard ? "hard-digit" : "digit";
   let questions;
-  if (retryWrongs && session?.wrongs?.length && session.quizMode === "digit") {
+  if (
+    retryWrongs &&
+    session?.wrongs?.length &&
+    session.quizMode === mode
+  ) {
     const keys = session.wrongs.map((w) => w.question.factKey);
-    questions = buildDigitQuiz(learnDigit, keys);
+    questions = hard
+      ? buildHardDigitQuiz(learnDigit, keys)
+      : buildDigitQuiz(learnDigit, keys);
   } else {
-    questions = buildDigitQuiz(learnDigit);
+    questions = hard
+      ? buildHardDigitQuiz(learnDigit)
+      : buildDigitQuiz(learnDigit);
   }
   session = {
     digit: learnDigit,
-    quizMode: "digit",
+    quizMode: mode,
     questions,
     index: 0,
     correct: 0,
@@ -536,17 +626,24 @@ function startQuiz(retryWrongs = false) {
   deps.showView("mulQuiz");
 }
 
-function startFullQuiz(retryWrongs = false) {
+function startFullQuiz(retryWrongs = false, hard = false) {
   learnDigit = null;
+  const mode = hard ? "hard-full" : "full";
   let questions;
-  if (retryWrongs && session?.wrongs?.length && session.quizMode === "full") {
+  if (
+    retryWrongs &&
+    session?.wrongs?.length &&
+    session.quizMode === mode
+  ) {
     const keys = session.wrongs.map((w) => w.question.factKey);
-    questions = buildRandomQuiz(keys);
+    questions = hard
+      ? buildHardRandomQuiz(keys)
+      : buildRandomQuiz(keys);
   } else {
-    questions = buildRandomQuiz();
+    questions = hard ? buildHardRandomQuiz() : buildRandomQuiz();
   }
   session = {
-    quizMode: "full",
+    quizMode: mode,
     questions,
     index: 0,
     correct: 0,
@@ -564,10 +661,7 @@ function renderQuizQuestion() {
   const q = session.questions[session.index];
   if (!q) return;
   session.hintCount = 0;
-  $("#mul-quiz-title").textContent =
-    session.quizMode === "full"
-      ? "全部測驗 · 2～9"
-      : `背 ${session.digit} · 測驗`;
+  $("#mul-quiz-title").textContent = quizTitle(session);
   $("#mul-quiz-progress").textContent = `第 ${session.index + 1} / ${session.questions.length} 題`;
   const lifeEl = $("#mul-quiz-life-story");
   const promptEl = $("#mul-prompt");
@@ -583,7 +677,11 @@ function renderQuizQuestion() {
   }
   const hintEl = $("#mul-quiz-hint");
   if (hintEl) {
-    hintEl.textContent = q.isLife ? "想想生活題，再選答案" : "選出正確答案";
+    hintEl.textContent = isHardQuizMode(session.quizMode)
+      ? "進階題：想想生活題，選因數"
+      : q.isLife
+        ? "想想生活題，再選答案"
+        : "選出正確答案";
     hintEl.className = "mul-quiz-hint";
   }
   applyMulQuizAnswerPanels(q.inputMode);
@@ -597,7 +695,9 @@ function renderQuizQuestion() {
 function renderFactorPad(quizMode = "full") {
   const pad = $("#mul-factor-pad");
   if (!pad) return;
-  const nums = quizMode === "digit" ? [1, 2, 3, 4, 5, 6, 7, 8, 9] : DIGITS;
+  const nums = isDigitKeypadMode(quizMode)
+    ? [1, 2, 3, 4, 5, 6, 7, 8, 9]
+    : DIGITS;
   pad.innerHTML = "";
   nums.forEach((n) => {
     const btn = document.createElement("button");
@@ -630,7 +730,7 @@ function hintText(q) {
   }
   if (session.hintCount === 0) {
     if (blank === "product") return `想想 ${a} 個 ${b} 相加會是多少？`;
-    if (session.quizMode === "digit") {
+    if (isDigitKeypadMode(session.quizMode)) {
       return `這句在背誦的 ${session.digit} 那一列裡`;
     }
     return `在九九表裡找 ${a} 和 ${b} 那一格`;
@@ -638,7 +738,9 @@ function hintText(q) {
   if (blank === "product") {
     return `答案在 ${Math.max(4, product - 10)}～${Math.min(81, product + 10)} 之間`;
   }
-  return session.quizMode === "digit" ? `答案在 1～9 之間` : `答案在 2～9 之間`;
+  return isDigitKeypadMode(session.quizMode)
+    ? `答案在 1～9 之間`
+    : `答案在 2～9 之間`;
 }
 
 function submitAnswer(value) {
@@ -657,7 +759,8 @@ function submitAnswer(value) {
 
   session.hintCount += 1;
   const hintEl = $("#mul-quiz-hint");
-  if (session.hintCount < 3) {
+  const hintsLeft = maxHints(session.quizMode);
+  if (session.hintCount < hintsLeft) {
     if (hintEl) {
       hintEl.textContent = hintText(q);
       hintEl.className = "mul-quiz-hint mul-quiz-hint-warm";
@@ -690,14 +793,30 @@ function showResult() {
   if (!session) return;
   const total = session.questions.length;
   const correct = session.correct;
-  const passed = correct >= PASS_CORRECT;
+  const need = passThreshold(session.quizMode);
+  const passed = correct >= need;
+  const hard = isHardQuizMode(session.quizMode);
 
-  if (session.quizMode === "full") {
+  if (session.quizMode === "hard-full") {
+    const fullProg = getFullQuizProgress();
+    setFullQuizProgress({
+      hardBestCorrect: Math.max(fullProg.hardBestCorrect || 0, correct),
+      hardPassed: fullProg.hardPassed || passed,
+    });
+  } else if (session.quizMode === "full") {
     const fullProg = getFullQuizProgress();
     setFullQuizProgress({
       bestCorrect: Math.max(fullProg.bestCorrect, correct),
       passed: fullProg.passed || passed,
     });
+  } else if (session.quizMode === "hard-digit" && session.digit) {
+    const prog = getDigitProgress(session.digit);
+    setDigitProgress(session.digit, {
+      learned: true,
+      hardBestCorrect: Math.max(prog.hardBestCorrect || 0, correct),
+      hardPassed: prog.hardPassed || passed,
+    });
+    learnDigit = session.digit;
   } else if (session.digit) {
     const prog = getDigitProgress(session.digit);
     setDigitProgress(session.digit, {
@@ -709,18 +828,28 @@ function showResult() {
     learnDigit = session.digit;
   }
 
-  $("#mul-result-title").textContent = passed ? "過關了！" : "再練一次";
+  $("#mul-result-title").textContent = passed
+    ? hard
+      ? "進階過關！"
+      : "過關了！"
+    : "再練一次";
   $("#mul-result-score").textContent = `${correct} / ${total} 題正確`;
   const sub = $("#mul-result-sub");
   if (sub) {
-    if (session.quizMode === "full") {
+    if (session.quizMode === "hard-full") {
+      sub.textContent = passed
+        ? "進階挑戰過關！因數與生活題都很熟了"
+        : `要 ${need} 題以上才過關，錯題可以再練`;
+    } else if (session.quizMode === "full") {
       sub.textContent = passed
         ? "全部測驗過關！2～9 都很熟了"
-        : `要 ${PASS_CORRECT} 題以上才過關，錯題可以再練`;
+        : `要 ${need} 題以上才過關，錯題可以再練`;
+    } else if (session.quizMode === "hard-digit" && passed) {
+      sub.textContent = `「${session.digit}」進階測驗過關！`;
     } else if (passed) {
       sub.textContent = `「${session.digit}」的乘法背好了！`;
     } else {
-      sub.textContent = `要 ${PASS_CORRECT} 題以上才過關，錯題可以再練`;
+      sub.textContent = `要 ${need} 題以上才過關，錯題可以再練`;
     }
   }
 
@@ -740,7 +869,9 @@ function showResult() {
   }
 
   $("#btn-mul-retry-wrong").hidden = session.wrongs.length === 0;
-  $("#btn-mul-next-digit").hidden = session.quizMode === "full";
+  const isFullLike =
+    session.quizMode === "full" || session.quizMode === "hard-full";
+  $("#btn-mul-next-digit").hidden = isFullLike;
   deps.showView("mulResult");
 }
 
@@ -770,8 +901,12 @@ export function bindMulEvents() {
     advanceRevealLine();
   });
   $("#btn-mul-to-quiz")?.addEventListener("click", () => startQuiz(false));
+  $("#btn-mul-hard-quiz")?.addEventListener("click", () => startQuiz(false, true));
   $("#btn-mul-skip-learn")?.addEventListener("click", () => startQuiz(false));
   $("#btn-mul-full-quiz")?.addEventListener("click", () => startFullQuiz(false));
+  $("#btn-mul-hard-full-quiz")?.addEventListener("click", () =>
+    startFullQuiz(false, true)
+  );
   $("#btn-mul-quiz-back")?.addEventListener("click", () => {
     if (confirm("離開測驗？進度不會儲存。")) {
       session = null;
@@ -780,11 +915,15 @@ export function bindMulEvents() {
     }
   });
   $("#btn-mul-retry-wrong")?.addEventListener("click", () => {
-    if (session?.quizMode === "full") startFullQuiz(true);
+    if (session?.quizMode === "hard-full") startFullQuiz(true, true);
+    else if (session?.quizMode === "full") startFullQuiz(true);
+    else if (session?.quizMode === "hard-digit") startQuiz(true, true);
     else startQuiz(true);
   });
   $("#btn-mul-try-again")?.addEventListener("click", () => {
-    if (session?.quizMode === "full") startFullQuiz(false);
+    if (session?.quizMode === "hard-full") startFullQuiz(false, true);
+    else if (session?.quizMode === "full") startFullQuiz(false);
+    else if (session?.quizMode === "hard-digit") startQuiz(false, true);
     else startQuiz(false);
   });
   $("#btn-mul-next-digit")?.addEventListener("click", () => openPick());

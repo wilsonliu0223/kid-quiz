@@ -2229,6 +2229,57 @@ body {
   color: var(--muted);
 }
 
+.mul-hard-block {
+  margin-top: 14px;
+}
+
+.mul-hard-label {
+  margin: 0 0 8px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #9a5a20;
+  text-align: center;
+}
+
+.mul-hard-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  width: 100%;
+  padding: 14px 16px;
+  border-radius: 14px;
+  border: 2px solid #d4a060;
+  background: linear-gradient(135deg, #fff8ef 0%, #fce8cc 100%);
+  cursor: pointer;
+  touch-action: manipulation;
+  text-align: left;
+  font-family: inherit;
+}
+
+.mul-hard-btn.mul-hard-passed {
+  border-color: #c47a28;
+  background: linear-gradient(135deg, #fff3e0 0%, #f5d4a8 100%);
+}
+
+.mul-hard-title {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: #8a4a12;
+}
+
+.mul-hard-meta {
+  font-size: 0.78rem;
+  color: #9a6a40;
+}
+
+.mul-hard-quiz-btn {
+  margin-top: 8px;
+  border-color: #d4a060;
+  color: #8a4a12;
+  font-weight: 700;
+}
+
 .mul-learn-row {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
