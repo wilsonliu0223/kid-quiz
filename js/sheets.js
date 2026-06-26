@@ -1,6 +1,7 @@
 import { CONFIG } from "./config.site.js";
 import { DEMO_ZH_ITEMS } from "./demo-data.js";
 import { DEMO_EN_ITEMS } from "./demo-en.js";
+import { enLessonFilterAliases } from "./exam-books.js";
 
 const COL_ZH = {
   lesson: ["課次"],
@@ -125,7 +126,7 @@ function recoverEnItemsFromBrokenColLabels(table) {
   const english = splitField(labels[4], true);
   const hintsRaw = splitField(labels[3], labels[3]?.startsWith("提示"));
   const lesson =
-    splitField(labels[0], labels[0]?.startsWith("課次"))[0] || "Unit21考試";
+    splitField(labels[0], labels[0]?.startsWith("課次"))[0] || "TJ3 Unit21考試";
 
   const n = Math.min(chinese.length, english.length);
   const items = [];
@@ -304,7 +305,11 @@ function shuffleArray(arr) {
 export function pickRandomQuestions(items, count = 10, lessonFilter = "全部") {
   let pool = items;
   if (lessonFilter && lessonFilter !== "全部") {
-    pool = items.filter((i) => i.lesson === lessonFilter);
+    const aliases = enLessonFilterAliases(lessonFilter);
+    pool =
+      aliases.length > 1
+        ? items.filter((i) => aliases.includes(i.lesson))
+        : items.filter((i) => i.lesson === lessonFilter);
   }
   if (!pool.length) return [];
 

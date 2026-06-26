@@ -117,6 +117,26 @@ body {
   border-color: #1a5bb8;
 }
 
+.setup-divider {
+  height: 1px;
+  margin: 20px 0 18px;
+  background: var(--border);
+}
+
+.setup-section-flip .flip-players-vs {
+  margin-bottom: 10px;
+}
+
+.setup-section-flip .flip-pair-count-picker {
+  margin-bottom: 10px;
+}
+
+.setup-section-flip .card-flip {
+  width: 100%;
+  min-height: 64px;
+  padding: 14px 16px;
+}
+
 .home-settings {
   margin-bottom: 14px;
   padding: 12px 14px;

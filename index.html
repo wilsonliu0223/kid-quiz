@@ -11,7 +11,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <title>家裡練習</title>
     <link rel="manifest" href="manifest.json" />
-    <link rel="stylesheet" href="css/app.css?v=setup-v1" />
+    <link rel="stylesheet" href="css/app.css?v=setup-v2" />
     <script type="importmap">
       {
         "imports": {
@@ -72,7 +72,7 @@
               data-action="start-zh"
             >
               <span class="card-title">國語</span>
-              <span class="card-desc">選課次 · 手寫國字</span>
+              <span class="card-desc">選課次 · 測驗 · 翻牌</span>
             </button>
             <button
               type="button"
@@ -93,28 +93,6 @@
         <div class="home-zone home-zone-duo">
           <h2 class="home-zone-title">雙人對戰</h2>
           <p class="home-zone-sub">兩人同機 · 開局再點誰先</p>
-
-          <div class="home-duo-group home-duo-group-flip">
-            <h3 class="home-duo-label">國字翻牌</h3>
-            <div class="flip-players-vs" id="flip-players-vs">
-              <span id="flip-player-a-name">思妘</span>
-              <span class="flip-vs">vs</span>
-              <span id="flip-player-b-name">思妤</span>
-            </div>
-            <div class="flip-pair-count-picker" role="group" aria-label="幾組字">
-              <span class="label">幾組字？</span>
-              <div class="lesson-chips" id="flip-pair-count-chips">
-                <button type="button" class="chip" data-flip-pairs="5">5</button>
-                <button type="button" class="chip chip-active" data-flip-pairs="10">10</button>
-                <button type="button" class="chip" data-flip-pairs="15">15</button>
-                <button type="button" class="chip" data-flip-pairs="20">20</button>
-              </div>
-            </div>
-            <button type="button" class="card card-flip" id="btn-start-flip-zh">
-              <span class="card-title">開始翻牌</span>
-              <span class="card-desc">國字配注音</span>
-            </button>
-          </div>
 
           <div class="home-duo-group home-duo-group-math">
             <h3 class="home-duo-label">數學對戰</h3>
@@ -216,6 +194,31 @@
         <button type="button" class="btn btn-primary btn-block" id="btn-setup-zh-start">
           開始測驗
         </button>
+
+        <div class="setup-divider" aria-hidden="true"></div>
+
+        <div class="setup-section setup-section-flip">
+          <span class="label">國字翻牌</span>
+          <p class="setup-section-sub">雙人同機 · 用上方課次抽字 · 開局再點誰先</p>
+          <div class="flip-players-vs" id="flip-players-vs">
+            <span id="flip-player-a-name">思妘</span>
+            <span class="flip-vs">vs</span>
+            <span id="flip-player-b-name">思妤</span>
+          </div>
+          <div class="flip-pair-count-picker" role="group" aria-label="幾組字">
+            <span class="label">幾組字？</span>
+            <div class="lesson-chips" id="flip-pair-count-chips">
+              <button type="button" class="chip" data-flip-pairs="5">5</button>
+              <button type="button" class="chip chip-active" data-flip-pairs="10">10</button>
+              <button type="button" class="chip" data-flip-pairs="15">15</button>
+              <button type="button" class="chip" data-flip-pairs="20">20</button>
+            </div>
+          </div>
+          <button type="button" class="card card-flip" id="btn-start-flip-zh">
+            <span class="card-title">開始翻牌</span>
+            <span class="card-desc">國字配注音</span>
+          </button>
+        </div>
       </section>
 
       <!-- 英語：題數 → 考試範圍 → 開始 -->
@@ -703,6 +706,6 @@
       </div>
     </div>
 
-    <script type="module" src="js/app.js?v=setup-v1"></script>
+    <script type="module" src="js/app.js?v=setup-v2"></script>
   </body>
 </html>

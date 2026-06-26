@@ -7,6 +7,7 @@ import {
   groupLessonsForEnExams,
   formatEnExamCurrent,
   formatEnExamTitle,
+  dedupeEnExamLessons,
 } from "./exam-books.js";
 import { CONFIG } from "./config.site.js";
 import {
@@ -173,8 +174,10 @@ function showView(name) {
     renderHomeScoreHistory();
     renderResumeBanner();
     renderMistakeBookHome();
-    renderFlipHomePlayers();
     renderMathHomePlayers();
+  }
+  if (name === "setupZh") {
+    renderFlipHomePlayers();
   }
   if (name === "quizEn") setupEnQuizKeyboardLift();
 }
@@ -280,9 +283,10 @@ function buildLessonPicker(bank, container, options = {}) {
     showAllChip = true,
     emptyMessage = "題庫尚無課次",
     pickedLabel = "課次名稱",
+    lessonsOverride = null,
   } = options;
 
-  const lessons = uniqueLessons(bank || zhBank);
+  const lessons = lessonsOverride || uniqueLessons(bank || zhBank);
   container.innerHTML = "";
 
   if (lessons.length <= 1) {
@@ -432,6 +436,7 @@ function openZhSetup() {
     emptyMessage: "尚無國語課次，請檢查試算表",
   });
   syncQuizCountChips();
+  renderFlipHomePlayers();
   showView("setupZh");
 }
 
@@ -439,6 +444,7 @@ function openEnSetup() {
   enLessonFilter = "全部";
   buildLessonPicker(enBank, $("#setup-en-exam-books"), {
     filterState: enFilterState,
+    lessonsOverride: dedupeEnExamLessons(uniqueLessons(enBank)),
     groupFn: groupLessonsForEnExams,
     formatters: {
       formatCurrent: formatEnExamCurrent,
@@ -463,7 +469,7 @@ function validateZhLessonFilter() {
 }
 
 function validateEnLessonFilter() {
-  const lessons = uniqueLessons(enBank).filter((l) => l !== "全部");
+  const lessons = dedupeEnExamLessons(uniqueLessons(enBank)).filter((l) => l !== "全部");
   if (!lessons.length) {
     alert("英語題庫是空的，請檢查試算表。");
     return false;

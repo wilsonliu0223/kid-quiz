@@ -440,9 +440,9 @@ export function bindFlipEvents() {
   $("#flip-pick-a")?.addEventListener("click", () => startGameWithFirstPlayer("A"));
   $("#flip-pick-b")?.addEventListener("click", () => startGameWithFirstPlayer("B"));
 
-  $("#btn-flip-first-back")?.addEventListener("click", () => deps.showView("home"));
+  $("#btn-flip-first-back")?.addEventListener("click", () => deps.showView("setupZh"));
   $("#btn-flip-play-back")?.addEventListener("click", () => {
-    if (confirm("離開對戰？目前進度不會儲存。")) deps.showView("home");
+    if (confirm("離開對戰？目前進度不會儲存。")) deps.showView("setupZh");
   });
   $("#btn-flip-replay")?.addEventListener("click", () => {
     const pairCount = getFlipPairCountSetting();
@@ -465,7 +465,7 @@ export function bindFlipEvents() {
     renderFirstPicker();
     deps.showView("flipFirst");
   });
-  $("#btn-flip-home")?.addEventListener("click", () => deps.showView("home"));
+  $("#btn-flip-home")?.addEventListener("click", () => deps.showView("setupZh"));
 }
 
 /**
