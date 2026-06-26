@@ -57,12 +57,13 @@ export const CONFIG = {
    * 未填寫時「兩台手機」會顯示設定教學。
    */
   FIREBASE: {
-    apiKey: "",
-    authDomain: "",
-    databaseURL: "",
-    projectId: "",
-    storageBucket: "",
-    messagingSenderId: "",
-    appId: "",
+    apiKey: "AIzaSyCt1caYzi7PDeTXEvcES6Sct9q6Lffs2Kk",
+    authDomain: "kid-quiz-online.firebaseapp.com",
+    databaseURL:
+      "https://kid-quiz-online-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "kid-quiz-online",
+    storageBucket: "kid-quiz-online.firebasestorage.app",
+    messagingSenderId: "677976319036",
+    appId: "1:677976319036:web:f8f9b0bef1dc877b5acf39",
   },
 };
