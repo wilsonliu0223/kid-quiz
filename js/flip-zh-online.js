@@ -1,4 +1,4 @@
-import { pickFlipWords, getFlipPairCountSetting, clearLocalFlipGame } from "./flip-zh.js";
+import { pickFlipWords, getFlipPairCountSetting, clearLocalFlipGame, clearFlipPlayUi } from "./flip-zh.js";
 import {
   registerOnlineGame,
   getOnlineContext,
@@ -206,6 +206,33 @@ function resetOnlineFlipSession() {
   txBusy = false;
   queuedFlipIdx = null;
   clearMismatchTimer();
+}
+
+function resetFlipZhOnlineSession() {
+  onlineState = null;
+  names = null;
+  resetOnlineFlipSession();
+  lastFlipTapAt = 0;
+  lastFlipTapIdx = -1;
+  clearFlipPlayUi();
+}
+
+function shouldReenterFlipPlay(snap) {
+  if (!$("#view-flip-play")?.classList.contains("view-active")) return true;
+  const remote = normalizeFlipState(snap.state);
+  if (!remote) return true;
+  if (!onlineState) return true;
+  const rClicks = remote.totalClicks ?? 0;
+  const rPairs = remote.matchedPairs ?? 0;
+  const lClicks = onlineState.totalClicks ?? 0;
+  const lPairs = onlineState.matchedPairs ?? 0;
+  if (rClicks === 0 && rPairs === 0 && !remote.over && (lClicks > 0 || lPairs > 0 || onlineState.over)) {
+    return true;
+  }
+  const rLen = asFirebaseList(remote.cards).length;
+  const lLen = onlineState.cards?.length ?? 0;
+  if (rLen > 0 && rLen !== lLen) return true;
+  return false;
 }
 
 async function forceResyncFlipState(roomId) {
@@ -420,8 +447,11 @@ function applyRemoteState(state, snap, force = false) {
 function enterPlay(snap) {
   clearLocalFlipGame();
   resetOnlineFlipSession();
+  onlineState = null;
+  names = null;
   lastFlipTapAt = 0;
   lastFlipTapIdx = -1;
+  clearFlipPlayUi();
   getOnlineContext().deps?.showView("flipPlay");
   applyRemoteState(snap.state, snap, true);
 }
@@ -529,8 +559,16 @@ registerOnlineGame("flip-zh", {
   startHint: "請選誰先翻牌",
   renderStartButtons: renderSlotStartButtons,
   startGame: startFlipZhGame,
+  onEnterLobby() {
+    resetFlipZhOnlineSession();
+    clearLocalFlipGame();
+  },
+  onLeave() {
+    resetFlipZhOnlineSession();
+    clearLocalFlipGame();
+  },
   onPlaying(snap) {
-    if (!$("#view-flip-play")?.classList.contains("view-active")) {
+    if (shouldReenterFlipPlay(snap)) {
       enterPlay(snap);
       return;
     }
@@ -539,6 +577,8 @@ registerOnlineGame("flip-zh", {
 });
 
 export function openFlipZhDuoMode(localStart) {
+  resetFlipZhOnlineSession();
+  clearLocalFlipGame();
   const ctx = getOnlineContext();
   const lessonFilter =
     typeof ctx.deps?.getLessonFilter === "function" ? ctx.deps.getLessonFilter() : "全部";

@@ -159,6 +159,7 @@ function showFirebaseSetupHint() {
 
 function enterOnlineFlow() {
   if (!pendingMode) return;
+  gameHandlers.get(pendingMode.game)?.onEnterLobby?.();
   if (!isFirebaseConfigured()) {
     showFirebaseSetupHint();
     deps?.showView("onlineFirebaseSetup");
@@ -286,6 +287,7 @@ function openLobby(roomId) {
   stopRoomListener();
   activeRoomId = roomId;
   mySlot = getOnlineSession()?.slot || mySlot;
+  gameHandlers.get(pendingMode?.game || "")?.onEnterLobby?.();
   deps?.showView("onlineLobby");
   roomUnsub = subscribeRoom(roomId, onRoomSnapshot);
 }
@@ -310,6 +312,7 @@ function onRoomSnapshot(snapshot) {
   }
 
   deps?.showView("onlineLobby");
+  gameHandlers.get(snapshot.meta?.game || "")?.onEnterLobby?.();
   renderLobby(snapshot);
 }
 
@@ -329,6 +332,7 @@ async function onHostStart(slot) {
 }
 
 export async function leaveOnlineRoom() {
+  const game = pendingMode?.game;
   stopRoomListener();
   if (activeRoomId && mySlot) {
     try {
@@ -337,6 +341,7 @@ export async function leaveOnlineRoom() {
       console.error(err);
     }
   }
+  gameHandlers.get(game || "")?.onLeave?.();
   activeRoomId = null;
   mySlot = null;
 }

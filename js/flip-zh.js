@@ -445,6 +445,26 @@ function createFlipLobby(words, pairCount) {
 
 export function clearLocalFlipGame() {
   game = null;
+  clearFlipPlayUi();
+}
+
+/** 清空翻牌對局畫面（本地或線上切換時避免殘留舊棋盤） */
+export function clearFlipPlayUi() {
+  const grid = document.querySelector("#flip-card-grid");
+  if (grid) {
+    grid.innerHTML = "";
+    grid.removeAttribute("data-pairs");
+    grid.classList.remove("flip-grid-my-turn", "flip-grid-locked");
+  }
+  const set = (sel, text) => {
+    const el = document.querySelector(sel);
+    if (el) el.textContent = text;
+  };
+  set("#flip-score-a", "0");
+  set("#flip-score-b", "0");
+  set("#flip-turn-label", "等候對局…");
+  set("#flip-progress-label", "");
+  set("#flip-click-label", "");
 }
 
 export function beginFlipFromHome() {
