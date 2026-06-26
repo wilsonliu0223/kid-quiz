@@ -2245,6 +2245,13 @@ body {
   background: #f4faf6;
   border: 1px solid #d0e8d8;
   color: var(--muted);
+  cursor: pointer;
+  touch-action: manipulation;
+  font-family: inherit;
+}
+
+.mul-learn-cell:active {
+  transform: scale(0.97);
 }
 
 .mul-learn-cell-active {
@@ -2306,6 +2313,34 @@ body {
   font-size: 0.85rem;
   color: var(--muted);
   margin: 0;
+}
+
+.mul-life-story {
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: #fff8ef;
+  border: 1px solid #f0d4b0;
+  color: #6b4a2a;
+  font-size: 0.95rem;
+  line-height: 1.55;
+  text-align: center;
+}
+
+.mul-life-story[hidden] {
+  display: none !important;
+}
+
+.mul-quiz-life {
+  margin-bottom: 4px;
+  font-size: 1.02rem;
+  font-weight: 600;
+}
+
+.mul-prompt.mul-prompt-equation {
+  font-size: clamp(1.35rem, 8vw, 1.85rem);
+  margin-top: 0;
+  color: #4a7a5e;
 }
 
 .mul-learn-actions {

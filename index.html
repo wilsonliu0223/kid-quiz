@@ -11,7 +11,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <title>家裡練習</title>
     <link rel="manifest" href="manifest.json" />
-    <link rel="stylesheet" href="css/app.css?v=times-table-v4" />
+    <link rel="stylesheet" href="css/app.css?v=times-table-v5" />
     <script type="importmap">
       {
         "imports": {
@@ -463,6 +463,7 @@
           <div class="mul-learn-row" id="mul-learn-row"></div>
           <div id="mul-learn-recite-panel" class="mul-learn-panel">
             <p class="mul-recite-line" id="mul-recite-line">3 × 1 ＝ 3</p>
+            <p class="mul-life-story" id="mul-learn-life-story" hidden></p>
             <button type="button" class="btn btn-secondary btn-block" id="btn-mul-recite">從頭跟念</button>
           </div>
           <div id="mul-learn-reveal-panel" class="mul-learn-panel" hidden>
@@ -487,6 +488,7 @@
           <span class="quiz-progress" id="mul-quiz-progress">第 1 / 9 題</span>
         </header>
         <div class="mul-body mul-quiz-body">
+          <p class="mul-life-story mul-quiz-life" id="mul-quiz-life-story" hidden></p>
           <p class="mul-prompt" id="mul-prompt">3 × □ ＝ 21</p>
           <p class="mul-quiz-hint" id="mul-quiz-hint">選出正確答案</p>
           <div class="mul-answer-area">
@@ -642,6 +644,6 @@
       </div>
     </div>
 
-    <script type="module" src="js/app.js?v=times-table-v4"></script>
+    <script type="module" src="js/app.js?v=times-table-v5"></script>
   </body>
 </html>

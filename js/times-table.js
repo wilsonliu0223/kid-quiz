@@ -3,6 +3,12 @@ const PASS_CORRECT = 8;
 const QUIZ_SIZE = 9;
 const DIGITS = [2, 3, 4, 5, 6, 7, 8, 9];
 
+import {
+  randomLifeStory,
+  lifeQuestionText,
+  pickLifeQuestionFlags,
+} from "./mul-life-scenarios.js";
+
 /** @type {MulDeps | null} */
 let deps = null;
 /** @type {MulSession | null} */
@@ -35,6 +41,8 @@ let revealIndex = 0;
  * @property {MulInputMode} inputMode
  * @property {number[]} choices
  * @property {string} factKey
+ * @property {boolean} [isLife]
+ * @property {string} [lifePrompt]
  *
  * @typedef {object} MulWrong
  * @property {MulQuestion} question
@@ -166,7 +174,7 @@ function buildChoices(answer, inputMode, quizMode = "full") {
  * @param {{ a: number, b: number, product: number }} fact
  * @param {MulBlank} blank
  */
-function toQuestion(fact, blank, quizMode = "full") {
+function toQuestion(fact, blank, quizMode = "full", options = {}) {
   const { a, b, product } = fact;
   let prompt = "";
   let answer = 0;
@@ -186,7 +194,7 @@ function toQuestion(fact, blank, quizMode = "full") {
     inputMode = "digit19";
   }
 
-  return {
+  const q = {
     a,
     b,
     product,
@@ -197,6 +205,19 @@ function toQuestion(fact, blank, quizMode = "full") {
     choices: buildChoices(answer, inputMode, quizMode),
     factKey: factKey(a, b),
   };
+
+  if (options.isLife) {
+    q.isLife = true;
+    q.lifePrompt = lifeQuestionText(
+      a,
+      b,
+      product,
+      blank,
+      options.templateId
+    );
+  }
+
+  return q;
 }
 
 function factsForDigit(digit) {
@@ -213,7 +234,10 @@ function buildDigitQuiz(digit, onlyKeys = null) {
     facts = facts.filter((f) => onlyKeys.includes(factKey(f.a, f.b)));
   }
   const blanks = pickBlankTypes(facts.length);
-  return facts.map((f, i) => toQuestion(f, blanks[i], "digit"));
+  const lifeFlags = pickLifeQuestionFlags(facts.length);
+  return facts.map((f, i) =>
+    toQuestion(f, blanks[i], "digit", { isLife: lifeFlags[i] })
+  );
 }
 
 function buildRandomQuiz(onlyKeys = null) {
@@ -224,7 +248,10 @@ function buildRandomQuiz(onlyKeys = null) {
     facts = shuffle(facts).slice(0, QUIZ_SIZE);
   }
   const blanks = pickBlankTypes(facts.length);
-  return facts.map((f, i) => toQuestion(f, blanks[i], "full"));
+  const lifeFlags = pickLifeQuestionFlags(facts.length);
+  return facts.map((f, i) =>
+    toQuestion(f, blanks[i], "full", { isLife: lifeFlags[i] })
+  );
 }
 
 function stopRecite() {
@@ -269,6 +296,12 @@ function applyMulLearnPanels(mode) {
     sub.style.display = isRecite ? "block" : "none";
   }
   body?.classList.toggle("mul-learn-reveal-active", !isRecite);
+  if (isRecite) {
+    const n = reciteIndex + 1;
+    if (learnDigit) showLearnLifeStory(learnDigit, n);
+  } else {
+    hideLearnLifeStory();
+  }
 }
 
 function resetMulPanels() {
@@ -308,13 +341,35 @@ function renderLearnRow() {
   if (!row) return;
   row.innerHTML = "";
   for (let n = 1; n <= 9; n++) {
-    const cell = document.createElement("div");
+    const cell = document.createElement("button");
+    cell.type = "button";
     cell.className = "mul-learn-cell";
     cell.textContent = `${learnDigit}×${n}=${learnDigit * n}`;
     cell.dataset.n = String(n);
+    cell.addEventListener("click", () => selectLearnFact(n - 1));
     row.appendChild(cell);
   }
   highlightLearnCell(reciteIndex);
+}
+
+function selectLearnFact(index) {
+  if (!learnDigit) return;
+  stopRecite();
+  reciteIndex = index;
+  updateReciteLine();
+  showLearnLifeStory(learnDigit, index + 1);
+}
+
+function showLearnLifeStory(a, b) {
+  const el = $("#mul-learn-life-story");
+  if (!el) return;
+  el.textContent = randomLifeStory(a, b);
+  el.hidden = false;
+}
+
+function hideLearnLifeStory() {
+  const el = $("#mul-learn-life-story");
+  if (el) el.hidden = true;
 }
 
 function highlightLearnCell(index) {
@@ -332,6 +387,7 @@ function updateReciteLine() {
     line.textContent = `${learnDigit} × ${n} ＝ ${learnDigit * n}`;
   }
   highlightLearnCell(reciteIndex);
+  showLearnLifeStory(learnDigit, n);
 }
 
 function startRecite() {
@@ -507,10 +563,21 @@ function renderQuizQuestion() {
       ? "全部測驗 · 2～9"
       : `背 ${session.digit} · 測驗`;
   $("#mul-quiz-progress").textContent = `第 ${session.index + 1} / ${session.questions.length} 題`;
-  $("#mul-prompt").textContent = q.prompt;
+  const lifeEl = $("#mul-quiz-life-story");
+  const promptEl = $("#mul-prompt");
+  if (q.isLife && q.lifePrompt && lifeEl && promptEl) {
+    lifeEl.textContent = q.lifePrompt;
+    lifeEl.hidden = false;
+    promptEl.textContent = q.prompt;
+    promptEl.classList.add("mul-prompt-equation");
+  } else if (lifeEl && promptEl) {
+    lifeEl.hidden = true;
+    promptEl.textContent = q.prompt;
+    promptEl.classList.remove("mul-prompt-equation");
+  }
   const hintEl = $("#mul-quiz-hint");
   if (hintEl) {
-    hintEl.textContent = "選出正確答案";
+    hintEl.textContent = q.isLife ? "想想生活題，再選答案" : "選出正確答案";
     hintEl.className = "mul-quiz-hint";
   }
   applyMulQuizAnswerPanels(q.inputMode);
@@ -552,6 +619,9 @@ function renderChoicePad(q) {
 
 function hintText(q) {
   const { a, b, product, blank } = q;
+  if (q.isLife && session.hintCount === 0) {
+    return `想想：${a} 和 ${b} 相乘`;
+  }
   if (session.hintCount === 0) {
     if (blank === "product") return `想想 ${a} 個 ${b} 相加會是多少？`;
     if (session.quizMode === "digit") {
@@ -570,7 +640,10 @@ function submitAnswer(value) {
   const q = session.questions[session.index];
   if (value === q.answer) {
     session.correct += 1;
-    deps.showOk("答對了！", q.prompt.replace("□", String(q.answer)), () => {
+    const okSub = q.isLife && q.lifePrompt
+      ? `${q.lifePrompt.replace("□", String(q.answer))}`
+      : q.prompt.replace("□", String(q.answer));
+    deps.showOk("答對了！", okSub, () => {
       goNextQuestion();
     });
     return;
