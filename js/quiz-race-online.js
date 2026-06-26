@@ -1,6 +1,6 @@
 import { pickRandomQuestions } from "./sheets.js";
 import { englishAnswersMatch } from "./english.js";
-import { blankSentenceForRace, raceSentenceHtml, ensureRaceSentenceSafe } from "./sentence.js?v=quiz-race-zh-blank-v3";
+import { blankSentenceForRace, raceSentenceHtml, ensureRaceSentenceSafe } from "./sentence.js?v=quiz-race-en-buzz-v1";
 import { buildMulRaceQuestions } from "./times-table.js";
 import {
   registerOnlineGame,
@@ -100,7 +100,48 @@ function questionRenderKey() {
   return `${onlineState.round}-${onlineState.phase}-${activeSubject}-${q?.id || ""}`;
 }
 
+function syncLocalDraftFromInput() {
+  if (activeSubject !== "en") return;
+  const el = /** @type {HTMLInputElement | null} */ ($("#race-answer-input"));
+  if (el && !el.hidden) localDraft = el.value;
+}
+
+function clearEnInput() {
+  localDraft = null;
+  const inputEl = /** @type {HTMLInputElement | null} */ ($("#race-answer-input"));
+  if (inputEl) {
+    inputEl.value = "";
+    inputEl.disabled = false;
+  }
+}
+
+function updateEnInputField() {
+  const inputEl = /** @type {HTMLInputElement | null} */ ($("#race-answer-input"));
+  if (!inputEl || activeSubject !== "en") return;
+  const submitted = mySubmission();
+  const canType = onlineState?.phase === "open" && !submitted && !onlineState?.over;
+  inputEl.hidden = false;
+  inputEl.placeholder = "輸入答案";
+  inputEl.disabled = !canType;
+  if (canType) {
+    if (document.activeElement !== inputEl) {
+      inputEl.value = String(localDraft ?? "");
+    }
+  } else if (submitted) {
+    inputEl.value = String(submitted.answer ?? "");
+  } else {
+    inputEl.value = "";
+  }
+}
+
 function highlightChoice(selected) {
+  document.querySelectorAll(".race-choice-btn").forEach((btn) => {
+    const val = btn.textContent ?? "";
+    const match =
+      activeSubject === "mul" ? Number(val) === Number(selected) : val === String(selected);
+    btn.classList.toggle("race-choice-selected", match);
+  });
+}
   document.querySelectorAll(".race-choice-btn").forEach((btn) => {
     const val = btn.textContent ?? "";
     const match =
@@ -354,13 +395,7 @@ function renderQuestionArea(force = false) {
     } else {
       promptEl.innerHTML = `<p class="race-prompt-sub">聽音拼字（請輸入英文後搶答）</p>`;
     }
-    if (inputEl) {
-      inputEl.hidden = false;
-      inputEl.placeholder = "輸入答案";
-      if (document.activeElement !== inputEl) {
-        inputEl.value = String(localDraft ?? "");
-      }
-    }
+    updateEnInputField();
     return;
   }
 
@@ -392,6 +427,7 @@ function escapeHtml(s) {
 }
 
 function updateBuzzButton() {
+  syncLocalDraftFromInput();
   const buzz = $("#btn-race-buzz");
   const hint = $("#race-status-hint");
   const ctx = getOnlineContext();
@@ -426,6 +462,8 @@ function updateBuzzButton() {
   } else {
     hint.textContent = "";
   }
+
+  if (activeSubject === "en") updateEnInputField();
 }
 
 function formatExpected(q) {
@@ -460,9 +498,10 @@ function applyRemoteState(state, snap, force = false) {
 
   const phaseRoundChanged =
     force || prevRound !== onlineState.round || prevPhase !== onlineState.phase;
-  if (phaseRoundChanged && !mySubmission()) {
+  if (phaseRoundChanged) {
     localDraft = null;
     lastQuestionKey = "";
+    clearEnInput();
   }
 
   renderRaceUi({ forceQuestion: phaseRoundChanged });
@@ -549,6 +588,8 @@ async function tryAdvancePhase() {
   });
 
   if (next) {
+    localDraft = null;
+    lastQuestionKey = "";
     onlineState = normalizeRaceState(next);
     renderRaceUi({ forceQuestion: true });
     if (onlineState?.over) showRaceResult();
@@ -557,6 +598,7 @@ async function tryAdvancePhase() {
 
 async function onBuzz() {
   const ctx = getOnlineContext();
+  syncLocalDraftFromInput();
   if (!ctx.roomId || !ctx.slot || !onlineState || onlineState.phase !== "open") return;
   if (mySubmission()) return;
   const draft = localDraft;
@@ -604,14 +646,10 @@ async function onBuzz() {
     });
 
     if (next) {
-      const prevPhase = onlineState?.phase;
+      localDraft = null;
       onlineState = normalizeRaceState(next);
-      if (prevPhase !== onlineState.phase) {
-        renderRaceUi({ forceQuestion: true });
-      } else {
-        renderRaceHeader();
-        updateBuzzButton();
-      }
+      updateEnInputField();
+      renderRaceUi({ forceQuestion: onlineState.phase !== "open" });
       if (onlineState.over) showRaceResult();
     }
   } catch (err) {
@@ -720,7 +758,10 @@ export function bindRaceEvents() {
     updateBuzzButton();
   });
   $("#race-answer-input")?.addEventListener("keydown", (e) => {
-    if (e.key === "Enter") void onBuzz();
+    if (e.key !== "Enter") return;
+    e.preventDefault();
+    syncLocalDraftFromInput();
+    void onBuzz();
   });
   $("#btn-race-replay")?.addEventListener("click", async () => {
     if (getOnlineContext().roomId) {
