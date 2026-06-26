@@ -3,6 +3,11 @@ import {
   formatLessonCurrent,
   formatLessonTitle,
 } from "./lesson-books.js";
+import {
+  groupLessonsForEnExams,
+  formatEnExamCurrent,
+  formatEnExamTitle,
+} from "./exam-books.js";
 import { CONFIG } from "./config.site.js";
 import {
   loadZhItems,
@@ -70,7 +75,8 @@ const $ = (sel) => document.querySelector(sel);
 
 let zhBank = [];
 let enBank = [];
-let lessonFilter = "全部";
+let zhLessonFilter = "全部";
+let enLessonFilter = "全部";
 let enMode = "meaning";
 let quiz = null;
 let handwriting = null;
@@ -96,23 +102,18 @@ function setQuizCountSetting(value) {
 }
 
 function syncQuizCountChips() {
-  const container = $("#quiz-count-chips");
-  if (!container) return;
   const current =
     localStorage.getItem(KEY_QUIZ_COUNT) || String(CONFIG.QUIZ_COUNT_DEFAULT || 10);
-  container.querySelectorAll(".chip").forEach((btn) => {
+  document.querySelectorAll(".quiz-count-chips .chip[data-quiz-count]").forEach((btn) => {
     const val = btn.dataset.quizCount;
     const active = val === "all" ? current === "all" : val === current;
     btn.classList.toggle("chip-active", active);
   });
-  updateQuizCountHint();
+  updateQuizCountHints();
 }
 
 function initQuizCountPicker() {
-  const container = $("#quiz-count-chips");
-  if (!container) return;
-
-  container.querySelectorAll(".chip").forEach((btn) => {
+  document.querySelectorAll(".quiz-count-chips .chip[data-quiz-count]").forEach((btn) => {
     btn.addEventListener("click", () => {
       const val = btn.dataset.quizCount;
       setQuizCountSetting(val === "all" ? "all" : val);
@@ -123,19 +124,20 @@ function initQuizCountPicker() {
   syncQuizCountChips();
 }
 
-function updateQuizCountHint() {
-  const hint = $("#quiz-count-hint");
-  if (!hint) return;
+function updateQuizCountHints() {
   const setting = getQuizCountSetting();
-  if (!setting) {
-    hint.textContent = "「全部」：目前課次有幾題就考幾題，隨機一輪、不重複";
-    return;
-  }
-  hint.textContent = `最多 ${setting} 題；題庫較少時會考完全部（不重複）`;
+  const text = !setting
+    ? "「全部」：目前範圍有幾題就考幾題，隨機一輪、不重複"
+    : `最多 ${setting} 題；題庫較少時會考完全部（不重複）`;
+  document.querySelectorAll(".quiz-count-hint").forEach((hint) => {
+    hint.textContent = text;
+  });
 }
 
 const views = {
   home: $("#view-home"),
+  setupZh: $("#view-setup-zh"),
+  setupEn: $("#view-setup-en"),
   quizZh: $("#view-quiz-zh"),
   quizEn: $("#view-quiz-en"),
   flipFirst: $("#view-flip-first"),
@@ -204,7 +206,6 @@ async function refreshBank() {
     setSheetStatus(
       `國語 ${zhBank.length} 題 · 英語 ${enBank.length} 題（${src}）${enNote}`
     );
-    buildLessonChips(zhBank);
     if (CONFIG.HANZI_STROKE_ENABLED !== false) {
       ensureHanziStrokeReady().catch(() => {});
     }
@@ -214,7 +215,7 @@ async function refreshBank() {
   }
 }
 
-function updateLessonPickedRows(container, name) {
+function updateLessonPickedRows(container, name, formatters = { formatTitle: formatLessonTitle }) {
   container.querySelectorAll(".lesson-book").forEach((article) => {
     const pickedRow = article.querySelector(".lesson-book-picked");
     const titleEl = article.querySelector(".lesson-book-picked-title");
@@ -228,20 +229,23 @@ function updateLessonPickedRows(container, name) {
       return;
     }
     pickedRow.hidden = false;
-    titleEl.textContent = formatLessonTitle(name);
+    titleEl.textContent = formatters.formatTitle(name);
   });
 }
 
-function selectLessonFilter(name, container) {
-  lessonFilter = name;
+function selectLessonFilter(name, container, filterState, formatters) {
+  filterState.set(name);
+  const current = filterState.get();
   container.querySelectorAll("[data-lesson]").forEach((c) => {
     c.classList.toggle("chip-active", c.dataset.lesson === name);
   });
   container.querySelectorAll(".lesson-book-current").forEach((el) => {
     el.textContent =
-      name === "全部" ? formatLessonCurrent(name) : formatLessonTitle(name);
+      name === "全部"
+        ? formatters.formatCurrent(name)
+        : formatters.formatTitle(name);
   });
-  updateLessonPickedRows(container, name);
+  updateLessonPickedRows(container, current, formatters);
   container.querySelectorAll(".lesson-book-panel").forEach((p) => {
     p.hidden = true;
   });
@@ -260,39 +264,54 @@ function selectLessonFilter(name, container) {
       if (head) head.setAttribute("aria-expanded", "true");
     });
   }
-  updateQuizCountHint();
+  updateQuizCountHints();
 }
 
-function buildLessonChips(bank) {
-  const lessons = uniqueLessons(bank || zhBank);
-  const wrap = $("#lesson-picker");
-  const container = $("#lesson-books");
+function buildLessonPicker(bank, container, options = {}) {
   if (!container) return;
+
+  const {
+    filterState,
+    groupFn = groupLessonsForBooks,
+    formatters = {
+      formatCurrent: formatLessonCurrent,
+      formatTitle: formatLessonTitle,
+    },
+    showAllChip = true,
+    emptyMessage = "題庫尚無課次",
+    pickedLabel = "課次名稱",
+  } = options;
+
+  const lessons = uniqueLessons(bank || zhBank);
   container.innerHTML = "";
 
   if (lessons.length <= 1) {
-    wrap.hidden = true;
-    lessonFilter = "全部";
+    filterState.set("全部");
+    if (lessons.length === 1) {
+      const msg = document.createElement("p");
+      msg.className = "setup-empty-hint";
+      msg.textContent = emptyMessage;
+      container.appendChild(msg);
+    }
     return;
   }
 
-  if (!lessons.includes(lessonFilter)) {
-    lessonFilter = "全部";
+  if (!lessons.includes(filterState.get())) {
+    filterState.set("全部");
   }
 
-  wrap.hidden = false;
-  const { books, ungrouped } = groupLessonsForBooks(lessons);
+  const { books, ungrouped } = groupFn(lessons);
 
   function addChip(parent, name, label) {
     const btn = document.createElement("button");
     btn.type = "button";
     btn.className =
-      "chip chip-lesson" + (name === lessonFilter ? " chip-active" : "");
+      "chip chip-lesson" + (name === filterState.get() ? " chip-active" : "");
     btn.textContent = label;
     btn.dataset.lesson = name;
     btn.title = name;
     btn.addEventListener("click", () => {
-      selectLessonFilter(name, container);
+      selectLessonFilter(name, container, filterState, formatters);
     });
     parent.appendChild(btn);
   }
@@ -306,15 +325,16 @@ function buildLessonChips(bank) {
     head.type = "button";
     head.className = "lesson-book-head";
     head.setAttribute("aria-expanded", collapsible ? "false" : "true");
+    const current = filterState.get();
     head.innerHTML = `
       <span class="lesson-book-head-main">
         <span class="lesson-book-title">${book.label}</span>
         <span class="lesson-book-hint">${book.hint || ""}</span>
       </span>
       <span class="lesson-book-current">${
-        lessonFilter === "全部"
-          ? formatLessonCurrent(lessonFilter)
-          : formatLessonTitle(lessonFilter)
+        current === "全部"
+          ? formatters.formatCurrent(current)
+          : formatters.formatTitle(current)
       }</span>
       <span class="lesson-book-chevron" aria-hidden="true"></span>
     `;
@@ -325,7 +345,7 @@ function buildLessonChips(bank) {
 
     const chips = document.createElement("div");
     chips.className = "lesson-chips lesson-chips-compact";
-    addChip(chips, "全部", "全部");
+    if (showAllChip) addChip(chips, "全部", "全部");
     book.lessons.forEach((name) => {
       addChip(chips, name, book.chipLabel ? book.chipLabel(name) : name);
     });
@@ -335,7 +355,7 @@ function buildLessonChips(bank) {
     picked.className = "lesson-book-picked";
     picked.hidden = true;
     picked.innerHTML = `
-      <span class="lesson-book-picked-label">課次名稱</span>
+      <span class="lesson-book-picked-label">${pickedLabel}</span>
       <span class="lesson-book-picked-title"></span>
     `;
     panel.appendChild(picked);
@@ -367,8 +387,8 @@ function buildLessonChips(bank) {
     buildBookCard(
       {
         id: "other",
-        label: "其他課次",
-        hint: ungrouped.length > 1 ? `${ungrouped.length} 課` : "",
+        label: "其他範圍",
+        hint: ungrouped.length > 1 ? `${ungrouped.length} 項` : "",
         lessons: ungrouped,
         chipLabel: null,
       },
@@ -383,7 +403,84 @@ function buildLessonChips(bank) {
     container.appendChild(chips);
   }
 
-  updateLessonPickedRows(container, lessonFilter);
+  updateLessonPickedRows(container, filterState.get(), formatters);
+
+  const specific = lessons.filter((l) => l !== "全部");
+  if (!showAllChip && specific.length === 1) {
+    selectLessonFilter(specific[0], container, filterState, formatters);
+  }
+}
+
+const zhFilterState = {
+  get: () => zhLessonFilter,
+  set: (v) => {
+    zhLessonFilter = v;
+  },
+};
+
+const enFilterState = {
+  get: () => enLessonFilter,
+  set: (v) => {
+    enLessonFilter = v;
+  },
+};
+
+function openZhSetup() {
+  zhLessonFilter = "全部";
+  buildLessonPicker(zhBank, $("#setup-zh-lesson-books"), {
+    filterState: zhFilterState,
+    emptyMessage: "尚無國語課次，請檢查試算表",
+  });
+  syncQuizCountChips();
+  showView("setupZh");
+}
+
+function openEnSetup() {
+  enLessonFilter = "全部";
+  buildLessonPicker(enBank, $("#setup-en-exam-books"), {
+    filterState: enFilterState,
+    groupFn: groupLessonsForEnExams,
+    formatters: {
+      formatCurrent: formatEnExamCurrent,
+      formatTitle: formatEnExamTitle,
+    },
+    showAllChip: false,
+    pickedLabel: "考試名稱",
+    emptyMessage: "尚無英語考試範圍，請在試算表「課次」欄新增（例：TJ3 Unit21考試）",
+  });
+  syncQuizCountChips();
+  showView("setupEn");
+}
+
+function validateZhLessonFilter() {
+  const lessons = uniqueLessons(zhBank);
+  if (lessons.length <= 1) return true;
+  if (zhLessonFilter === "全部") {
+    alert("請先點「一年級下」等區塊，選擇要考的課次");
+    return false;
+  }
+  return true;
+}
+
+function validateEnLessonFilter() {
+  const lessons = uniqueLessons(enBank).filter((l) => l !== "全部");
+  if (!lessons.length) {
+    alert("英語題庫是空的，請檢查試算表。");
+    return false;
+  }
+  if (lessons.length === 1) {
+    enLessonFilter = lessons[0];
+    return true;
+  }
+  if (enLessonFilter === "全部") {
+    alert("請選擇考試範圍（例如 TJ3 Unit21考試 或 TJ4 期末考）");
+    return false;
+  }
+  return true;
+}
+
+function getActiveLessonFilter(subject) {
+  return subject === "en" ? enLessonFilter : zhLessonFilter;
 }
 
 function renderChildChips() {
@@ -436,7 +533,7 @@ function persistQuizDraft() {
     subject: quiz.subject,
     mode: quiz.mode,
     child: quiz.child,
-    lessonFilter,
+    lessonFilter: getActiveLessonFilter(quiz.subject),
     enMode,
     questions: quiz.questions,
     index: quiz.index,
@@ -469,8 +566,12 @@ function resumeQuiz() {
   const draft = loadQuizDraft();
   if (!draft?.questions?.length) return;
 
-  lessonFilter = draft.lessonFilter || "全部";
-  if (draft.subject === "en") enMode = draft.mode || draft.enMode || "meaning";
+  if (draft.subject === "en") {
+    enLessonFilter = draft.lessonFilter || "全部";
+    enMode = draft.mode || draft.enMode || "meaning";
+  } else {
+    zhLessonFilter = draft.lessonFilter || "全部";
+  }
 
   quiz = {
     subject: draft.subject,
@@ -686,6 +787,7 @@ function startZhQuiz(options = {}) {
     ensurePaddleOcr().catch(() => {});
   }
   if (!options.mistakeReview && blockIfShouldResumeInstead()) return;
+  if (!options.mistakeReview && !validateZhLessonFilter()) return;
   if (CONFIG.HANZI_STROKE_ENABLED !== false) {
     ensureHanziStrokeReady().catch(() => {});
   }
@@ -694,7 +796,7 @@ function startZhQuiz(options = {}) {
   const child = getSelectedChild();
   const questions = options.mistakeReview
     ? questionsFromMistakeBook(zhBank, child, "zh", countSetting)
-    : pickRandomQuestions(zhBank, countSetting, lessonFilter);
+    : pickRandomQuestions(zhBank, countSetting, zhLessonFilter);
 
   if (!questions.length) {
     alert(
@@ -799,19 +901,19 @@ async function playEnglishAudio() {
 
 function startEnQuiz(options = {}) {
   if (!options.mistakeReview && blockIfShouldResumeInstead()) return;
+  if (!options.mistakeReview && !validateEnLessonFilter()) return;
   clearQuizDraft();
-  if (!options.mistakeReview) buildLessonChips(enBank);
   const countSetting = getQuizCountSetting();
   const child = getSelectedChild();
   const questions = options.mistakeReview
     ? questionsFromMistakeBook(enBank, child, "en", countSetting)
-    : pickRandomQuestions(enBank, countSetting, lessonFilter);
+    : pickRandomQuestions(enBank, countSetting, enLessonFilter);
 
   if (!questions.length) {
     const hint = options.mistakeReview
       ? "錯題本裡沒有英語題目。"
-      : lessonFilter !== "全部"
-        ? `目前課次「${lessonFilter}」在英語題庫沒有題目，請改選「全部」或「測試」等英語課次。`
+      : enLessonFilter !== "全部"
+        ? `目前範圍「${enLessonFilter}」在英語題庫沒有題目，請改選其他考試範圍。`
         : "請在試算表新增「英語」工作表，並確認「類型」欄為「單字」。";
     alert(`沒有英語題目！${hint}`);
     return;
@@ -1507,7 +1609,7 @@ function showResult() {
   const saveStatus = $("#score-save-status");
   saveStatus.hidden = false;
   saveStatus.textContent = "正在記錄成績…";
-  void logQuizResult(quiz, lessonFilter).then((r) => {
+  void logQuizResult(quiz, getActiveLessonFilter(quiz.subject)).then((r) => {
     saveStatus.textContent = r.message;
     renderHomeScoreHistory();
   });
@@ -1751,16 +1853,23 @@ function bindEvents() {
     btn.addEventListener("click", go);
   };
 
-  bindStart($("#btn-start-zh"), () => {
-    buildLessonChips(zhBank);
-    startZhQuiz();
-  });
+  bindStart($("#btn-start-zh"), openZhSetup);
   bindStart($("#btn-start-en"), () => {
     primeSpeech();
     enMode =
       document.querySelector(".en-mode-picker .chip-active")?.dataset.enMode ||
       "meaning";
-    buildLessonChips(enBank);
+    openEnSetup();
+  });
+
+  $("#btn-setup-zh-back")?.addEventListener("click", () => showView("home"));
+  $("#btn-setup-en-back")?.addEventListener("click", () => showView("home"));
+  $("#btn-setup-zh-start")?.addEventListener("click", () => startZhQuiz());
+  $("#btn-setup-en-start")?.addEventListener("click", () => {
+    primeSpeech();
+    enMode =
+      document.querySelector(".en-mode-picker .chip-active")?.dataset.enMode ||
+      "meaning";
     startEnQuiz();
   });
 
@@ -1877,7 +1986,7 @@ async function init() {
   initFlipZh({
     showView,
     getZhBank: () => zhBank,
-    getLessonFilter: () => lessonFilter,
+    getLessonFilter: () => zhLessonFilter,
     getChildNames,
     showWarn: (title, sub) => {
       showFeedback("warn", title, [{ label: "好的", primary: true, onClick: () => {} }], {

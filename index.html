@@ -11,7 +11,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <title>家裡練習</title>
     <link rel="manifest" href="manifest.json" />
-    <link rel="stylesheet" href="css/app.css?v=home-v1" />
+    <link rel="stylesheet" href="css/app.css?v=setup-v1" />
     <script type="importmap">
       {
         "imports": {
@@ -52,11 +52,6 @@
           </button>
         </div>
 
-        <div class="lesson-picker" id="lesson-picker" hidden>
-          <span class="label">本週課次</span>
-          <div class="lesson-books" id="lesson-books"></div>
-        </div>
-
         <div class="home-settings">
           <div class="child-picker" role="group" aria-label="選擇小孩">
             <span class="label">誰在練習？</span>
@@ -64,17 +59,6 @@
               <button type="button" class="chip chip-active" data-child="A">A</button>
               <button type="button" class="chip" data-child="B">B</button>
             </div>
-          </div>
-          <div class="quiz-count-picker" role="group" aria-label="本次題數">
-            <span class="label">本次題數</span>
-            <div class="lesson-chips" id="quiz-count-chips">
-              <button type="button" class="chip" data-quiz-count="5">5</button>
-              <button type="button" class="chip chip-active" data-quiz-count="10">10</button>
-              <button type="button" class="chip" data-quiz-count="15">15</button>
-              <button type="button" class="chip" data-quiz-count="20">20</button>
-              <button type="button" class="chip" data-quiz-count="all">全部</button>
-            </div>
-            <p class="quiz-count-hint" id="quiz-count-hint">題數少於題庫時，隨機抽題不重複</p>
           </div>
         </div>
 
@@ -88,7 +72,7 @@
               data-action="start-zh"
             >
               <span class="card-title">國語</span>
-              <span class="card-desc">看注音 · 手寫國字</span>
+              <span class="card-desc">選課次 · 手寫國字</span>
             </button>
             <button
               type="button"
@@ -97,7 +81,7 @@
               data-action="start-en"
             >
               <span class="card-title">英語</span>
-              <span class="card-desc">看中拼英 · 聽音拼字</span>
+              <span class="card-desc">選範圍 · 拼字測驗</span>
             </button>
             <button type="button" class="card card-mul" id="btn-start-mul">
               <span class="card-title">九九乘法</span>
@@ -203,6 +187,65 @@
         </div>
 
         <p class="sheet-status" id="sheet-status">正在載入題庫…</p>
+      </section>
+
+      <!-- 國語：選課次 → 題數 → 開始 -->
+      <section id="view-setup-zh" class="view view-hidden" aria-label="國語設定">
+        <header class="setup-header setup-header-zh">
+          <button type="button" class="btn-text" id="btn-setup-zh-back">← 返回</button>
+          <span class="setup-subject">國語</span>
+        </header>
+
+        <div class="setup-section">
+          <span class="label">本週課次</span>
+          <div class="lesson-books" id="setup-zh-lesson-books"></div>
+        </div>
+
+        <div class="setup-section">
+          <span class="label">本次題數</span>
+          <div class="lesson-chips quiz-count-chips" id="quiz-count-chips-zh">
+            <button type="button" class="chip" data-quiz-count="5">5</button>
+            <button type="button" class="chip chip-active" data-quiz-count="10">10</button>
+            <button type="button" class="chip" data-quiz-count="15">15</button>
+            <button type="button" class="chip" data-quiz-count="20">20</button>
+            <button type="button" class="chip" data-quiz-count="all">全部</button>
+          </div>
+          <p class="quiz-count-hint" id="quiz-count-hint-zh"></p>
+        </div>
+
+        <button type="button" class="btn btn-primary btn-block" id="btn-setup-zh-start">
+          開始測驗
+        </button>
+      </section>
+
+      <!-- 英語：題數 → 考試範圍 → 開始 -->
+      <section id="view-setup-en" class="view view-hidden" aria-label="英語設定">
+        <header class="setup-header setup-header-en">
+          <button type="button" class="btn-text" id="btn-setup-en-back">← 返回</button>
+          <span class="setup-subject">英語</span>
+        </header>
+
+        <div class="setup-section">
+          <span class="label">本次題數</span>
+          <div class="lesson-chips quiz-count-chips" id="quiz-count-chips-en">
+            <button type="button" class="chip" data-quiz-count="5">5</button>
+            <button type="button" class="chip chip-active" data-quiz-count="10">10</button>
+            <button type="button" class="chip" data-quiz-count="15">15</button>
+            <button type="button" class="chip" data-quiz-count="20">20</button>
+            <button type="button" class="chip" data-quiz-count="all">全部</button>
+          </div>
+          <p class="quiz-count-hint" id="quiz-count-hint-en"></p>
+        </div>
+
+        <div class="setup-section">
+          <span class="label">考試範圍</span>
+          <p class="setup-section-sub">選 TJ3 或 TJ4 等試算表課次</p>
+          <div class="lesson-books" id="setup-en-exam-books"></div>
+        </div>
+
+        <button type="button" class="btn btn-primary btn-block btn-primary-en" id="btn-setup-en-start">
+          開始測驗
+        </button>
       </section>
 
       <!-- 國語測驗 -->
@@ -660,6 +703,6 @@
       </div>
     </div>
 
-    <script type="module" src="js/app.js?v=times-table-v10"></script>
+    <script type="module" src="js/app.js?v=setup-v1"></script>
   </body>
 </html>

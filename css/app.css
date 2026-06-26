@@ -69,6 +69,54 @@ body {
   -webkit-overflow-scrolling: touch;
 }
 
+#view-setup-zh.view-active,
+#view-setup-en.view-active {
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.setup-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  gap: 8px;
+}
+
+.setup-subject {
+  font-size: 1.15rem;
+  font-weight: 800;
+}
+
+.setup-header-zh .setup-subject {
+  color: var(--zh-dark);
+}
+
+.setup-header-en .setup-subject {
+  color: #1a5bb8;
+}
+
+.setup-section {
+  margin-bottom: 18px;
+}
+
+.setup-section-sub {
+  margin: -4px 0 10px;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.setup-empty-hint {
+  margin: 0;
+  font-size: 0.88rem;
+  color: var(--muted);
+}
+
+.btn-primary-en {
+  background: var(--en);
+  border-color: #1a5bb8;
+}
+
 .home-settings {
   margin-bottom: 14px;
   padding: 12px 14px;
