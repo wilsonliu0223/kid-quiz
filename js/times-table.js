@@ -41,8 +41,8 @@ let revealIndex = 0;
  * @property {number} attempts
  *
  * @typedef {object} MulSession
- * @property {number} digit
- * @property {'A'|'B'} phase
+ * @property {number} [digit]
+ * @property {'digit'|'full'} quizMode
  * @property {MulQuestion[]} questions
  * @property {number} index
  * @property {number} correct
@@ -84,6 +84,26 @@ function defaultDigitProgress() {
   return { learned: false, bestCorrect: 0, passed: false, phaseB: false };
 }
 
+function defaultFullQuizProgress() {
+  return { bestCorrect: 0, passed: false };
+}
+
+function getFullQuizProgress() {
+  const child = deps.getSelectedChild();
+  const root = loadProgressRoot();
+  if (!root[child]) root[child] = {};
+  if (!root[child].fullQuiz) root[child].fullQuiz = defaultFullQuizProgress();
+  return root[child].fullQuiz;
+}
+
+function setFullQuizProgress(patch) {
+  const child = deps.getSelectedChild();
+  const root = loadProgressRoot();
+  if (!root[child]) root[child] = {};
+  root[child].fullQuiz = { ...getFullQuizProgress(), ...patch };
+  saveProgressRoot(root);
+}
+
 function getDigitProgress(digit) {
   const child = deps.getSelectedChild();
   const root = loadProgressRoot();
@@ -123,9 +143,12 @@ function allFactsPool() {
   return facts;
 }
 
-function buildChoices(answer, inputMode) {
+function buildChoices(answer, inputMode, quizMode = "full") {
   if (inputMode === "digit19") {
-    const pool = DIGITS.filter((n) => n !== answer);
+    const pool =
+      quizMode === "digit"
+        ? [1, 2, 3, 4, 5, 6, 7, 8, 9].filter((n) => n !== answer)
+        : DIGITS.filter((n) => n !== answer);
     const picks = shuffle(pool).slice(0, 3);
     return shuffle([answer, ...picks]);
   }
@@ -143,7 +166,7 @@ function buildChoices(answer, inputMode) {
  * @param {{ a: number, b: number, product: number }} fact
  * @param {MulBlank} blank
  */
-function toQuestion(fact, blank) {
+function toQuestion(fact, blank, quizMode = "full") {
   const { a, b, product } = fact;
   let prompt = "";
   let answer = 0;
@@ -171,9 +194,26 @@ function toQuestion(fact, blank) {
     prompt,
     answer,
     inputMode,
-    choices: buildChoices(answer, inputMode),
+    choices: buildChoices(answer, inputMode, quizMode),
     factKey: factKey(a, b),
   };
+}
+
+function factsForDigit(digit) {
+  const facts = [];
+  for (let n = 1; n <= 9; n++) {
+    facts.push({ a: digit, b: n, product: digit * n });
+  }
+  return facts;
+}
+
+function buildDigitQuiz(digit, onlyKeys = null) {
+  let facts = factsForDigit(digit);
+  if (onlyKeys) {
+    facts = facts.filter((f) => onlyKeys.includes(factKey(f.a, f.b)));
+  }
+  const blanks = pickBlankTypes(facts.length);
+  return facts.map((f, i) => toQuestion(f, blanks[i], "digit"));
 }
 
 function buildRandomQuiz(onlyKeys = null) {
@@ -184,7 +224,7 @@ function buildRandomQuiz(onlyKeys = null) {
     facts = shuffle(facts).slice(0, QUIZ_SIZE);
   }
   const blanks = pickBlankTypes(facts.length);
-  return facts.map((f, i) => toQuestion(f, blanks[i]));
+  return facts.map((f, i) => toQuestion(f, blanks[i], "full"));
 }
 
 function stopRecite() {
@@ -332,21 +372,59 @@ function openPick() {
   stopRecite();
   resetMulPanels();
   renderDigitGrid();
+  renderFullQuizBlock();
   deps.showView("mulPick");
+}
+
+function renderFullQuizBlock() {
+  const prog = getFullQuizProgress();
+  const meta = $("#mul-full-meta");
+  if (meta) {
+    meta.textContent = prog.passed
+      ? `已過關 · 最佳 ${prog.bestCorrect}/${QUIZ_SIZE}`
+      : prog.bestCorrect > 0
+        ? `最佳 ${prog.bestCorrect}/${QUIZ_SIZE}`
+        : "2～9 隨機 · 9 題";
+  }
+  const btn = $("#btn-mul-full-quiz");
+  if (btn) btn.classList.toggle("mul-full-passed", prog.passed);
 }
 
 function startQuiz(retryWrongs = false) {
   if (!learnDigit) return;
   let questions;
-  if (retryWrongs && session?.wrongs?.length) {
+  if (retryWrongs && session?.wrongs?.length && session.quizMode === "digit") {
+    const keys = session.wrongs.map((w) => w.question.factKey);
+    questions = buildDigitQuiz(learnDigit, keys);
+  } else {
+    questions = buildDigitQuiz(learnDigit);
+  }
+  session = {
+    digit: learnDigit,
+    quizMode: "digit",
+    questions,
+    index: 0,
+    correct: 0,
+    wrongs: [],
+    retryMode: retryWrongs,
+    hintCount: 0,
+  };
+  resetMulPanels();
+  renderQuizQuestion();
+  deps.showView("mulQuiz");
+}
+
+function startFullQuiz(retryWrongs = false) {
+  learnDigit = null;
+  let questions;
+  if (retryWrongs && session?.wrongs?.length && session.quizMode === "full") {
     const keys = session.wrongs.map((w) => w.question.factKey);
     questions = buildRandomQuiz(keys);
   } else {
     questions = buildRandomQuiz();
   }
   session = {
-    digit: learnDigit,
-    phase: "random",
+    quizMode: "full",
     questions,
     index: 0,
     correct: 0,
@@ -364,7 +442,10 @@ function renderQuizQuestion() {
   const q = session.questions[session.index];
   if (!q) return;
   session.hintCount = 0;
-  $("#mul-quiz-title").textContent = `背 ${session.digit} · 隨機 2～9`;
+  $("#mul-quiz-title").textContent =
+    session.quizMode === "full"
+      ? "全部測驗 · 2～9"
+      : `背 ${session.digit} · 測驗`;
   $("#mul-quiz-progress").textContent = `第 ${session.index + 1} / ${session.questions.length} 題`;
   $("#mul-prompt").textContent = q.prompt;
   const hintEl = $("#mul-quiz-hint");
@@ -374,17 +455,18 @@ function renderQuizQuestion() {
   }
   applyMulQuizAnswerPanels(q.inputMode);
   if (q.inputMode === "digit19") {
-    renderFactorPad();
+    renderFactorPad(session.quizMode);
   } else {
     renderChoicePad(q);
   }
 }
 
-function renderFactorPad() {
+function renderFactorPad(quizMode = "full") {
   const pad = $("#mul-factor-pad");
-  if (!pad || pad.dataset.built === "1") return;
+  if (!pad) return;
+  const nums = quizMode === "digit" ? [1, 2, 3, 4, 5, 6, 7, 8, 9] : DIGITS;
   pad.innerHTML = "";
-  DIGITS.forEach((n) => {
+  nums.forEach((n) => {
     const btn = document.createElement("button");
     btn.type = "button";
     btn.className = "mul-factor-key";
@@ -392,7 +474,6 @@ function renderFactorPad() {
     btn.addEventListener("click", () => submitAnswer(n));
     pad.appendChild(btn);
   });
-  pad.dataset.built = "1";
 }
 
 function renderChoicePad(q) {
@@ -413,12 +494,15 @@ function hintText(q) {
   const { a, b, product, blank } = q;
   if (session.hintCount === 0) {
     if (blank === "product") return `想想 ${a} 個 ${b} 相加會是多少？`;
+    if (session.quizMode === "digit") {
+      return `這句在背誦的 ${session.digit} 那一列裡`;
+    }
     return `在九九表裡找 ${a} 和 ${b} 那一格`;
   }
   if (blank === "product") {
     return `答案在 ${Math.max(4, product - 10)}～${Math.min(81, product + 10)} 之間`;
   }
-  return `答案在 2～9 之間`;
+  return session.quizMode === "digit" ? `答案在 1～9 之間` : `答案在 2～9 之間`;
 }
 
 function submitAnswer(value) {
@@ -468,22 +552,34 @@ function showResult() {
   const total = session.questions.length;
   const correct = session.correct;
   const passed = correct >= PASS_CORRECT;
-  const prog = getDigitProgress(session.digit);
-  setDigitProgress(session.digit, {
-    learned: true,
-    bestCorrect: Math.max(prog.bestCorrect, correct),
-    passed: prog.passed || passed,
-    phaseB: prog.phaseB,
-  });
+
+  if (session.quizMode === "full") {
+    const fullProg = getFullQuizProgress();
+    setFullQuizProgress({
+      bestCorrect: Math.max(fullProg.bestCorrect, correct),
+      passed: fullProg.passed || passed,
+    });
+  } else if (session.digit) {
+    const prog = getDigitProgress(session.digit);
+    setDigitProgress(session.digit, {
+      learned: true,
+      bestCorrect: Math.max(prog.bestCorrect, correct),
+      passed: prog.passed || passed,
+      phaseB: prog.phaseB,
+    });
+    learnDigit = session.digit;
+  }
 
   $("#mul-result-title").textContent = passed ? "過關了！" : "再練一次";
   $("#mul-result-score").textContent = `${correct} / ${total} 題正確`;
   const sub = $("#mul-result-sub");
   if (sub) {
-    if (passed && session.phase === "random") {
-      sub.textContent = `「${session.digit}」背誦過關！隨機測驗也達標`;
+    if (session.quizMode === "full") {
+      sub.textContent = passed
+        ? "全部測驗過關！2～9 都很熟了"
+        : `要 ${PASS_CORRECT} 題以上才過關，錯題可以再練`;
     } else if (passed) {
-      sub.textContent = `「${session.digit}」已熟練`;
+      sub.textContent = `「${session.digit}」的乘法背好了！`;
     } else {
       sub.textContent = `要 ${PASS_CORRECT} 題以上才過關，錯題可以再練`;
     }
@@ -505,7 +601,7 @@ function showResult() {
   }
 
   $("#btn-mul-retry-wrong").hidden = session.wrongs.length === 0;
-  learnDigit = session.digit;
+  $("#btn-mul-next-digit").hidden = session.quizMode === "full";
   deps.showView("mulResult");
 }
 
@@ -554,6 +650,7 @@ export function bindMulEvents() {
   });
   $("#btn-mul-to-quiz")?.addEventListener("click", () => startQuiz(false));
   $("#btn-mul-skip-learn")?.addEventListener("click", () => startQuiz(false));
+  $("#btn-mul-full-quiz")?.addEventListener("click", () => startFullQuiz(false));
   $("#btn-mul-quiz-back")?.addEventListener("click", () => {
     if (confirm("離開測驗？進度不會儲存。")) {
       session = null;
@@ -561,8 +658,14 @@ export function bindMulEvents() {
       openPick();
     }
   });
-  $("#btn-mul-retry-wrong")?.addEventListener("click", () => startQuiz(true));
-  $("#btn-mul-try-again")?.addEventListener("click", () => startQuiz(false));
+  $("#btn-mul-retry-wrong")?.addEventListener("click", () => {
+    if (session?.quizMode === "full") startFullQuiz(true);
+    else startQuiz(true);
+  });
+  $("#btn-mul-try-again")?.addEventListener("click", () => {
+    if (session?.quizMode === "full") startFullQuiz(false);
+    else startQuiz(false);
+  });
   $("#btn-mul-next-digit")?.addEventListener("click", () => openPick());
   $("#btn-mul-home")?.addEventListener("click", () => {
     stopRecite();

@@ -2184,6 +2184,51 @@ body {
   color: #d4a017;
 }
 
+.mul-full-block {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px dashed #c8dcc8;
+}
+
+.mul-full-label {
+  margin: 0 0 8px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--muted);
+  text-align: center;
+}
+
+.mul-full-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  width: 100%;
+  padding: 14px 16px;
+  border-radius: 14px;
+  border: 2px solid #5a9a7a;
+  background: linear-gradient(135deg, #f0faf4 0%, #d8efe0 100%);
+  cursor: pointer;
+  touch-action: manipulation;
+  text-align: left;
+}
+
+.mul-full-btn.mul-full-passed {
+  border-color: #3d8a5a;
+  background: linear-gradient(135deg, #e8f8ee 0%, #c8e8d4 100%);
+}
+
+.mul-full-title {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: #2d6b4a;
+}
+
+.mul-full-meta {
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
 .mul-learn-row {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
