@@ -61,16 +61,16 @@ import {
 import {
   initFlipZh,
   renderFlipHomePlayers,
-} from "./flip-zh.js?v=duo-active-v1";
+} from "./flip-zh.js";
 import {
   initFlipMath,
   renderMathHomePlayers,
-} from "./flip-math-deck30.js?v=duo-active-v1";
-import { initGomoku, renderGomokuHomePlayers } from "./gomoku.js?v=duo-online-v4";
-import { initOnlineDuo } from "./online-duo.js?v=duo-online-v4";
-import "./flip-zh-online.js?v=duo-online-v5";
-import "./flip-math-online.js?v=duo-online-v4";
-import "./gomoku-online.js?v=duo-online-v4";
+} from "./flip-math-deck30.js";
+import { initGomoku, renderGomokuHomePlayers } from "./gomoku.js";
+import { initOnlineDuo } from "./online-duo.js";
+import "./flip-zh-online.js";
+import "./flip-math-online.js";
+import "./gomoku-online.js";
 import { initTimesTable, openMulHome } from "./times-table.js?v=mul-pair-v10";
 import {
   addMistake,

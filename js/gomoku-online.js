@@ -9,7 +9,7 @@ import {
   getOnlineContext,
   leaveOnlineRoom,
   openDuoModePicker,
-} from "./online-duo.js?v=duo-online-v4";
+} from "./online-duo.js";
 import { startGomokuRoom, transactGameState } from "./room-service.js";
 
 const BOARD_SIZE = 15;

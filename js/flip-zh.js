@@ -5,8 +5,8 @@ import {
   refreshDuoBattleUI,
   renderDuoPickButtons,
 } from "./duo-pick.js";
-import { getOnlineContext, leaveOnlineRoom } from "./online-duo.js?v=duo-online-v4";
-import { openFlipZhDuoMode } from "./flip-zh-online.js?v=duo-online-v5";
+import { getOnlineContext, leaveOnlineRoom } from "./online-duo.js";
+import { openFlipZhDuoMode } from "./flip-zh-online.js";
 
 const KEY_FLIP_PAIR_COUNT = "kid-quiz-flip-pair-count";
 const FLIP_PAIR_OPTIONS = [5, 10, 15, 20];

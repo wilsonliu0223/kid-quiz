@@ -1,10 +1,10 @@
-import { pickFlipWords, getFlipPairCountSetting, clearLocalFlipGame } from "./flip-zh.js?v=duo-active-v1";
+import { pickFlipWords, getFlipPairCountSetting, clearLocalFlipGame } from "./flip-zh.js";
 import {
   registerOnlineGame,
   getOnlineContext,
   leaveOnlineRoom,
   openDuoModePicker,
-} from "./online-duo.js?v=duo-online-v5";
+} from "./online-duo.js";
 import { startGameRoom, transactGameState, asFirebaseList } from "./room-service.js";
 
 /** @typedef {'host' | 'guest'} RoomSlot */
