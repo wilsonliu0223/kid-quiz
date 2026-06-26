@@ -44,7 +44,13 @@ import {
   clearQuizDraft,
 } from "./store.js";
 import { fillSentenceContext } from "./sentence.js";
-import { getChildName, getChildNames, setChildNames } from "./children.js";
+import {
+  getChildName,
+  getChildNames,
+  getChildren,
+  nextChildId,
+  setChildren,
+} from "./children.js";
 import {
   logQuizResult,
   loadLocalScores,
@@ -55,12 +61,12 @@ import {
 import {
   initFlipZh,
   renderFlipHomePlayers,
-} from "./flip-zh.js?v=flip-clicks-v1";
+} from "./flip-zh.js?v=children-v1";
 import {
   initFlipMath,
   renderMathHomePlayers,
-} from "./flip-math-deck30.js?v=math-setup-v1";
-import { initGomoku, renderGomokuHomePlayers } from "./gomoku.js?v=gomoku-v2";
+} from "./flip-math-deck30.js?v=children-v1";
+import { initGomoku, renderGomokuHomePlayers } from "./gomoku.js?v=children-v1";
 import { initTimesTable, openMulHome } from "./times-table.js?v=mul-pair-v10";
 import {
   addMistake,
@@ -496,13 +502,27 @@ function getActiveLessonFilter(subject) {
 }
 
 function renderChildChips() {
-  const names = getChildNames();
-  const selected = getSelectedChild();
-  document.querySelectorAll(".child-btns .chip").forEach((btn) => {
-    const id = btn.dataset.child;
-    btn.textContent = names[id] || id;
-    btn.classList.toggle("chip-active", id === selected);
+  const container = $("#child-btns");
+  if (!container) return;
+
+  const children = getChildren();
+  let selected = getSelectedChild();
+  if (!children.some((c) => c.id === selected)) {
+    selected = children[0]?.id || "A";
+    setSelectedChild(selected);
+  }
+
+  container.innerHTML = "";
+  children.forEach((child) => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "chip";
+    if (child.id === selected) btn.classList.add("chip-active");
+    btn.dataset.child = child.id;
+    btn.textContent = child.name;
+    container.appendChild(btn);
   });
+
   renderFlipHomePlayers();
   renderMathHomePlayers();
   renderGomokuHomePlayers();
@@ -510,34 +530,138 @@ function renderChildChips() {
 
 function initChildPicker() {
   renderChildChips();
-  document.querySelectorAll(".child-btns .chip").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      setSelectedChild(btn.dataset.child);
-      renderChildChips();
-      renderHomeScoreHistory();
-      renderMistakeBookHome();
-    });
+  const container = $("#child-btns");
+  container?.addEventListener("click", (e) => {
+    const btn = e.target.closest("[data-child]");
+    if (!btn) return;
+    setSelectedChild(btn.dataset.child);
+    renderChildChips();
+    renderHomeScoreHistory();
+    renderMistakeBookHome();
   });
+}
+
+function renderParentNameList() {
+  const list = $("#parent-name-list");
+  if (!list) return;
+
+  const children = getChildren();
+  list.innerHTML = "";
+
+  children.forEach((child, index) => {
+    const row = document.createElement("div");
+    row.className = "parent-name-row";
+
+    const order = document.createElement("div");
+    order.className = "parent-name-order";
+
+    const upBtn = document.createElement("button");
+    upBtn.type = "button";
+    upBtn.className = "btn-icon parent-name-move";
+    upBtn.textContent = "↑";
+    upBtn.dataset.move = "up";
+    upBtn.dataset.index = String(index);
+    upBtn.disabled = index === 0;
+
+    const downBtn = document.createElement("button");
+    downBtn.type = "button";
+    downBtn.className = "btn-icon parent-name-move";
+    downBtn.textContent = "↓";
+    downBtn.dataset.move = "down";
+    downBtn.dataset.index = String(index);
+    downBtn.disabled = index === children.length - 1;
+
+    order.append(upBtn, downBtn);
+
+    const input = document.createElement("input");
+    input.type = "text";
+    input.className = "parent-name-input";
+    input.dataset.childId = child.id;
+    input.value = child.name;
+    input.maxLength = 8;
+    input.autocomplete = "off";
+
+    const delBtn = document.createElement("button");
+    delBtn.type = "button";
+    delBtn.className = "btn-text parent-name-delete";
+    delBtn.textContent = "刪除";
+    delBtn.dataset.index = String(index);
+    delBtn.disabled = children.length <= 1;
+
+    row.append(order, input, delBtn);
+    list.appendChild(row);
+  });
+}
+
+function moveParentChild(index, direction) {
+  const children = [...getChildren()];
+  const target = direction === "up" ? index - 1 : index + 1;
+  if (target < 0 || target >= children.length) return;
+  [children[index], children[target]] = [children[target], children[index]];
+  setChildren(children);
+  renderParentNameList();
+}
+
+function deleteParentChild(index) {
+  const children = getChildren();
+  if (children.length <= 1) return;
+  children.splice(index, 1);
+  setChildren(children);
+  renderParentNameList();
+}
+
+function addParentChildRow() {
+  const children = getChildren();
+  const ids = new Set(children.map((c) => c.id));
+  children.push({ id: nextChildId(ids), name: `小孩 ${children.length + 1}` });
+  setChildren(children);
+  renderParentNameList();
+  const inputs = $("#parent-name-list")?.querySelectorAll(".parent-name-input");
+  inputs?.[inputs.length - 1]?.focus();
 }
 
 function fillParentNameInputs() {
-  const names = getChildNames();
-  $("#name-child-a").value = names.A;
-  $("#name-child-b").value = names.B;
+  renderParentNameList();
 }
 
 function saveParentNames() {
-  const names = setChildNames({
-    A: $("#name-child-a").value,
-    B: $("#name-child-b").value,
-  });
+  const inputs = $("#parent-name-list")?.querySelectorAll(".parent-name-input");
+  if (!inputs?.length) return;
+
+  const children = [...inputs].map((input) => ({
+    id: input.dataset.childId,
+    name: input.value,
+  }));
+  const saved = setChildren(children);
   renderChildChips();
+
   const msg = $("#name-save-msg");
-  msg.hidden = false;
-  msg.textContent = `已儲存：A ${names.A}、B ${names.B}`;
-  setTimeout(() => {
-    msg.hidden = true;
-  }, 2000);
+  if (msg) {
+    msg.hidden = false;
+    msg.textContent = `已儲存 ${saved.length} 位：${saved.map((c) => c.name).join("、")}`;
+    setTimeout(() => {
+      msg.hidden = true;
+    }, 2500);
+  }
+}
+
+function initParentNameList() {
+  const list = $("#parent-name-list");
+  if (!list) return;
+
+  list.addEventListener("click", (e) => {
+    const moveBtn = e.target.closest(".parent-name-move");
+    if (moveBtn) {
+      moveParentChild(Number(moveBtn.dataset.index), moveBtn.dataset.move);
+      return;
+    }
+    const delBtn = e.target.closest(".parent-name-delete");
+    if (delBtn && !delBtn.disabled) {
+      deleteParentChild(Number(delBtn.dataset.index));
+    }
+  });
+
+  $("#btn-add-child-name")?.addEventListener("click", addParentChildRow);
 }
 
 function persistQuizDraft() {
@@ -1995,6 +2119,7 @@ async function init() {
   bindEvents();
   setupQuizAutoSave();
   initChildPicker();
+  initParentNameList();
   initQuizCountPicker();
   initFlipZh({
     showView,

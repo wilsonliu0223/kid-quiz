@@ -1,3 +1,6 @@
+import { duoScores, getChildName, getDuoPlayerIds, otherDuoPlayer } from "./children.js";
+import { renderDuoPickButtons } from "./duo-pick.js";
+
 const KEY_FLIP_PAIR_COUNT = "kid-quiz-flip-pair-count";
 const FLIP_PAIR_OPTIONS = [5, 10, 15, 20];
 const MISMATCH_MS = 900;
@@ -30,9 +33,10 @@ let game = null;
  * @typedef {object} FlipGameState
  * @property {{ word: string, zhuyin: string }[]} words
  * @property {FlipCard[]} cards
- * @property {{ A: number, B: number }} scores
- * @property {'A'|'B'} firstPlayerId
- * @property {'A'|'B'} currentPlayerId
+ * @property {Record<string, number>} scores
+ * @property {string[]} playerIds
+ * @property {string} firstPlayerId
+ * @property {string} currentPlayerId
  * @property {number[]} flippedIdx
  * @property {boolean} locked
  * @property {number} matchedPairs
@@ -88,11 +92,11 @@ export function initFlipPairCountPicker() {
 }
 
 export function renderFlipHomePlayers() {
-  const names = deps?.getChildNames() || { A: "A", B: "B" };
+  const ids = getDuoPlayerIds();
   const aEl = $("#flip-player-a-name");
   const bEl = $("#flip-player-b-name");
-  if (aEl) aEl.textContent = names.A;
-  if (bEl) bEl.textContent = names.B;
+  if (aEl) aEl.textContent = ids[0] ? getChildName(ids[0]) : "—";
+  if (bEl) bEl.textContent = ids[1] ? getChildName(ids[1]) : "—";
 }
 
 /** @returns {{ ok: true, words: object[] } | { ok: false, available: number }} */
@@ -166,18 +170,16 @@ function flipMinClicks(pairCount) {
 }
 
 function renderFirstPicker() {
-  const names = deps.getChildNames();
-  const aBtn = $("#flip-pick-a");
-  const bBtn = $("#flip-pick-b");
-  if (aBtn) aBtn.textContent = names.A;
-  if (bBtn) bBtn.textContent = names.B;
+  renderDuoPickButtons("#flip-pick-btns", {
+    onPick: startGameWithFirstPlayer,
+  });
   $("#flip-first-lesson").textContent = deps.getLessonFilter();
   $("#flip-first-pairs").textContent = String(game?.pairCount ?? getFlipPairCountSetting());
 }
 
 function renderPlayHeader() {
   if (!game) return;
-  const names = deps.getChildNames();
+  const [idA, idB] = game.playerIds;
   const aScore = $("#flip-score-a");
   const bScore = $("#flip-score-b");
   const aName = $("#flip-play-name-a");
@@ -188,10 +190,10 @@ function renderPlayHeader() {
   const firstTagB = $("#flip-first-tag-b");
   const clickLabel = $("#flip-click-label");
 
-  if (aName) aName.textContent = names.A;
-  if (bName) bName.textContent = names.B;
-  if (aScore) aScore.textContent = String(game.scores.A);
-  if (bScore) bScore.textContent = String(game.scores.B);
+  if (aName) aName.textContent = playerName(idA);
+  if (bName) bName.textContent = playerName(idB);
+  if (aScore) aScore.textContent = String(game.scores[idA] ?? 0);
+  if (bScore) bScore.textContent = String(game.scores[idB] ?? 0);
   if (turn) turn.textContent = `輪到：${playerName(game.currentPlayerId)}`;
   if (progress) {
     progress.textContent = `配對 ${game.matchedPairs} / ${game.pairCount}`;
@@ -201,12 +203,12 @@ function renderPlayHeader() {
     clickLabel.textContent = `點擊 ${game.totalClicks} 次 · 單人最少 ${min} 次`;
   }
 
-  const aActive = game.currentPlayerId === "A";
+  const aActive = game.currentPlayerId === idA;
   $("#flip-score-block-a")?.classList.toggle("flip-score-active", aActive);
   $("#flip-score-block-b")?.classList.toggle("flip-score-active", !aActive);
 
-  if (firstTagA) firstTagA.hidden = game.firstPlayerId !== "A";
-  if (firstTagB) firstTagB.hidden = game.firstPlayerId !== "B";
+  if (firstTagA) firstTagA.hidden = game.firstPlayerId !== idA;
+  if (firstTagB) firstTagB.hidden = game.firstPlayerId !== idB;
 }
 
 function renderBoard() {
@@ -354,7 +356,7 @@ function onCardClick(idx) {
     c0.faceUp = false;
     c1.faceUp = false;
     game.flippedIdx = [];
-    game.currentPlayerId = game.currentPlayerId === "A" ? "B" : "A";
+    game.currentPlayerId = otherDuoPlayer(game.currentPlayerId, game.playerIds);
     game.locked = false;
     renderBoard();
   }, MISMATCH_MS);
@@ -362,15 +364,17 @@ function onCardClick(idx) {
 
 function showFlipResult() {
   if (!game) return;
-  const names = deps.getChildNames();
-  const a = game.scores.A;
-  const b = game.scores.B;
+  const [idA, idB] = game.playerIds;
+  const a = game.scores[idA] ?? 0;
+  const b = game.scores[idB] ?? 0;
   const title = $("#flip-result-title");
   const detail = $("#flip-result-detail");
   const scoreLine = $("#flip-result-scores");
   const clickLine = $("#flip-result-clicks");
 
-  if (scoreLine) scoreLine.textContent = `${names.A} ${a} ：${b} ${names.B}`;
+  if (scoreLine) {
+    scoreLine.textContent = `${playerName(idA)} ${a} ：${b} ${playerName(idB)}`;
+  }
 
   const min = flipMinClicks(game.pairCount);
   if (clickLine) {
@@ -382,9 +386,9 @@ function showFlipResult() {
   }
 
   if (a > b) {
-    if (title) title.textContent = `${names.A} 獲勝！`;
+    if (title) title.textContent = `${playerName(idA)} 獲勝！`;
   } else if (b > a) {
-    if (title) title.textContent = `${names.B} 獲勝！`;
+    if (title) title.textContent = `${playerName(idB)} 獲勝！`;
   } else if (title) title.textContent = "平手！";
 
   if (detail) {
@@ -395,17 +399,41 @@ function showFlipResult() {
 }
 
 function startGameWithFirstPlayer(firstPlayerId) {
-  if (!game?.words) return;
+  if (!game?.words || !game.playerIds?.includes(firstPlayerId)) return;
   game.firstPlayerId = firstPlayerId;
   game.currentPlayerId = firstPlayerId;
   game.cards = buildCards(game.words);
-  game.scores = { A: 0, B: 0 };
+  game.scores = duoScores(game.playerIds);
   game.flippedIdx = [];
   game.locked = false;
   game.matchedPairs = 0;
   game.totalClicks = 0;
   deps.showView("flipPlay");
   renderBoard();
+}
+
+function createFlipLobby(words, pairCount) {
+  const playerIds = getDuoPlayerIds();
+  if (playerIds.length < 2) {
+    deps.showWarn(
+      "需要兩位小孩",
+      "請在家長區新增至少兩位，並把要對戰的兩位排在最上面"
+    );
+    return null;
+  }
+  return {
+    words,
+    cards: [],
+    playerIds,
+    scores: duoScores(playerIds),
+    firstPlayerId: playerIds[0],
+    currentPlayerId: playerIds[0],
+    flippedIdx: [],
+    locked: false,
+    matchedPairs: 0,
+    pairCount,
+    totalClicks: 0,
+  };
 }
 
 export function beginFlipFromHome() {
@@ -428,18 +456,8 @@ export function beginFlipFromHome() {
     return;
   }
 
-  game = {
-    words: result.words,
-    cards: [],
-    scores: { A: 0, B: 0 },
-    firstPlayerId: "A",
-    currentPlayerId: "A",
-    flippedIdx: [],
-    locked: false,
-    matchedPairs: 0,
-    pairCount,
-    totalClicks: 0,
-  };
+  game = createFlipLobby(result.words, pairCount);
+  if (!game) return;
 
   renderFirstPicker();
   deps.showView("flipFirst");
@@ -461,9 +479,6 @@ export function bindFlipEvents() {
     beginFlipFromHome();
   });
 
-  $("#flip-pick-a")?.addEventListener("click", () => startGameWithFirstPlayer("A"));
-  $("#flip-pick-b")?.addEventListener("click", () => startGameWithFirstPlayer("B"));
-
   $("#btn-flip-first-back")?.addEventListener("click", () => deps.showView("setupZh"));
   $("#btn-flip-play-back")?.addEventListener("click", () => {
     if (confirm("離開對戰？目前進度不會儲存。")) deps.showView("setupZh");
@@ -475,18 +490,8 @@ export function bindFlipEvents() {
       deps.showWarn("無法再玩一局", "請回首頁調整課次或組數");
       return;
     }
-    game = {
-      words: result.words,
-      cards: [],
-      scores: { A: 0, B: 0 },
-      firstPlayerId: "A",
-      currentPlayerId: "A",
-      flippedIdx: [],
-      locked: false,
-      matchedPairs: 0,
-      pairCount,
-      totalClicks: 0,
-    };
+    game = createFlipLobby(result.words, pairCount);
+    if (!game) return;
     renderFirstPicker();
     deps.showView("flipFirst");
   });

@@ -11,7 +11,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <title>家裡練習</title>
     <link rel="manifest" href="manifest.json" />
-    <link rel="stylesheet" href="css/app.css?v=math-setup-v1" />
+    <link rel="stylesheet" href="css/app.css?v=children-v1" />
     <script type="importmap">
       {
         "imports": {
@@ -55,10 +55,7 @@
         <div class="home-settings">
           <div class="child-picker" role="group" aria-label="選擇小孩">
             <span class="label">誰在練習？</span>
-            <div class="child-btns">
-              <button type="button" class="chip chip-active" data-child="A">A</button>
-              <button type="button" class="chip" data-child="B">B</button>
-            </div>
+            <div class="child-btns" id="child-btns"></div>
           </div>
         </div>
 
@@ -355,10 +352,7 @@
           </p>
           <p class="flip-first-hint">點一下你的名字，你先翻牌</p>
 
-          <div class="flip-pick-btns">
-            <button type="button" class="flip-pick-btn flip-pick-a" id="flip-pick-a">思妘</button>
-            <button type="button" class="flip-pick-btn flip-pick-b" id="flip-pick-b">思妤</button>
-          </div>
+          <div class="flip-pick-btns" id="flip-pick-btns"></div>
         </div>
       </section>
 
@@ -446,10 +440,7 @@
             <span id="math-first-mode">攤牌</span> · 目標 <span id="math-first-range">10～100</span>
           </p>
           <p class="flip-first-hint">點名字先出牌</p>
-          <div class="flip-pick-btns">
-            <button type="button" class="flip-pick-btn flip-pick-a" id="math-pick-a">思妘</button>
-            <button type="button" class="flip-pick-btn flip-pick-b" id="math-pick-b">思妤</button>
-          </div>
+          <div class="flip-pick-btns" id="math-pick-btns"></div>
         </div>
       </section>
 
@@ -524,10 +515,7 @@
           <h2 class="flip-first-title">誰拿黑子？</h2>
           <p class="flip-first-meta">15×15 · 先連五子獲勝 · 連珠規則</p>
           <p class="flip-first-hint">黑子先手須遵守禁手（三三、四四、長連）；白棋無禁手</p>
-          <div class="flip-pick-btns">
-            <button type="button" class="flip-pick-btn flip-pick-a gomoku-pick-a" id="gomoku-pick-a">思妘（黑先）</button>
-            <button type="button" class="flip-pick-btn flip-pick-b gomoku-pick-b" id="gomoku-pick-b">思妤（黑先）</button>
-          </div>
+          <div class="flip-pick-btns" id="gomoku-pick-btns"></div>
         </div>
       </section>
 
@@ -690,12 +678,11 @@
         <div class="parent-body">
           <div id="parent-names" class="parent-names" hidden>
           <h3 class="parent-heading">小孩名字</h3>
-          <label class="name-field"
-            >A <input id="name-child-a" type="text" maxlength="8" autocomplete="off"
-          /></label>
-          <label class="name-field"
-            >B <input id="name-child-b" type="text" maxlength="8" autocomplete="off"
-          /></label>
+          <p class="parent-note parent-names-hint">可新增多位；雙人對戰使用列表最上面兩位（可用 ↑↓ 調整順序）</p>
+          <div id="parent-name-list" class="parent-name-list"></div>
+          <button type="button" class="btn btn-secondary btn-block" id="btn-add-child-name">
+            ＋ 新增小孩
+          </button>
           <button type="button" class="btn btn-secondary btn-block" id="btn-save-names">
             儲存名字
           </button>
@@ -782,6 +769,6 @@
       </div>
     </div>
 
-    <script type="module" src="js/app.js?v=math-setup-v1"></script>
+    <script type="module" src="js/app.js?v=children-v1"></script>
   </body>
 </html>

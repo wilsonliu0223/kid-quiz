@@ -1619,6 +1619,72 @@ body {
   border-bottom: 1px solid var(--border);
 }
 
+.parent-names-hint {
+  margin: 0 0 12px;
+}
+
+.parent-name-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.parent-name-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.parent-name-order {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.btn-icon {
+  min-width: 32px;
+  min-height: 28px;
+  padding: 0 6px;
+  font-size: 0.85rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--card);
+  color: var(--text);
+  cursor: pointer;
+}
+
+.btn-icon:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.parent-name-input {
+  flex: 1;
+  min-height: 44px;
+  font-size: 1.05rem;
+  border: 2px solid var(--border);
+  border-radius: 10px;
+  padding: 0 12px;
+}
+
+.parent-name-delete {
+  flex-shrink: 0;
+  color: var(--err);
+  font-size: 0.85rem;
+}
+
+.duo-pick-need-two {
+  margin: 0;
+  padding: 12px 14px;
+  font-size: 0.9rem;
+  color: var(--muted);
+  text-align: center;
+  background: #f5f5f5;
+  border-radius: 10px;
+}
+
 .name-field {
   display: flex;
   align-items: center;

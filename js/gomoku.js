@@ -1,6 +1,10 @@
 import { forbiddenLabel, wouldBlackForbidden } from "./gomoku-renju.js?v=gomoku-v2";
+import { getChildName, getDuoPlayerIds, otherDuoPlayer } from "./children.js";
+import { renderDuoPickButtons } from "./duo-pick.js";
 
 const BOARD_SIZE = 15;
+/** @type {string[]} */
+let duoPlayerIds = [];
 
 /** @type {GomokuDeps | null} */
 let deps = null;
@@ -15,11 +19,12 @@ let game = null;
 
 /**
  * @typedef {object} GomokuState
- * @property {(''|'A'|'B')[][]} cells
- * @property {'A'|'B'} blackPlayerId
- * @property {'A'|'B'} currentPlayerId
+ * @property {(''|string)[][]} cells
+ * @property {string} blackPlayerId
+ * @property {string} currentPlayerId
  * @property {boolean} over
- * @property {'A'|'B'|null} winner
+ * @property {string|null} winner
+ * @property {string[]} playerIds
  * @property {[number, number]|null} lastMove
  * @property {Set<number>|null} winLine
  */
@@ -32,7 +37,25 @@ function playerName(id) {
 }
 
 function otherPlayer(id) {
-  return id === "A" ? "B" : "A";
+  if (game?.playerIds?.length === 2) {
+    return otherDuoPlayer(id, game.playerIds);
+  }
+  return otherDuoPlayer(id, duoPlayerIds);
+}
+
+export function renderGomokuHomePlayers() {
+  const ids = getDuoPlayerIds();
+  const aEl = $("#gomoku-player-a-name");
+  const bEl = $("#gomoku-player-b-name");
+  if (aEl) aEl.textContent = ids[0] ? getChildName(ids[0]) : "—";
+  if (bEl) bEl.textContent = ids[1] ? getChildName(ids[1]) : "—";
+}
+
+function renderFirstPicker() {
+  renderDuoPickButtons("#gomoku-pick-btns", {
+    onPick: startWithBlackPlayer,
+    labelSuffix: "（黑先）",
+  });
 }
 
 function emptyBoard() {
@@ -83,22 +106,6 @@ function boardFull(cells) {
 
 function stoneLabel(playerId) {
   return playerId === game?.blackPlayerId ? "黑子" : "白子";
-}
-
-export function renderGomokuHomePlayers() {
-  const names = deps?.getChildNames() || { A: "A", B: "B" };
-  const aEl = $("#gomoku-player-a-name");
-  const bEl = $("#gomoku-player-b-name");
-  if (aEl) aEl.textContent = names.A;
-  if (bEl) bEl.textContent = names.B;
-}
-
-function renderFirstPicker() {
-  const names = deps.getChildNames();
-  const aBtn = $("#gomoku-pick-a");
-  const bBtn = $("#gomoku-pick-b");
-  if (aBtn) aBtn.textContent = `${names.A}（黑先）`;
-  if (bBtn) bBtn.textContent = `${names.B}（黑先）`;
 }
 
 function renderPlayHeader() {
@@ -264,8 +271,12 @@ function showResult() {
 }
 
 function startWithBlackPlayer(blackPlayerId) {
+  const playerIds = getDuoPlayerIds();
+  if (playerIds.length < 2 || !playerIds.includes(blackPlayerId)) return;
+  duoPlayerIds = playerIds;
   game = {
     cells: emptyBoard(),
+    playerIds,
     blackPlayerId,
     currentPlayerId: blackPlayerId,
     over: false,
@@ -278,6 +289,11 @@ function startWithBlackPlayer(blackPlayerId) {
 }
 
 export function beginGomokuFromHome() {
+  duoPlayerIds = getDuoPlayerIds();
+  if (duoPlayerIds.length < 2) {
+    alert("至少需要兩位小孩才能下五子棋，請在家長區新增並把對戰的兩位排在最上面");
+    return;
+  }
   renderFirstPicker();
   deps.showView("gomokuFirst");
 }
@@ -296,9 +312,6 @@ export function bindGomokuEvents() {
     e.preventDefault();
     beginGomokuFromHome();
   });
-
-  $("#gomoku-pick-a")?.addEventListener("click", () => startWithBlackPlayer("A"));
-  $("#gomoku-pick-b")?.addEventListener("click", () => startWithBlackPlayer("B"));
 
   $("#btn-gomoku-first-back")?.addEventListener("click", () => deps.showView("home"));
   $("#btn-gomoku-play-back")?.addEventListener("click", () => {

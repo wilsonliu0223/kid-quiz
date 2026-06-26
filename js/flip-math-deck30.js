@@ -1,3 +1,6 @@
+import { duoScores, getChildName, getDuoPlayerIds, otherDuoPlayer } from "./children.js";
+import { renderDuoPickButtons } from "./duo-pick.js";
+
 const DECK_VERSION = "deck30";
 const KEY_MATH_RANGE = "kid-quiz-math-range";
 const WIN_SCORE = 5;
@@ -37,9 +40,10 @@ let pendingMode = null;
  * @property {'100'|'1000'} rangeKey
  * @property {number} target
  * @property {MathCard[]} cards
- * @property {{ A: number, B: number }} scores
- * @property {'A'|'B'} firstPlayerId
- * @property {'A'|'B'} currentPlayerId
+ * @property {Record<string, number>} scores
+ * @property {string[]} playerIds
+ * @property {string} firstPlayerId
+ * @property {string} currentPlayerId
  * @property {string[]} selection
  * @property {string[]} turnFlippedIds
  * @property {boolean} locked
@@ -98,11 +102,11 @@ export function initMathRangePicker() {
 }
 
 export function renderMathHomePlayers() {
-  const names = deps?.getChildNames() || { A: "A", B: "B" };
+  const ids = getDuoPlayerIds();
   const aEl = $("#math-setup-player-a-name");
   const bEl = $("#math-setup-player-b-name");
-  if (aEl) aEl.textContent = names.A;
-  if (bEl) bEl.textContent = names.B;
+  if (aEl) aEl.textContent = ids[0] ? getChildName(ids[0]) : "—";
+  if (bEl) bEl.textContent = ids[1] ? getChildName(ids[1]) : "—";
 }
 
 function mathModeTitle(mode) {
@@ -379,6 +383,8 @@ function startNewRound(keepScores = true) {
   const rangeKey = getMathRangeSetting();
   const prev = game;
   const mode = pendingMode || prev?.mode || "open";
+  const playerIds =
+    prev?.playerIds?.length === 2 ? prev.playerIds : getDuoPlayerIds();
 
   if (mode === "guess") {
     game = {
@@ -386,9 +392,10 @@ function startNewRound(keepScores = true) {
       rangeKey,
       target: pickSecret(rangeKey),
       cards: [],
-      scores: keepScores && prev ? { ...prev.scores } : { A: 0, B: 0 },
-      firstPlayerId: prev?.firstPlayerId || "A",
-      currentPlayerId: prev?.currentPlayerId || "A",
+      playerIds,
+      scores: keepScores && prev ? { ...prev.scores } : duoScores(playerIds),
+      firstPlayerId: prev?.firstPlayerId || playerIds[0],
+      currentPlayerId: prev?.currentPlayerId || playerIds[0],
       selection: [],
       turnFlippedIds: [],
       locked: false,
@@ -404,9 +411,10 @@ function startNewRound(keepScores = true) {
     rangeKey,
     target: pickTarget(rangeKey, mode),
     cards: buildDeck(),
-    scores: keepScores && prev ? { ...prev.scores } : { A: 0, B: 0 },
-    firstPlayerId: prev?.firstPlayerId || "A",
-    currentPlayerId: prev?.currentPlayerId || "A",
+    playerIds,
+    scores: keepScores && prev ? { ...prev.scores } : duoScores(playerIds),
+    firstPlayerId: prev?.firstPlayerId || playerIds[0],
+    currentPlayerId: prev?.currentPlayerId || playerIds[0],
     selection: [],
     turnFlippedIds: [],
     locked: false,
@@ -430,17 +438,17 @@ function applyFlipModeFaces(cards) {
 
 function renderMathHeader() {
   if (!game) return;
-  const names = deps.getChildNames();
-  $("#math-play-name-a").textContent = names.A;
-  $("#math-play-name-b").textContent = names.B;
-  $("#math-score-a").textContent = String(game.scores.A);
-  $("#math-score-b").textContent = String(game.scores.B);
+  const [idA, idB] = game.playerIds;
+  $("#math-play-name-a").textContent = playerName(idA);
+  $("#math-play-name-b").textContent = playerName(idB);
+  $("#math-score-a").textContent = String(game.scores[idA] ?? 0);
+  $("#math-score-b").textContent = String(game.scores[idB] ?? 0);
   $("#math-turn-label").textContent = `輪到：${playerName(game.currentPlayerId)}`;
 
-  $("#math-score-block-a")?.classList.toggle("flip-score-active", game.currentPlayerId === "A");
-  $("#math-score-block-b")?.classList.toggle("flip-score-active", game.currentPlayerId === "B");
-  $("#math-first-tag-a").hidden = game.firstPlayerId !== "A";
-  $("#math-first-tag-b").hidden = game.firstPlayerId !== "B";
+  $("#math-score-block-a")?.classList.toggle("flip-score-active", game.currentPlayerId === idA);
+  $("#math-score-block-b")?.classList.toggle("flip-score-active", game.currentPlayerId === idB);
+  $("#math-first-tag-a").hidden = game.firstPlayerId !== idA;
+  $("#math-first-tag-b").hidden = game.firstPlayerId !== idB;
 
   const { min, max } = rangeBounds(game.rangeKey);
 
@@ -645,7 +653,7 @@ function submitGuess() {
     deps.showOk("猜中了！", `${who} 猜對秘密數，+1 分`, () => {
       if (!game) return;
       if (checkWin()) return;
-      game.currentPlayerId = game.currentPlayerId === "A" ? "B" : "A";
+      game.currentPlayerId = otherDuoPlayer(game.currentPlayerId, game.playerIds);
       nextGuessRound();
     });
     return;
@@ -662,12 +670,14 @@ function nextGuessRound() {
   const scores = { ...game.scores };
   const firstPlayerId = game.firstPlayerId;
   const currentPlayerId = game.currentPlayerId;
+  const playerIds = game.playerIds;
   const rangeKey = getMathRangeSetting();
   game = {
     mode: "guess",
     rangeKey,
     target: pickSecret(rangeKey),
     cards: [],
+    playerIds,
     scores,
     firstPlayerId,
     currentPlayerId,
@@ -681,7 +691,7 @@ function nextGuessRound() {
 }
 
 function switchPlayer() {
-  game.currentPlayerId = game.currentPlayerId === "A" ? "B" : "A";
+  game.currentPlayerId = otherDuoPlayer(game.currentPlayerId, game.playerIds);
   game.selection = [];
 }
 
@@ -739,7 +749,8 @@ function onCardClick(cardId) {
 }
 
 function checkWin() {
-  if (game.scores.A >= WIN_SCORE || game.scores.B >= WIN_SCORE) {
+  const [idA, idB] = game.playerIds;
+  if ((game.scores[idA] ?? 0) >= WIN_SCORE || (game.scores[idB] ?? 0) >= WIN_SCORE) {
     showMathResult();
     return true;
   }
@@ -754,12 +765,14 @@ function nextQuestion() {
   const scores = { ...game.scores };
   const firstPlayerId = game.firstPlayerId;
   const currentPlayerId = game.currentPlayerId;
+  const playerIds = game.playerIds;
   const mode = game.mode;
   game = {
     mode,
     rangeKey: getMathRangeSetting(),
     target: pickTarget(getMathRangeSetting(), mode),
     cards: buildDeck(),
+    playerIds,
     scores,
     firstPlayerId,
     currentPlayerId,
@@ -810,7 +823,7 @@ function submitAnswer() {
   deps.showOk("答對了！", `${who} 用${modeText}湊出 ${game.target}，+1 分`, () => {
     if (!game) return;
     if (checkWin()) return;
-    game.currentPlayerId = game.currentPlayerId === "A" ? "B" : "A";
+    game.currentPlayerId = otherDuoPlayer(game.currentPlayerId, game.playerIds);
     nextQuestion();
   });
 }
@@ -826,20 +839,20 @@ function clearSelection() {
 }
 
 function showMathResult() {
-  const names = deps.getChildNames();
-  const a = game.scores.A;
-  const b = game.scores.B;
-  $("#math-result-scores").textContent = `${names.A} ${a} ：${b} ${names.B}`;
-  if (a > b) $("#math-result-title").textContent = `${names.A} 獲勝！`;
-  else if (b > a) $("#math-result-title").textContent = `${names.B} 獲勝！`;
+  const [idA, idB] = game.playerIds;
+  const a = game.scores[idA] ?? 0;
+  const b = game.scores[idB] ?? 0;
+  $("#math-result-scores").textContent = `${playerName(idA)} ${a} ：${b} ${playerName(idB)}`;
+  if (a > b) $("#math-result-title").textContent = `${playerName(idA)} 獲勝！`;
+  else if (b > a) $("#math-result-title").textContent = `${playerName(idB)} 獲勝！`;
   else $("#math-result-title").textContent = "平手！";
   deps.showView("mathResult");
 }
 
 function renderMathFirstPicker() {
-  const names = deps.getChildNames();
-  $("#math-pick-a").textContent = names.A;
-  $("#math-pick-b").textContent = names.B;
+  renderDuoPickButtons("#math-pick-btns", {
+    onPick: startWithFirstPlayer,
+  });
   const { min, max } = rangeBounds(getMathRangeSetting());
   $("#math-first-range").textContent = `${min}～${max}`;
   const modeName =
@@ -876,9 +889,13 @@ export function beginMathGuess() {
 }
 
 function startWithFirstPlayer(firstPlayerId) {
+  const playerIds = getDuoPlayerIds();
+  if (playerIds.length < 2 || !playerIds.includes(firstPlayerId)) return;
+
   game = null;
   const mode = pendingMode || "open";
   startNewRound(false);
+  game.playerIds = playerIds;
   game.firstPlayerId = firstPlayerId;
   game.currentPlayerId = firstPlayerId;
   game.mode = mode;
@@ -924,11 +941,16 @@ export function bindMathEvents() {
   });
   $("#btn-math-setup-continue")?.addEventListener("click", () => {
     if (!pendingMode) return;
+    if (getDuoPlayerIds().length < 2) {
+      deps.showWarn(
+        "需要兩位小孩",
+        "請在家長區新增至少兩位，並把要對戰的兩位排在最上面"
+      );
+      return;
+    }
     renderMathFirstPicker();
     deps.showView("mathFirst");
   });
-  $("#math-pick-a")?.addEventListener("click", () => startWithFirstPlayer("A"));
-  $("#math-pick-b")?.addEventListener("click", () => startWithFirstPlayer("B"));
   $("#btn-math-first-back")?.addEventListener("click", () => {
     if (!pendingMode) {
       deps.showView("home");
