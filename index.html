@@ -11,7 +11,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <title>家裡練習</title>
     <link rel="manifest" href="manifest.json" />
-    <link rel="stylesheet" href="css/app.css?v=times-table-v1" />
+    <link rel="stylesheet" href="css/app.css?v=times-table-v2" />
     <script type="importmap">
       {
         "imports": {
@@ -467,8 +467,15 @@
           </div>
           <div id="mul-learn-reveal-panel" class="mul-learn-panel" hidden>
             <p class="mul-reveal-equation" id="mul-reveal-equation">3 × 1 ＝ □</p>
-            <p class="mul-reveal-hint" id="mul-reveal-hint">點一下看答案</p>
-            <button type="button" class="btn btn-secondary btn-block" id="btn-mul-reveal-next">下一句</button>
+            <div class="mul-reveal-canvas-wrap" id="mul-reveal-canvas-wrap">
+              <canvas id="mul-reveal-canvas" class="mul-reveal-canvas" aria-label="手寫答案"></canvas>
+            </div>
+            <p class="mul-reveal-hint" id="mul-reveal-hint">在格子裡手寫答案，再按確認</p>
+            <div class="mul-reveal-actions">
+              <button type="button" class="btn btn-secondary" id="btn-mul-reveal-clear">清除</button>
+              <button type="button" class="btn btn-primary btn-primary-mul" id="btn-mul-reveal-check">確認</button>
+            </div>
+            <button type="button" class="btn btn-text btn-block" id="btn-mul-reveal-next">略過 · 下一句</button>
           </div>
           <div class="mul-learn-actions">
             <button type="button" class="btn btn-secondary" id="btn-mul-reveal-mode">遮答案練習</button>
@@ -641,6 +648,6 @@
       </div>
     </div>
 
-    <script type="module" src="js/app.js?v=times-table-v1"></script>
+    <script type="module" src="js/app.js?v=times-table-v2"></script>
   </body>
 </html>

@@ -2281,8 +2281,43 @@ body {
 }
 
 .mul-reveal-equation {
-  cursor: pointer;
-  touch-action: manipulation;
+  margin-bottom: 8px;
+}
+
+.mul-learn-reveal-active .mul-reveal-equation {
+  cursor: default;
+}
+
+.mul-reveal-canvas-wrap {
+  width: 100%;
+  max-width: 320px;
+  margin: 0 auto;
+  aspect-ratio: 4 / 3;
+  border: 2px solid #9ccfb0;
+  border-radius: 12px;
+  background: #fff;
+  overflow: hidden;
+  touch-action: none;
+}
+
+.mul-reveal-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.mul-reveal-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.mul-reveal-actions .btn {
+  flex: 1;
+}
+
+.mul-reveal-hint-warn {
+  color: #c45a2a;
 }
 
 .mul-reveal-equation.mul-revealed {
