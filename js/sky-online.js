@@ -8,7 +8,7 @@ import {
   openOnlineOnlyDuo,
 } from "./online-duo.js";
 import { startGameRoom } from "./room-service.js";
-import { SHIPS, SHIP_IDS } from "./sky-shooter/ships.js?v=sky-duo-v10";
+import { SHIPS, SHIP_IDS, shipLobbyCardHtml } from "./sky-shooter/ships.js?v=sky-duo-v11";
 import {
   createInitialState,
   stepSimulation,
@@ -173,12 +173,11 @@ function renderShipLobby(title) {
   const row = document.createElement("div");
   row.className = "sky-ship-pick-row";
   SHIP_IDS.forEach((id) => {
-    const s = SHIPS[id];
     const btn = document.createElement("button");
     btn.type = "button";
-    btn.className = "sky-ship-card";
+    btn.className = `sky-ship-card sky-ship-card-${id}`;
     btn.dataset.ship = id;
-    btn.innerHTML = `<strong>${s.name}</strong><span>${s.tag}</span><small>速度×${s.speed} · ${s.lives}命</small>`;
+    btn.innerHTML = shipLobbyCardHtml(id);
     btn.addEventListener("click", async () => {
       if (!ctx.roomId || !slot) return;
       await setPlayerShip(ctx.roomId, slot, id);

@@ -3007,33 +3007,71 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
-  padding: 12px 8px;
+  gap: 2px;
+  padding: 12px 8px 10px;
   border-radius: 12px;
   border: 2px solid #8ab0d8;
   background: #f0f6ff;
   cursor: pointer;
   font: inherit;
+  min-height: 148px;
+}
+
+.sky-ship-card-swift {
+  background: #f0f6ff;
+  border-color: #8ab0d8;
+}
+
+.sky-ship-card-heavy {
+  background: #ffe8f2;
+  border-color: #e8a0b8;
+}
+
+.sky-ship-card-art {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  margin-top: 6px;
+  flex: 1;
+  min-height: 72px;
+}
+
+.sky-ship-card-art-svg {
+  width: 72px;
+  height: auto;
+  max-height: 80px;
+  display: block;
+  pointer-events: none;
 }
 
 .sky-ship-card strong {
   font-size: 1rem;
+  line-height: 1.2;
 }
 
-.sky-ship-card span {
+.sky-ship-card span:not(.sky-ship-card-art) {
   font-size: 0.8rem;
   color: var(--muted);
+  line-height: 1.2;
 }
 
 .sky-ship-card small {
   font-size: 0.72rem;
   color: var(--muted);
+  line-height: 1.2;
 }
 
-.sky-ship-card-active {
+.sky-ship-card-active.sky-ship-card-swift {
   border-color: #4a90d9;
   box-shadow: 0 0 0 2px rgba(74, 144, 217, 0.35);
   background: #e0f0ff;
+}
+
+.sky-ship-card-active.sky-ship-card-heavy {
+  border-color: #e06088;
+  box-shadow: 0 0 0 2px rgba(224, 96, 136, 0.35);
+  background: #ffd6e8;
 }
 
 #view-sky-online-play.view-active {
