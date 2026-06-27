@@ -137,7 +137,17 @@ const GAME_TITLES = {
   "race-zh": "國語搶答對戰",
   "race-en": "英語搶答對戰",
   "race-mul": "九九搶答對戰",
+  "sky-coop": "天空射擊 · 合作",
+  "sky-versus": "天空射擊 · 對戰",
 };
+
+/** 僅線上雙機（跳過同機選項） */
+export function openOnlineOnlyDuo(req) {
+  pendingMode = req;
+  const subEl = $("#duo-mode-sub");
+  if (subEl) subEl.textContent = "請用兩台手機：一方建立房間、另一方輸入房間碼";
+  enterOnlineFlow();
+}
 
 /**
  * @param {DuoModeRequest} req

@@ -68,6 +68,7 @@ import {
 } from "./flip-math-deck30.js";
 import { initGomoku, renderGomokuHomePlayers } from "./gomoku.js";
 import { initOnlineDuo } from "./online-duo.js";
+import { initSkyOnline, openSkyDuoMenu } from "./sky-online.js";
 import "./flip-zh-online.js";
 import "./flip-math-online.js";
 import "./gomoku-online.js";
@@ -178,6 +179,9 @@ const views = {
   gomokuResult: $("#view-gomoku-result"),
   gomokuOnlinePlay: $("#view-gomoku-online-play"),
   gomokuOnlineResult: $("#view-gomoku-online-result"),
+  skyDuoMenu: $("#view-sky-duo-menu"),
+  skyOnlinePlay: $("#view-sky-online-play"),
+  skyOnlineResult: $("#view-sky-online-result"),
   racePlay: $("#view-race-play"),
   raceResult: $("#view-race-result"),
   result: $("#view-result"),
@@ -2198,6 +2202,7 @@ async function init() {
       );
     },
   });
+  initSkyOnline();
   initRaceDuo({
     getZhBank: () => zhBank,
     getEnBank: () => enBank,
@@ -2233,6 +2238,10 @@ async function init() {
   $("#btn-start-sky-shooter")?.addEventListener("click", (e) => {
     e.preventDefault();
     window.location.href = "prototypes/sky-stage1.html?v=sky-stage1-v3";
+  });
+  $("#btn-start-sky-duo")?.addEventListener("click", (e) => {
+    e.preventDefault();
+    openSkyDuoMenu();
   });
   $("#btn-mul-race-duo")?.addEventListener("click", (e) => {
     e.preventDefault();

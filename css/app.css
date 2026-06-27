@@ -2973,6 +2973,143 @@ body {
   opacity: 0.88;
 }
 
+.home-zone-duo .card-sky-duo {
+  align-items: stretch;
+  justify-content: flex-start;
+  min-height: 52px;
+  padding: 12px 14px;
+  background: linear-gradient(135deg, #ede8ff 0%, #c8b0f0 100%);
+  border: 2px solid #8a60d4;
+  width: 100%;
+}
+
+.card-sky-duo .card-sky-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 8px;
+  width: 100%;
+  text-align: left;
+}
+
+.card-sky-duo .card-title {
+  flex-shrink: 0;
+  color: #3a2860;
+}
+
+.sky-duo-menu-body {
+  padding: 20px 16px 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 420px;
+  margin: 0 auto;
+}
+
+.online-lobby-sky-panel {
+  margin: 12px 0;
+  padding: 12px;
+  border-radius: 12px;
+  background: rgba(90, 120, 200, 0.08);
+  border: 1px solid rgba(90, 120, 200, 0.2);
+}
+
+.sky-lobby-ship-label {
+  font-size: 0.9rem;
+  font-weight: 700;
+  margin: 0 0 10px;
+  text-align: center;
+}
+
+.sky-ship-pick-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.sky-ship-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 12px 8px;
+  border-radius: 12px;
+  border: 2px solid #8ab0d8;
+  background: #f0f6ff;
+  cursor: pointer;
+  font: inherit;
+}
+
+.sky-ship-card strong {
+  font-size: 1rem;
+}
+
+.sky-ship-card span {
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.sky-ship-card small {
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+
+.sky-ship-card-active {
+  border-color: #4a90d9;
+  box-shadow: 0 0 0 2px rgba(74, 144, 217, 0.35);
+  background: #e0f0ff;
+}
+
+#view-sky-online-play.view-active {
+  overflow: hidden;
+}
+
+.quiz-header-sky {
+  flex-wrap: wrap;
+  gap: 4px 12px;
+}
+
+.sky-online-room-tag {
+  font-size: 0.75rem;
+  opacity: 0.75;
+}
+
+.sky-online-play-body {
+  display: flex;
+  flex-direction: column;
+  height: calc(100dvh - 52px);
+  max-height: calc(100dvh - 52px);
+}
+
+.sky-canvas-wrap {
+  flex: 1;
+  min-height: 0;
+  position: relative;
+  background: #1a2848;
+}
+
+#sky-online-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+}
+
+.sky-online-controls {
+  padding: 10px 12px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  background: var(--bg);
+}
+
+.sky-online-hint {
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--muted);
+  text-align: center;
+}
+
 .quiz-header-gomoku .quiz-subject {
   color: var(--gomoku-dark);
 }
