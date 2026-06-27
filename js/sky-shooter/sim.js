@@ -1,5 +1,5 @@
-import { shipOrDefault } from "./ships.js?v=sky-duo-v24";
-import { asList } from "./state-util.js?v=sky-duo-v24";
+import { shipOrDefault } from "./ships.js?v=sky-duo-v25";
+import { asList } from "./state-util.js?v=sky-duo-v25";
 
 export const COOP_BOSS_AT = 95;
 export const VERSUS_TIME = 180;
@@ -183,7 +183,7 @@ function cycleWeapon(p) {
   if (p.hasLaser) list.push("laser");
   if (list.length <= 1) return;
   const i = list.indexOf(p.weapon);
-  p.weapon = list[(i + 1) % list.length];
+  p.weapon = list[i >= 0 ? (i + 1) % list.length : 0];
 }
 
 /** @param {object} state @param {number} dt */
@@ -306,20 +306,56 @@ function updateSpawns(state, dt) {
   const grunts = state.enemies.filter((e) => e.kind !== "boss").length;
   if (state.spawnCd <= 0 && grunts < max) {
     state.spawnCd = state.mode === "coop" ? 1.1 : 1.4;
-    const fast = Math.random() < 0.28;
-    state.enemies.push({
-      id: eid(),
-      kind: fast ? "fast" : "grunt",
-      x: -0.05,
-      y: 0.28 + Math.random() * 0.42,
-      w: fast ? 0.04 : 0.05,
-      h: fast ? 0.035 : 0.042,
-      hp: fast ? 1 : 2,
-      speed: fast ? 0.22 : 0.14,
-      fireCd: 1.2 + Math.random(),
-      shield: 0.8,
-    });
+    if (state.mode === "coop") {
+      state.enemies.push(spawnCoopEnemy());
+    } else {
+      const fast = Math.random() < 0.28;
+      state.enemies.push({
+        id: eid(),
+        kind: fast ? "fast" : "grunt",
+        x: -0.05,
+        y: 0.28 + Math.random() * 0.42,
+        w: fast ? 0.04 : 0.05,
+        h: fast ? 0.035 : 0.042,
+        hp: fast ? 1 : 2,
+        speed: fast ? 0.22 : 0.14,
+        vx: fast ? 0.22 : 0.14,
+        vy: 0,
+        fireCd: 1.2 + Math.random(),
+        shield: 0.8,
+      });
+    }
   }
+}
+
+/** 合作模式：敵軍從左、右、上三邊進場 */
+function spawnCoopEnemy() {
+  const fast = Math.random() < 0.28;
+  const speed = fast ? 0.22 : 0.14;
+  const side = Math.floor(Math.random() * 3);
+  const base = {
+    id: eid(),
+    kind: fast ? "fast" : "grunt",
+    w: fast ? 0.04 : 0.05,
+    h: fast ? 0.035 : 0.042,
+    hp: fast ? 1 : 2,
+    speed,
+    fireCd: 1.2 + Math.random(),
+    shield: 0.8,
+  };
+  if (side === 0) {
+    return { ...base, x: -0.05, y: 0.15 + Math.random() * 0.55, vx: speed, vy: 0 };
+  }
+  if (side === 1) {
+    return { ...base, x: 1.05, y: 0.15 + Math.random() * 0.55, vx: -speed, vy: 0 };
+  }
+  return {
+    ...base,
+    x: 0.08 + Math.random() * 0.84,
+    y: -0.05,
+    vx: (Math.random() - 0.5) * 0.05,
+    vy: speed * 0.9,
+  };
 }
 
 function updatePlayers(state, dt) {
@@ -468,9 +504,13 @@ function updateEnemies(state, dt) {
         }
       }
     } else {
-      e.x += e.speed * dt;
+      const vx = typeof e.vx === "number" ? e.vx : e.speed;
+      const vy = typeof e.vy === "number" ? e.vy : 0;
+      e.x += vx * dt;
+      e.y += vy * dt;
       e.fireCd -= dt;
-      if (e.fireCd <= 0 && e.shield <= 0 && e.x > 0.08) {
+      const onField = e.x > 0.06 && e.x < 0.94 && e.y > 0.06 && e.y < 0.94;
+      if (e.fireCd <= 0 && e.shield <= 0 && onField) {
         e.fireCd = 1.1 + Math.random() * 0.8;
         const target = nearestPlayer(state, e);
         if (target) {
@@ -485,9 +525,13 @@ function updateEnemies(state, dt) {
           });
         }
       }
-      if (e.x > 1.08) {
+      if (state.mode === "coop") {
+        if (e.x > 1.08 || e.x < -0.08 || e.y > 1.05) {
+          e._gone = true;
+          state.teamScore = Math.max(0, state.teamScore - 1);
+        }
+      } else if (e.x > 1.08) {
         e._gone = true;
-        if (state.mode === "coop") state.teamScore = Math.max(0, state.teamScore - 1);
       }
     }
   }

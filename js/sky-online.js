@@ -8,7 +8,7 @@ import {
   openOnlineOnlyDuo,
 } from "./online-duo.js";
 import { startGameRoom } from "./room-service.js";
-import { SHIPS, SHIP_IDS, shipLobbyCardHtml } from "./sky-shooter/ships.js?v=sky-duo-v24";
+import { SHIPS, SHIP_IDS, shipLobbyCardHtml } from "./sky-shooter/ships.js?v=sky-duo-v25";
 import {
   createInitialState,
   stepSimulation,
@@ -18,11 +18,11 @@ import {
   clampPlayersToZone,
   canPlayerControl,
   VERSUS_GUEST_Y_BAND,
-} from "./sky-shooter/sim.js?v=sky-duo-v24";
-import { drawSkyFrame } from "./sky-shooter/render.js?v=sky-duo-v24";
-import { normalizeSkyState, isValidSkyState } from "./sky-shooter/state-util.js?v=sky-duo-v24";
+} from "./sky-shooter/sim.js?v=sky-duo-v25";
+import { drawSkyFrame } from "./sky-shooter/render.js?v=sky-duo-v25";
+import { normalizeSkyState, isValidSkyState } from "./sky-shooter/state-util.js?v=sky-duo-v25";
 
-const SKY_BUILD = "v24";
+const SKY_BUILD = "v25";
 
 const $ = (sel) => document.querySelector(sel);
 
@@ -89,7 +89,10 @@ function bindSkyOnlineOnce() {
     getOnlineContext().deps?.showView("home");
   });
   $("#btn-sky-hud-weapon")?.addEventListener("click", () => {
+    if (!myPlayerCanControl()) return;
     localInput.weaponTap = true;
+    const ctx = getOnlineContext();
+    applyLocalPointerInput(ctx.slot, liveState?.mode || activeSkyMode);
     void sendInputNow();
   });
 }
@@ -351,9 +354,11 @@ function startSkySession(snap, ctx) {
       }
       if (canPlayerControl(hostSimState, "host")) {
         applyPlayerInput(hostSimState, "host", hostInputs.host);
+        hostInputs.host.weaponTap = false;
       }
       if (canPlayerControl(hostSimState, "guest")) {
         applyPlayerInput(hostSimState, "guest", hostInputs.guest);
+        hostInputs.guest.weaponTap = false;
       }
       stepSimulation(hostSimState, 1 / 30);
       liveState = hostSimState;

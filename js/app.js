@@ -68,7 +68,7 @@ import {
 } from "./flip-math-deck30.js";
 import { initGomoku, renderGomokuHomePlayers } from "./gomoku.js";
 import { initOnlineDuo } from "./online-duo.js";
-import { initSkyOnline, openSkyDuoMenu } from "./sky-online.js?v=sky-duo-v24";
+import { initSkyOnline, openSkyDuoMenu } from "./sky-online.js?v=sky-duo-v25";
 import "./flip-zh-online.js";
 import "./flip-math-online.js";
 import "./gomoku-online.js";

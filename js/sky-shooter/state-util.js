@@ -23,6 +23,12 @@ export function normalizeSkyState(state) {
     for (const slot of ["host", "guest"]) {
       if (state.players[slot]) {
         state.players[slot].slot = slot;
+        if (typeof state.players[slot].hasSpread !== "boolean") {
+          state.players[slot].hasSpread = !!state.players[slot].hasSpread;
+        }
+        if (typeof state.players[slot].hasLaser !== "boolean") {
+          state.players[slot].hasLaser = !!state.players[slot].hasLaser;
+        }
         if (typeof state.players[slot].pvpHp !== "number") {
           state.players[slot].pvpHp = 100;
         }

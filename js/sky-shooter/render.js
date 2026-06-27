@@ -1,11 +1,11 @@
-import { shipOrDefault } from "./ships.js?v=sky-duo-v24";
-import { asList } from "./state-util.js?v=sky-duo-v24";
+import { shipOrDefault } from "./ships.js?v=sky-duo-v25";
+import { asList } from "./state-util.js?v=sky-duo-v25";
 import {
   VERSUS_TIME,
   ZONE_RATIO,
   COOP_Y_BAND,
   VERSUS_GUEST_Y_BAND,
-} from "./sim.js?v=sky-duo-v24";
+} from "./sim.js?v=sky-duo-v25";
 
 const WEAPON_LABELS = { straight: "直射", spread: "擴散", laser: "雷射" };
 
@@ -61,7 +61,7 @@ export function drawSkyFrame(ctx, state, opts) {
     ctx.scale(1, -1);
   }
 
-  drawSkyZones(ctx, w, h, time);
+  drawSkyZones(ctx, w, h, time, mode);
 
   if (state.flash > 0) {
     ctx.fillStyle = `rgba(255,255,255,${state.flash * 0.35})`;
@@ -121,7 +121,7 @@ function zoneBounds(h) {
   return { mid, bot, botEnd };
 }
 
-function drawSkyZones(ctx, w, h, time) {
+function drawSkyZones(ctx, w, h, time, mode) {
   const { mid, bot, botEnd } = zoneBounds(h);
 
   const grdTop = ctx.createLinearGradient(0, 0, 0, mid);
@@ -143,22 +143,26 @@ function drawSkyZones(ctx, w, h, time) {
   ctx.fillStyle = grdBot;
   ctx.fillRect(0, bot, w, botEnd - bot);
 
-  ctx.strokeStyle = "rgba(61, 107, 138, 0.65)";
-  ctx.lineWidth = 1;
-  ctx.beginPath();
-  ctx.moveTo(0, mid);
-  ctx.lineTo(w, mid);
-  ctx.moveTo(0, bot);
-  ctx.lineTo(w, bot);
-  ctx.stroke();
-
-  for (let i = 0; i < 5; i++) {
-    const mx = ((time * 12 + i * 90) % (w + 80)) - 40;
-    const my = mid * 0.25 + i * 14;
-    ctx.fillStyle = "rgba(100, 140, 180, 0.2)";
+  if (mode !== "coop") {
+    ctx.strokeStyle = "rgba(61, 107, 138, 0.65)";
+    ctx.lineWidth = 1;
     ctx.beginPath();
-    ctx.ellipse(mx, my, 28, 10, 0, 0, Math.PI * 2);
-    ctx.fill();
+    ctx.moveTo(0, mid);
+    ctx.lineTo(w, mid);
+    ctx.moveTo(0, bot);
+    ctx.lineTo(w, bot);
+    ctx.stroke();
+  }
+
+  if (mode !== "coop") {
+    for (let i = 0; i < 5; i++) {
+      const mx = ((time * 12 + i * 90) % (w + 80)) - 40;
+      const my = mid * 0.25 + i * 14;
+      ctx.fillStyle = "rgba(100, 140, 180, 0.2)";
+      ctx.beginPath();
+      ctx.ellipse(mx, my, 28, 10, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
   }
 }
 
@@ -464,9 +468,7 @@ function drawPlayerLaserBeam(ctx, p, w, h, time, view, mode) {
       ? faceDown
         ? h * (COOP_Y_BAND[0] - 0.02)
         : h * (VERSUS_GUEST_Y_BAND[1] + 0.02)
-      : faceDown
-        ? h * 0.5
-        : zoneBounds(h).mid + 6;
+      : 2;
   const beamH = Math.abs(y0 - aimY);
   if (beamH < 4) return;
 
