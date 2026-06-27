@@ -3098,6 +3098,7 @@ body {
   position: relative;
   background: #1a2848;
   overflow: hidden;
+  padding-bottom: 4px;
 }
 
 .sky-dead-overlay {

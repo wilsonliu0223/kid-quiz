@@ -8,7 +8,7 @@ import {
   openOnlineOnlyDuo,
 } from "./online-duo.js";
 import { startGameRoom } from "./room-service.js";
-import { SHIPS, SHIP_IDS, shipLobbyCardHtml } from "./sky-shooter/ships.js?v=sky-duo-v19";
+import { SHIPS, SHIP_IDS, shipLobbyCardHtml } from "./sky-shooter/ships.js?v=sky-duo-v20";
 import {
   createInitialState,
   stepSimulation,
@@ -18,11 +18,11 @@ import {
   clampPlayersToZone,
   canPlayerControl,
   VERSUS_GUEST_Y_BAND,
-} from "./sky-shooter/sim.js?v=sky-duo-v19";
-import { drawSkyFrame } from "./sky-shooter/render.js?v=sky-duo-v19";
-import { normalizeSkyState, isValidSkyState } from "./sky-shooter/state-util.js?v=sky-duo-v19";
+} from "./sky-shooter/sim.js?v=sky-duo-v20";
+import { drawSkyFrame } from "./sky-shooter/render.js?v=sky-duo-v20";
+import { normalizeSkyState, isValidSkyState } from "./sky-shooter/state-util.js?v=sky-duo-v20";
 
-const SKY_BUILD = "v19";
+const SKY_BUILD = "v20";
 
 const $ = (sel) => document.querySelector(sel);
 
@@ -41,7 +41,7 @@ let localInput = { x: 0.5, y: 0.9, weaponTap: false };
 let pointerDown = false;
 let lastInputSend = 0;
 let hostSimState = null;
-let hostInputs = { host: { x: 0.35, y: 0.88 }, guest: { x: 0.65, y: 0.12 } };
+let hostInputs = { host: { x: 0.35, y: 0.84 }, guest: { x: 0.65, y: 0.12 } };
 let resultShown = false;
 /** @type {string | null} */
 let activeRoomId = null;
@@ -592,7 +592,7 @@ function bindCanvasInput(slot, mode) {
     localInput.y = VERSUS_GUEST_Y_BAND[0] + 0.095;
     localInput.x = 0.65;
   } else {
-    localInput.y = 0.88;
+    localInput.y = 0.84;
     localInput.x = slot === "host" ? 0.35 : 0.65;
   }
 }

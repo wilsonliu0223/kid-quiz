@@ -1,8 +1,12 @@
-import { shipOrDefault } from "./ships.js?v=sky-duo-v19";
-import { asList } from "./state-util.js?v=sky-duo-v19";
-import { VERSUS_TIME, ZONE_RATIO, COOP_Y_BAND, VERSUS_GUEST_Y_BAND, versusYBand } from "./sim.js?v=sky-duo-v19";
+import { shipOrDefault } from "./ships.js?v=sky-duo-v20";
+import { asList } from "./state-util.js?v=sky-duo-v20";
+import { VERSUS_TIME, ZONE_RATIO, COOP_Y_BAND, VERSUS_GUEST_Y_BAND, versusYBand } from "./sim.js?v=sky-duo-v20";
 
 const WEAPON_LABELS = { straight: "直射", spread: "擴散", laser: "雷射" };
+
+/** 螢幕上自己／對手的顯示帶（略離底，避免手機上貼邊） */
+const SCREEN_ME_BAND = [0.72, 0.86];
+const SCREEN_OPPO_BAND = [0.14, 0.28];
 
 function bandMap(y, from, to) {
   const span = from[1] - from[0];
@@ -28,9 +32,12 @@ function createView(mode, mySlot) {
     },
     /** 玩家飛機：永遠映射到自己下方／對手上方 */
     playerPy(ny, h, slot) {
+      if (mode === "coop") {
+        return bandMap(ny, COOP_Y_BAND, SCREEN_ME_BAND) * h;
+      }
       if (!versus) return ny * h;
       const from = versusYBand(slot, "versus");
-      const to = slot === mySlot ? COOP_Y_BAND : VERSUS_GUEST_Y_BAND;
+      const to = slot === mySlot ? SCREEN_ME_BAND : SCREEN_OPPO_BAND;
       return bandMap(ny, from, to) * h;
     },
     playerFaceDown(slot, worldY) {

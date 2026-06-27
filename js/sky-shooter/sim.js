@@ -1,5 +1,5 @@
-import { shipOrDefault } from "./ships.js?v=sky-duo-v19";
-import { asList } from "./state-util.js?v=sky-duo-v19";
+import { shipOrDefault } from "./ships.js?v=sky-duo-v20";
+import { asList } from "./state-util.js?v=sky-duo-v20";
 
 export const COOP_BOSS_AT = 95;
 export const VERSUS_TIME = 180;
@@ -19,7 +19,7 @@ export const ZONE_RATIO = { top: 0.38, mid: 0.34, bot: 0.28 };
 /** 合作模式：僅限下方戰鬥區（與單機相同，不可進中間敵區） */
 export const COOP_Y_BAND = [
   ZONE_RATIO.top + ZONE_RATIO.mid + 0.025,
-  ZONE_RATIO.top + ZONE_RATIO.mid + ZONE_RATIO.bot - 0.025,
+  ZONE_RATIO.top + ZONE_RATIO.mid + ZONE_RATIO.bot - 0.085,
 ];
 /** 對戰模式：來賓在畫面上方區（世界座標），與房主區上下對稱 */
 export const VERSUS_GUEST_Y_BAND = [1 - COOP_Y_BAND[1], 1 - COOP_Y_BAND[0]];
@@ -51,7 +51,7 @@ export function createInitialState(mode, ships) {
     spawnCd: 0.35,
     flash: 0,
     players: {
-      host: makePlayer("host", hostShip, 0.35, isCoop ? 0.9 : 0.88),
+      host: makePlayer("host", hostShip, 0.35, isCoop ? 0.9 : 0.84),
       guest: makePlayer("guest", guestShip, 0.65, isCoop ? 0.9 : VERSUS_GUEST_Y_BAND[0] + 0.095),
     },
     enemies: [],
@@ -218,6 +218,10 @@ export function stepSimulation(state, dt) {
 
   clampPlayersToZone(state);
 
+  if (state.mode === "versus" && VERSUS_PLAYERS_INVINCIBLE) {
+    ensureVersusGodMode(state);
+  }
+
   if (isCoop) {
     if (state.players.host.lives <= 0 && state.players.guest.lives <= 0) {
       state.phase = "end";
@@ -247,7 +251,18 @@ function endVersus(state) {
   if (!state.endReason) state.endReason = "time";
 }
 
+function ensureVersusGodMode(state) {
+  for (const slot of ["host", "guest"]) {
+    const p = state.players[slot];
+    if (!p) continue;
+    const ship = shipOrDefault(p.ship);
+    if (p.lives < ship.lives) p.lives = ship.lives;
+    if (typeof p.pvpHp !== "number" || p.pvpHp < PVP_MAX_HP) p.pvpHp = PVP_MAX_HP;
+  }
+}
+
 function checkVersusElimination(state) {
+  if (VERSUS_PLAYERS_INVINCIBLE) return;
   const hDead = state.players.host.lives <= 0;
   const gDead = state.players.guest.lives <= 0;
   if (!hDead && !gDead) return;
