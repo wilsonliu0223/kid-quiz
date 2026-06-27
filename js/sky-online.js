@@ -18,6 +18,8 @@ import {
 import { drawSkyFrame } from "./sky-shooter/render.js";
 import { normalizeSkyState, isValidSkyState } from "./sky-shooter/state-util.js";
 
+const SKY_BUILD = "v4";
+
 const $ = (sel) => document.querySelector(sel);
 
 /** @type {object | null} */
@@ -45,6 +47,7 @@ function gameModeFromKey(key) {
   return key === "sky-coop" ? "coop" : "versus";
 }
 
+function bindSkyOnlineOnce() {
   if (bindSkyOnlineOnce.done) return;
   bindSkyOnlineOnce.done = true;
 
