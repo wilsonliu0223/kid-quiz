@@ -906,6 +906,7 @@
             phase: 0,
             spin: 0,
             bossDir: 1,
+            bossAtkIdx: 0,
           });
           return;
         }
@@ -1589,36 +1590,95 @@
         ctx.restore();
       }
 
+      function bossPhase1Attack(e) {
+        const px = player.x;
+        const py = player.y;
+        e.bossAtkIdx = (e.bossAtkIdx || 0) + 1;
+        const mode = e.bossAtkIdx % 3;
+
+        if (mode === 0) {
+          // 左右炮塔：朝玩家扇形岩漿流（非全圓彈幕）
+          for (const side of [-1, 1]) {
+            const t = bossTurretOffset(e, side);
+            const tx = e.x + t.ox;
+            const ty = e.y + t.oy;
+            const ang = Math.atan2(py - ty, px - tx);
+            for (let k = -2; k <= 2; k++) {
+              const a = ang + k * 0.09;
+              enemyBullets.push({
+                x: tx,
+                y: ty - 6,
+                vx: Math.cos(a) * (155 + k * 4),
+                vy: Math.sin(a) * (155 + k * 4),
+                r: 4.5,
+                glow: true,
+              });
+            }
+          }
+        } else if (mode === 1) {
+          // 爐心雙股岩漿瀑：向左右下方傾瀉（V 形，非放射圓）
+          telegraphs.push({ x: e.x, y: e.y + 8, r: 6, maxR: 52, life: 0.38, color: "#ff7020" });
+          for (const side of [-1, 1]) {
+            for (let i = 0; i < 6; i++) {
+              const t = i / 5;
+              const a = Math.PI / 2 + side * (0.28 + t * 0.22);
+              const sp = 115 + i * 12;
+              enemyBullets.push({
+                x: e.x + side * (8 + i * 4),
+                y: e.y - 2,
+                vx: Math.cos(a) * sp,
+                vy: Math.sin(a) * sp,
+                r: 4.5 + (i % 2) * 0.5,
+                glow: true,
+              });
+            }
+          }
+        } else {
+          // 間歇泉柱：三股垂直岩漿雨落下
+          for (let col = -1; col <= 1; col++) {
+            const gx = e.x + col * 40;
+            telegraphs.push({
+              x: gx,
+              y: e.y - 20,
+              r: 4,
+              maxR: 18,
+              life: 0.35,
+              color: "#ffaa40",
+            });
+            for (let row = 0; row < 5; row++) {
+              enemyBullets.push({
+                x: gx + col * 6,
+                y: e.y - 16 - row * 6,
+                vx: col * 22 + (row - 2) * 8,
+                vy: 95 + row * 22,
+                r: 4,
+                glow: true,
+              });
+            }
+          }
+        }
+
+        let drones = enemies.filter((en) => en.kind === "ember_drone").length;
+        if (mode === 1) {
+          for (; drones < 2; drones++) {
+            spawnSkyEnemy(
+              "ember_drone",
+              "skyTop",
+              e.x + (drones === 0 ? -55 : 55),
+              zoneY.mid * 0.1,
+            );
+          }
+        }
+      }
+
       function bossAttack(e) {
         e.spin = (e.spin || 0) + 0.45;
         const px = player.x;
         const py = player.y;
         const phase = bossHpPhase(e);
-        const w = e.w;
 
         if (phase === 1) {
-          telegraphs.push({ x: e.x, y: e.y, r: 10, maxR: 68, life: 0.42, color: "#ff9040" });
-          const n = 14;
-          for (let i = 0; i < n; i++) {
-            const a = (Math.PI * 2 * i) / n + e.spin;
-            enemyBullets.push({
-              x: e.x,
-              y: e.y - 4,
-              vx: Math.cos(a) * 118,
-              vy: Math.sin(a) * 118,
-              r: 5,
-              glow: true,
-            });
-          }
-          let drones = enemies.filter((en) => en.kind === "ember_drone").length;
-          for (; drones < 2; drones++) {
-            spawnSkyEnemy(
-              "ember_drone",
-              "skyTop",
-              e.x + (drones === 0 ? -50 : 50),
-              zoneY.mid * 0.1,
-            );
-          }
+          bossPhase1Attack(e);
         } else if (phase === 2) {
           ensureBossVents();
           triggerVentBurst();
