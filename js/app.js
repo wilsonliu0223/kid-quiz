@@ -2230,6 +2230,10 @@ async function init() {
     e.preventDefault();
     openMulHome();
   });
+  $("#btn-start-sky-shooter")?.addEventListener("click", (e) => {
+    e.preventDefault();
+    window.location.href = "prototypes/sky-stage1.html?v=sky-stage1-v1";
+  });
   $("#btn-mul-race-duo")?.addEventListener("click", (e) => {
     e.preventDefault();
     openMulRaceDuoMode();

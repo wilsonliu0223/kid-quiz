@@ -2941,6 +2941,38 @@ body {
   color: var(--gomoku-dark);
 }
 
+.home-zone-duo .card-sky-shooter {
+  align-items: stretch;
+  justify-content: flex-start;
+  min-height: 52px;
+  padding: 12px 14px;
+  background: linear-gradient(135deg, #e8f4ff 0%, #b8d4f0 100%);
+  border: 2px solid #5a9fd4;
+  width: 100%;
+}
+
+.card-sky-shooter .card-sky-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 8px;
+  width: 100%;
+  text-align: left;
+}
+
+.card-sky-shooter .card-title {
+  flex-shrink: 0;
+  color: #1a3d5c;
+}
+
+.card-sky-note {
+  font-size: 0.72rem;
+  font-weight: 600;
+  line-height: 1.35;
+  color: #1a3d5c;
+  opacity: 0.88;
+}
+
 .quiz-header-gomoku .quiz-subject {
   color: var(--gomoku-dark);
 }
