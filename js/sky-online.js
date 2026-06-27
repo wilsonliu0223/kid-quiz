@@ -8,7 +8,7 @@ import {
   openOnlineOnlyDuo,
 } from "./online-duo.js";
 import { startGameRoom } from "./room-service.js";
-import { SHIPS, SHIP_IDS, shipLobbyCardHtml } from "./sky-shooter/ships.js?v=sky-duo-v27";
+import { SHIPS, SHIP_IDS, shipLobbyCardHtml } from "./sky-shooter/ships.js?v=sky-duo-v28";
 import {
   createInitialState,
   stepSimulation,
@@ -18,9 +18,9 @@ import {
   clampPlayersToZone,
   canPlayerControl,
   VERSUS_GUEST_Y_BAND,
-} from "./sky-shooter/sim.js?v=sky-duo-v27";
-import { drawSkyFrame } from "./sky-shooter/render.js?v=sky-duo-v27";
-import { normalizeSkyState, isValidSkyState } from "./sky-shooter/state-util.js?v=sky-duo-v27";
+} from "./sky-shooter/sim.js?v=sky-duo-v28";
+import { drawSkyFrame } from "./sky-shooter/render.js?v=sky-duo-v28";
+import { normalizeSkyState, isValidSkyState } from "./sky-shooter/state-util.js?v=sky-duo-v28";
 
 const SKY_BUILD = "v27";
 

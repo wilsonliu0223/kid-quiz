@@ -1,12 +1,14 @@
-import { shipOrDefault } from "./ships.js?v=sky-duo-v27";
-import { asList } from "./state-util.js?v=sky-duo-v27";
+import { shipOrDefault } from "./ships.js?v=sky-duo-v28";
+import { asList } from "./state-util.js?v=sky-duo-v28";
 import {
   VERSUS_TIME,
   ZONE_RATIO,
+  ZONE_MID_Y,
+  ZONE_BOT_Y,
   COOP_Y_BAND,
   VERSUS_GUEST_Y_BAND,
   COOP_BOSS_HP,
-} from "./sim.js?v=sky-duo-v27";
+} from "./sim.js?v=sky-duo-v28";
 
 const WEAPON_LABELS = { straight: "直射", spread: "擴散", laser: "雷射" };
 
@@ -115,15 +117,11 @@ export function drawSkyFrame(ctx, state, opts) {
   drawHud(ctx, state, w, h, mySlot, names);
 }
 
-function zoneBounds(h) {
-  const mid = h * ZONE_RATIO.top;
-  const bot = mid + h * ZONE_RATIO.mid;
-  const botEnd = bot + h * ZONE_RATIO.bot;
-  return { mid, bot, botEnd };
-}
 
 function drawSkyZones(ctx, w, h, time, mode) {
-  const { mid, bot, botEnd } = zoneBounds(h);
+  const mid = h * ZONE_MID_Y;
+  const bot = h * ZONE_BOT_Y;
+  const botEnd = bot + h * ZONE_RATIO.bot;
 
   const grdTop = ctx.createLinearGradient(0, 0, 0, mid);
   grdTop.addColorStop(0, "#0f2840");
@@ -144,18 +142,51 @@ function drawSkyZones(ctx, w, h, time, mode) {
   ctx.fillStyle = grdBot;
   ctx.fillRect(0, bot, w, botEnd - bot);
 
-  if (mode !== "coop") {
-    ctx.strokeStyle = "rgba(61, 107, 138, 0.65)";
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.moveTo(0, mid);
-    ctx.lineTo(w, mid);
-    ctx.moveTo(0, bot);
-    ctx.lineTo(w, bot);
-    ctx.stroke();
+  if (mode === "coop") {
+    const skyGrd = ctx.createLinearGradient(0, 0, 0, mid);
+    skyGrd.addColorStop(0, "rgba(255, 70, 90, 0.1)");
+    skyGrd.addColorStop(1, "rgba(255, 50, 70, 0.04)");
+    ctx.fillStyle = skyGrd;
+    ctx.fillRect(0, 0, w, mid);
+
+    const midGrd = ctx.createLinearGradient(0, mid, 0, bot);
+    midGrd.addColorStop(0, "rgba(255, 55, 75, 0.07)");
+    midGrd.addColorStop(1, "rgba(255, 45, 65, 0.03)");
+    ctx.fillStyle = midGrd;
+    ctx.fillRect(0, mid, w, bot - mid);
   }
 
-  if (mode !== "coop") {
+  const lineColor =
+    mode === "coop" ? "rgba(255, 100, 115, 0.5)" : "rgba(61, 107, 138, 0.65)";
+  ctx.strokeStyle = lineColor;
+  ctx.lineWidth = mode === "coop" ? 1.5 : 1;
+  ctx.beginPath();
+  ctx.moveTo(0, mid);
+  ctx.lineTo(w, mid);
+  ctx.moveTo(0, bot);
+  ctx.lineTo(w, bot);
+  ctx.stroke();
+
+  if (mode === "coop") {
+    const midH = bot - mid;
+    for (let i = 0; i < 7; i++) {
+      const mx = ((time * 10 + i * 110) % (w + 100)) - 50;
+      const my = mid + midH * (0.12 + i * 0.11);
+      const rw = 24 + (i % 3) * 6;
+      ctx.fillStyle = `rgba(100, 140, 180, ${0.14 + (i % 2) * 0.06})`;
+      ctx.beginPath();
+      ctx.ellipse(mx, my, rw, 9, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    for (let i = 0; i < 4; i++) {
+      const mx = ((time * 12 + i * 90) % (w + 80)) - 40;
+      const my = mid * (0.2 + i * 0.16);
+      ctx.fillStyle = "rgba(100, 140, 180, 0.16)";
+      ctx.beginPath();
+      ctx.ellipse(mx, my, 22, 8, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  } else {
     for (let i = 0; i < 5; i++) {
       const mx = ((time * 12 + i * 90) % (w + 80)) - 40;
       const my = mid * 0.25 + i * 14;
@@ -233,29 +264,60 @@ function drawEnemyBullet(ctx, eb, w, h, view, mode) {
   ctx.shadowBlur = 0;
 }
 
+function drawEnemyShield(ctx, e, x, y, ew, eh, time) {
+  if (e.shield <= 0 || e.kind === "boss") return;
+  const r = Math.max(ew, eh) * (e.kind === "warden" ? 0.92 : 0.75);
+  const pulse = 0.5 + Math.sin(time * 14) * 0.25;
+  ctx.save();
+  ctx.translate(x, y);
+  if (e.kind === "warden") {
+    ctx.fillStyle = `rgba(120, 220, 255, ${0.08 * pulse})`;
+    ctx.beginPath();
+    ctx.arc(0, 0, r * 1.08, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = `rgba(255, 220, 120, ${0.45 + pulse * 0.35})`;
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.arc(0, 0, r, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.strokeStyle = `rgba(180, 240, 255, ${0.55 + (e.shield % 0.4) * 0.35})`;
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([5, 4]);
+    ctx.beginPath();
+    ctx.arc(0, 0, r * 0.72, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.setLineDash([]);
+  } else {
+    ctx.strokeStyle = `rgba(120, 220, 255, ${0.35 + (e.shield % 0.3)})`;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(0, 0, r, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
 function drawEnemy(ctx, e, w, h, time, view, mode) {
   const x = e.x * w;
   const y = view.playerY(mode, e.y, h);
   const ew = e.w * w;
   const eh = e.h * h;
 
-  if (e.shield > 0) {
-    ctx.strokeStyle = `rgba(120,220,255,${0.35 + (e.shield % 0.3)})`;
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.ellipse(x, y, ew * 0.55, eh * 0.55, 0, 0, Math.PI * 2);
-    ctx.stroke();
-  }
-
   if (e.kind === "boss") {
     drawBoss(ctx, e, x, y, ew, eh, time);
     return;
   }
-  if (e.kind === "fast") {
-    drawJetEnemy(ctx, x, y, ew);
-    return;
-  }
-  drawHelicopter(ctx, x, y, ew, time);
+
+  if (e.kind === "striker") drawStrikerEnemy(ctx, x, y, ew);
+  else if (e.kind === "fast") drawJetEnemy(ctx, x, y, ew);
+  else if (e.kind === "heavy") drawHeavyEnemy(ctx, x, y, ew, time);
+  else if (e.kind === "tank") drawTankEnemy(ctx, x, y, ew, eh, e);
+  else if (e.kind === "drone") drawDroneEnemy(ctx, x, y, ew, eh, time);
+  else if (e.kind === "bomber") drawBomberEnemy(ctx, x, y, ew);
+  else if (e.kind === "warden") drawWardenEnemy(ctx, x, y, ew, time);
+  else drawHelicopter(ctx, x, y, ew, time);
+
+  drawEnemyShield(ctx, e, x, y, ew, eh, time);
 }
 
 function drawHelicopter(ctx, x, y, ew, time) {
@@ -295,19 +357,171 @@ function drawJetEnemy(ctx, x, y, ew) {
   ctx.scale(-1, 1);
   ctx.fillStyle = "#4a5a6a";
   ctx.beginPath();
-  ctx.moveTo(14, 0);
-  ctx.lineTo(-10, -9);
-  ctx.lineTo(-6, 0);
-  ctx.lineTo(-10, 9);
+  ctx.moveTo(ew * 0.35, 0);
+  ctx.lineTo(-ew * 0.25, -ew * 0.22);
+  ctx.lineTo(-ew * 0.15, 0);
+  ctx.lineTo(-ew * 0.25, ew * 0.22);
   ctx.closePath();
   ctx.fill();
   ctx.fillStyle = "#ff6060";
   ctx.shadowColor = "#ff4040";
   ctx.shadowBlur = 8;
   ctx.beginPath();
-  ctx.arc(-4, 0, 3, 0, Math.PI * 2);
+  ctx.arc(-ew * 0.1, 0, ew * 0.08, 0, Math.PI * 2);
   ctx.fill();
   ctx.shadowBlur = 0;
+  ctx.restore();
+}
+
+function drawStrikerEnemy(ctx, x, y, ew) {
+  ctx.save();
+  ctx.translate(x, y);
+  const s = ew / 28;
+  ctx.scale(s, s);
+  ctx.fillStyle = "#6a5090";
+  ctx.beginPath();
+  ctx.moveTo(12, 0);
+  ctx.lineTo(-8, -7);
+  ctx.lineTo(-4, 0);
+  ctx.lineTo(-8, 7);
+  ctx.closePath();
+  ctx.fill();
+  ctx.fillStyle = "#c080ff";
+  ctx.shadowColor = "#e0a0ff";
+  ctx.shadowBlur = 10;
+  ctx.beginPath();
+  ctx.arc(-2, 0, 3, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.shadowBlur = 0;
+  ctx.fillStyle = "#ff60a0";
+  ctx.fillRect(8, -1, 5, 2);
+  ctx.restore();
+}
+
+function drawHeavyEnemy(ctx, x, y, ew, time) {
+  const rot = time * 10;
+  ctx.save();
+  ctx.translate(x, y);
+  const s = ew / 34;
+  ctx.scale(s, s);
+  ctx.fillStyle = "#4a5568";
+  ctx.fillRect(-17, -6, 34, 14);
+  ctx.fillStyle = "#6a4050";
+  ctx.fillRect(-10, -12, 20, 10);
+  ctx.strokeStyle = "rgba(255,180,120,0.75)";
+  ctx.lineWidth = 2;
+  ctx.strokeRect(-15, -4, 30, 10);
+  ctx.save();
+  ctx.rotate(rot);
+  ctx.strokeStyle = "rgba(255,220,180,0.5)";
+  ctx.beginPath();
+  ctx.moveTo(-18, 0);
+  ctx.lineTo(18, 0);
+  ctx.stroke();
+  ctx.restore();
+  ctx.fillStyle = "#ff7040";
+  ctx.beginPath();
+  ctx.arc(13, 2, 4, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+}
+
+function drawTankEnemy(ctx, x, y, ew, eh, e) {
+  ctx.save();
+  ctx.translate(x, y);
+  const dir = (e.vx ?? e.speed) >= 0 ? 1 : -1;
+  ctx.scale(dir, 1);
+  ctx.fillStyle = "#3a4858";
+  ctx.fillRect(-ew / 2, -eh / 2 + 4, ew, eh - 6);
+  ctx.fillStyle = "#2a3540";
+  ctx.fillRect(-ew / 2 + 4, -eh / 2, ew - 8, 10);
+  ctx.fillStyle = "#5a6878";
+  ctx.fillRect(-8, -2, 16, 14);
+  ctx.fillStyle = "#ff5030";
+  ctx.beginPath();
+  ctx.arc(-ew / 2 + 8, 6, 4, 0, Math.PI * 2);
+  ctx.arc(ew / 2 - 8, 6, 4, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = "#8898a8";
+  ctx.fillRect(ew / 2 - 6, -2, 14, 5);
+  ctx.restore();
+}
+
+function drawDroneEnemy(ctx, x, y, ew, eh, time) {
+  const rot = time * 16;
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.fillStyle = "#5a6880";
+  ctx.beginPath();
+  ctx.ellipse(0, 0, ew * 0.45, eh * 0.35, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = "#88a8c8";
+  ctx.fillRect(-4, -6, 8, 10);
+  ctx.strokeStyle = "rgba(180,220,255,0.6)";
+  ctx.lineWidth = 1.5;
+  ctx.save();
+  ctx.rotate(rot);
+  ctx.beginPath();
+  ctx.moveTo(-14, 0);
+  ctx.lineTo(14, 0);
+  ctx.moveTo(0, -14);
+  ctx.lineTo(0, 14);
+  ctx.stroke();
+  ctx.restore();
+  ctx.fillStyle = "#40d0ff";
+  ctx.beginPath();
+  ctx.arc(0, 0, 3, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+}
+
+function drawBomberEnemy(ctx, x, y, ew) {
+  ctx.save();
+  ctx.translate(x, y);
+  const s = ew / 36;
+  ctx.scale(s, s);
+  ctx.fillStyle = "#4a3848";
+  ctx.beginPath();
+  ctx.moveTo(-16, 4);
+  ctx.lineTo(12, -8);
+  ctx.lineTo(16, 0);
+  ctx.lineTo(12, 8);
+  ctx.closePath();
+  ctx.fill();
+  ctx.fillStyle = "#6a5060";
+  ctx.fillRect(-8, -4, 16, 10);
+  ctx.fillStyle = "#ff6040";
+  ctx.beginPath();
+  ctx.arc(10, 0, 4, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+}
+
+function drawWardenEnemy(ctx, x, y, ew, time) {
+  const rot = time * 10;
+  ctx.save();
+  ctx.translate(x, y);
+  const s = ew / 30;
+  ctx.scale(s, s);
+  ctx.fillStyle = "#7a90a8";
+  ctx.fillRect(-15, -5, 30, 13);
+  ctx.fillStyle = "#a8c8e8";
+  ctx.fillRect(-8, -11, 16, 9);
+  ctx.strokeStyle = "rgba(255, 230, 160, 0.75)";
+  ctx.lineWidth = 1.5;
+  ctx.strokeRect(-13, -3, 26, 9);
+  ctx.save();
+  ctx.rotate(rot);
+  ctx.strokeStyle = "rgba(200, 240, 255, 0.55)";
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.ellipse(0, -15, 15, 3, 0, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.restore();
+  ctx.fillStyle = "#ffd54a";
+  ctx.beginPath();
+  ctx.arc(0, -2, 4, 0, Math.PI * 2);
+  ctx.fill();
   ctx.restore();
 }
 
