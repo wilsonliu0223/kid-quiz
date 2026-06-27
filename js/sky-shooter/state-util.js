@@ -21,7 +21,12 @@ export function normalizeSkyState(state) {
   state.missileTracks = asList(state.missileTracks);
   if (state.players) {
     for (const slot of ["host", "guest"]) {
-      if (state.players[slot]) state.players[slot].slot = slot;
+      if (state.players[slot]) {
+        state.players[slot].slot = slot;
+        if (typeof state.players[slot].pvpHp !== "number") {
+          state.players[slot].pvpHp = 100;
+        }
+      }
     }
   }
   return state;

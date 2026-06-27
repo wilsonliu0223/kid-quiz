@@ -1,11 +1,16 @@
-import { shipOrDefault } from "./ships.js?v=sky-duo-v17";
-import { asList } from "./state-util.js?v=sky-duo-v17";
+import { shipOrDefault } from "./ships.js?v=sky-duo-v18";
+import { asList } from "./state-util.js?v=sky-duo-v18";
 
 export const COOP_BOSS_AT = 95;
 export const VERSUS_TIME = 180;
 export const VERSUS_BOSS_AT = 95;
 export const BOSS_KILL_BONUS = 15;
-export const PVP_HIT_SCORE = 3;
+export const PVP_HIT_SCORE = 1;
+/** 對戰互射：累積傷害，滿了才扣 1 命 */
+export const PVP_MAX_HP = 100;
+export const PVP_BULLET_DAMAGE = 11;
+export const PVP_HIT_INVULN = 1.9;
+export const PVP_LIFE_LOSS_INVULN = 1.35;
 
 /** 單機同款三區比例（上／中／下） */
 export const ZONE_RATIO = { top: 0.38, mid: 0.34, bot: 0.28 };
@@ -100,6 +105,7 @@ function makePlayer(slot, ship, x, y) {
     missileCd: 0,
     ultT: 0,
     energy: 0,
+    pvpHp: 100,
   };
 }
 
@@ -378,6 +384,19 @@ function fireLaser(state, p, ship, dt) {
       damageEnemy(state, e, dps, p.slot);
     }
   }
+  if (state.mode === "versus") {
+    const opp = state.players[otherSlot(p.slot)];
+    if (opp && opp.lives > 0 && Math.abs(opp.x - p.x) < half + 0.04) {
+      const inBeam = down ? opp.y > p.y : opp.y < p.y;
+      if (inBeam && opp.invuln <= 0) {
+        p.pvpLaserCd = (p.pvpLaserCd || 0) - dt;
+        if (p.pvpLaserCd <= 0) {
+          p.pvpLaserCd = 0.5;
+          applyPvpChip(state, opp.slot, p.slot, 7);
+        }
+      }
+    }
+  }
   if (p.missileT > 0) syncMissileTracks(state, p);
 }
 
@@ -511,11 +530,9 @@ function updateBullets(state, dt) {
     if (b.pvp) {
       const target = otherSlot(b.owner);
       const p = state.players[target];
-      if (p && p.invuln <= 0 && p.lives > 0 && hitCircle(b.x, b.y, b.r, p.x, p.y, 0.04)) {
+      if (p && p.lives > 0 && hitCircle(b.x, b.y, b.r, p.x, p.y, 0.04)) {
         b._gone = true;
-        scoreHit(state, b.owner, PVP_HIT_SCORE);
-        p.invuln = 0.85;
-        burst(state, p.x, p.y, "#c8a0ff", 6);
+        applyPvpChip(state, target, b.owner, PVP_BULLET_DAMAGE);
       }
     }
   }
@@ -539,6 +556,28 @@ function updateBullets(state, dt) {
   state.eBullets = state.eBullets.filter(
     (eb) => !eb._gone && eb.x > -0.05 && eb.x < 1.05 && eb.y > -0.05 && eb.y < 1.05,
   );
+}
+
+function applyPvpChip(state, targetSlot, attackerSlot, amount) {
+  const p = state.players[targetSlot];
+  if (!p || p.lives <= 0 || p.invuln > 0) return false;
+
+  const hp = typeof p.pvpHp === "number" ? p.pvpHp : PVP_MAX_HP;
+  p.pvpHp = hp - amount;
+  p.invuln = PVP_HIT_INVULN;
+  scoreHit(state, attackerSlot, PVP_HIT_SCORE);
+  burst(state, p.x, p.y, "#c8a0ff", 6);
+
+  if (p.pvpHp <= 0) {
+    const ship = shipOrDefault(p.ship);
+    p.lives -= 1;
+    p.pvpHp = PVP_MAX_HP;
+    p.power = Math.max(0, p.power - 1);
+    p.missileT = 0;
+    p.invuln = PVP_LIFE_LOSS_INVULN + ship.dodgeInvuln;
+    burst(state, p.x, p.y, "#4da6ff", 10);
+  }
+  return true;
 }
 
 function damageEnemy(state, e, dmg, attacker) {
