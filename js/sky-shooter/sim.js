@@ -1,5 +1,5 @@
-import { shipOrDefault } from "./ships.js?v=sky-duo-v15";
-import { asList } from "./state-util.js?v=sky-duo-v15";
+import { shipOrDefault } from "./ships.js?v=sky-duo-v16";
+import { asList } from "./state-util.js?v=sky-duo-v16";
 
 export const COOP_BOSS_AT = 95;
 export const VERSUS_TIME = 180;
@@ -498,6 +498,16 @@ function updateBullets(state, dt) {
   }
 
   for (const b of state.bullets) {
+    if (b._gone) continue;
+    for (const e of state.enemies) {
+      if (e.shield > 0) continue;
+      if (hitRect(b.x, b.y, b.r, e.x, e.y, e.w, e.h)) {
+        b._gone = true;
+        damageEnemy(state, e, b.dmg, b.owner);
+        break;
+      }
+    }
+    if (b._gone) continue;
     if (b.pvp) {
       const target = otherSlot(b.owner);
       const p = state.players[target];
@@ -506,15 +516,6 @@ function updateBullets(state, dt) {
         scoreHit(state, b.owner, PVP_HIT_SCORE);
         p.invuln = 0.85;
         burst(state, p.x, p.y, "#c8a0ff", 6);
-      }
-      continue;
-    }
-    for (const e of state.enemies) {
-      if (e.shield > 0) continue;
-      if (hitRect(b.x, b.y, b.r, e.x, e.y, e.w, e.h)) {
-        b._gone = true;
-        damageEnemy(state, e, b.dmg, b.owner);
-        break;
       }
     }
   }

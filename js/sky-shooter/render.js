@@ -1,12 +1,31 @@
-import { shipOrDefault } from "./ships.js?v=sky-duo-v15";
-import { asList } from "./state-util.js?v=sky-duo-v15";
-import { VERSUS_TIME, ZONE_RATIO, COOP_Y_BAND, VERSUS_GUEST_Y_BAND } from "./sim.js?v=sky-duo-v15";
+import { shipOrDefault } from "./ships.js?v=sky-duo-v16";
+import { asList } from "./state-util.js?v=sky-duo-v16";
+import { VERSUS_TIME, ZONE_RATIO, COOP_Y_BAND, VERSUS_GUEST_Y_BAND } from "./sim.js?v=sky-duo-v16";
 
 const WEAPON_LABELS = { straight: "直射", spread: "擴散", laser: "雷射" };
+
+/** 對戰來賓端：世界 Y 翻轉成螢幕 Y，自己在下、對手在上 */
+function createView(mode, mySlot) {
+  const flip = mode === "versus" && mySlot === "guest";
+  return {
+    flip,
+    y(ny) {
+      return flip ? 1 - ny : ny;
+    },
+    py(ny, h) {
+      return this.y(ny) * h;
+    },
+    /** 依螢幕位置決定機頭朝向（下方朝上、上方朝下） */
+    faceDown(ny) {
+      return this.y(ny) < 0.45;
+    },
+  };
+}
 
 /** @param {CanvasRenderingContext2D} ctx @param {object} state @param {{ w: number, h: number, mySlot: string, names: Record<string,string> }} opts */
 export function drawSkyFrame(ctx, state, opts) {
   const { w, h, mySlot, names } = opts;
+  const view = createView(state.mode, mySlot);
   const particles = asList(state.particles);
   const pickups = asList(state.pickups);
   const eBullets = asList(state.eBullets);
@@ -14,17 +33,16 @@ export function drawSkyFrame(ctx, state, opts) {
   const enemies = asList(state.enemies);
   const missileTracks = asList(state.missileTracks);
   const time = state.t || 0;
-  const viewFlipped = state.mode === "versus" && mySlot === "guest";
 
   ctx.clearRect(0, 0, w, h);
 
-  if (viewFlipped) {
+  if (view.flip) {
     ctx.save();
     ctx.translate(0, h);
     ctx.scale(1, -1);
   }
-
   drawSkyZones(ctx, w, h, time, state.mode);
+  if (view.flip) ctx.restore();
 
   if (state.flash > 0) {
     ctx.fillStyle = `rgba(255,255,255,${state.flash * 0.35})`;
@@ -35,43 +53,41 @@ export function drawSkyFrame(ctx, state, opts) {
     ctx.globalAlpha = Math.min(1, p.life * 2);
     ctx.fillStyle = p.color;
     ctx.beginPath();
-    ctx.arc(p.x * w, p.y * h, 3, 0, Math.PI * 2);
+    ctx.arc(p.x * w, view.py(p.y, h), 3, 0, Math.PI * 2);
     ctx.fill();
   }
   ctx.globalAlpha = 1;
 
   for (const o of pickups) {
-    drawPickup(ctx, o, w, h, time);
+    drawPickup(ctx, o, w, h, time, view);
   }
 
   for (const eb of eBullets) {
-    drawEnemyBullet(ctx, eb, w, h);
+    drawEnemyBullet(ctx, eb, w, h, view);
   }
 
   for (const b of bullets) {
-    drawPlayerBullet(ctx, b, w, h);
+    drawPlayerBullet(ctx, b, w, h, view);
   }
 
-  drawMissileTracks(ctx, state, w, h, missileTracks, enemies);
+  drawMissileTracks(ctx, state, w, h, missileTracks, enemies, view);
 
   for (const e of enemies) {
-    drawEnemy(ctx, e, w, h, time);
+    drawEnemy(ctx, e, w, h, time, view);
   }
 
-  drawAllPlayerLasers(ctx, state, w, h, time);
+  drawAllPlayerLasers(ctx, state, w, h, time, view);
 
   for (const slot of ["host", "guest"]) {
     const p = state.players[slot];
     if (p.lives <= 0) continue;
-    drawPlayerShip(ctx, p, w, h, time);
+    drawPlayerShip(ctx, p, w, h, time, view);
   }
-
-  if (viewFlipped) ctx.restore();
 
   for (const slot of ["host", "guest"]) {
     const p = state.players[slot];
     if (p.lives <= 0) continue;
-    drawPlayerLabels(ctx, p, w, h, slot === mySlot, names[slot] || slot, viewFlipped);
+    drawPlayerLabels(ctx, p, w, h, slot === mySlot, names[slot] || slot, view);
   }
 
   drawHud(ctx, state, w, h, mySlot, names);
@@ -157,7 +173,7 @@ function drawSkyZones(ctx, w, h, time, mode) {
   }
 }
 
-function drawPickup(ctx, o, w, h, time) {
+function drawPickup(ctx, o, w, h, time, view) {
   const colors = {
     power: "#ffb830",
     spread: "#ff8040",
@@ -165,7 +181,7 @@ function drawPickup(ctx, o, w, h, time) {
     missile: "#a060ff",
   };
   const x = o.x * w;
-  const y = o.y * h;
+  const y = view.py(o.y, h);
   const pulse = 0.85 + Math.sin(time * 8 + o.id) * 0.15;
   ctx.save();
   ctx.shadowColor = colors[o.type] || "#fff";
@@ -183,9 +199,9 @@ function drawPickup(ctx, o, w, h, time) {
   ctx.restore();
 }
 
-function drawPlayerBullet(ctx, b, w, h) {
+function drawPlayerBullet(ctx, b, w, h, view) {
   const x = b.x * w;
-  const y = b.y * h;
+  const y = view.py(b.y, h);
   const r = b.r * w;
   ctx.save();
   if (b.pvp) {
@@ -206,9 +222,9 @@ function drawPlayerBullet(ctx, b, w, h) {
   ctx.restore();
 }
 
-function drawEnemyBullet(ctx, eb, w, h) {
+function drawEnemyBullet(ctx, eb, w, h, view) {
   const x = eb.x * w;
-  const y = eb.y * h;
+  const y = view.py(eb.y, h);
   const r = eb.r * w;
   const grd = ctx.createRadialGradient(x, y, 0, x, y, r * 2);
   grd.addColorStop(0, "#fff");
@@ -223,9 +239,9 @@ function drawEnemyBullet(ctx, eb, w, h) {
   ctx.shadowBlur = 0;
 }
 
-function drawEnemy(ctx, e, w, h, time) {
+function drawEnemy(ctx, e, w, h, time, view) {
   const x = e.x * w;
-  const y = e.y * h;
+  const y = view.py(e.y, h);
   const ew = e.w * w;
   const eh = e.h * h;
 
@@ -408,11 +424,11 @@ function drawRaidenFighter(ctx, x, y, palette, time) {
   ctx.restore();
 }
 
-function drawPlayerShip(ctx, p, w, h, time) {
+function drawPlayerShip(ctx, p, w, h, time, view) {
   const ship = shipOrDefault(p.ship);
   const x = p.x * w;
-  const y = p.y * h;
-  const faceDown = p.y < 0.45;
+  const y = view.py(p.y, h);
+  const faceDown = view.faceDown(p.y);
 
   if (p.invuln > 0 && Math.sin(time * 12) > 0) ctx.globalAlpha = 0.55;
 
@@ -424,13 +440,12 @@ function drawPlayerShip(ctx, p, w, h, time) {
   ctx.globalAlpha = 1;
 }
 
-function drawPlayerLabels(ctx, p, w, h, isMe, name, viewFlipped) {
+function drawPlayerLabels(ctx, p, w, h, isMe, name, view) {
   const x = p.x * w;
-  const sy = viewFlipped ? (1 - p.y) * h : p.y * h;
-  const faceDown = p.y < 0.45;
-  const labelSign = viewFlipped ? -1 : 1;
-  const nameOff = (faceDown ? -36 : 36) * labelSign;
-  const statOff = (faceDown ? -50 : 50) * labelSign;
+  const sy = view.py(p.y, h);
+  const faceDown = view.faceDown(p.y);
+  const nameOff = faceDown ? -36 : 36;
+  const statOff = faceDown ? -50 : 50;
 
   ctx.fillStyle = isMe ? "#fff" : "rgba(255,255,255,0.75)";
   ctx.font = "11px sans-serif";
@@ -443,21 +458,21 @@ function drawPlayerLabels(ctx, p, w, h, isMe, name, viewFlipped) {
   ctx.fillText(`${hearts} ${WEAPON_LABELS[p.weapon] || ""}`, x, sy + statOff);
 }
 
-function drawAllPlayerLasers(ctx, state, w, h, time) {
+function drawAllPlayerLasers(ctx, state, w, h, time, view) {
   for (const slot of ["host", "guest"]) {
     const p = state.players[slot];
     if (!p || p.lives <= 0 || p.weapon !== "laser") continue;
-    drawPlayerLaserBeam(ctx, p, w, h, time, state.mode);
+    drawPlayerLaserBeam(ctx, p, w, h, time, view);
   }
 }
 
-function drawPlayerLaserBeam(ctx, p, w, h, time, mode) {
-  const faceDown = p.y < 0.45;
+function drawPlayerLaserBeam(ctx, p, w, h, time, view) {
+  const faceDown = view.faceDown(p.y);
   const x = p.x * w;
-  const y0 = p.y * h + (faceDown ? 14 : -14);
+  const y0 = view.py(p.y, h) + (faceDown ? 14 : -14);
   const { mid } = zoneBounds(h);
-  const top = faceDown ? h * 0.5 : mid + 6;
-  const beamH = Math.abs(y0 - top);
+  const aimY = faceDown ? view.py(0.5, h) : mid + 6;
+  const beamH = Math.abs(y0 - aimY);
   if (beamH < 4) return;
 
   const pulse = time * 14 + (p.slot === "host" ? 0 : 1.7);
@@ -465,8 +480,8 @@ function drawPlayerLaserBeam(ctx, p, w, h, time, mode) {
   const beamW = (10 + p.power * 3.5) * (p.ship === "heavy" ? 1.15 : 1);
   const coreW = (3.5 + p.power * 0.4) * flicker;
   const midW = beamW * 0.75 * flicker;
-  const yTop = Math.min(y0, top);
-  const yBot = Math.max(y0, top);
+  const yTop = Math.min(y0, aimY);
+  const yBot = Math.max(y0, aimY);
 
   ctx.save();
   ctx.shadowColor = "#00e5ff";
@@ -497,7 +512,7 @@ function drawPlayerLaserBeam(ctx, p, w, h, time, mode) {
   ctx.restore();
 }
 
-function drawMissileTracks(ctx, state, w, h, missileTracks, enemies) {
+function drawMissileTracks(ctx, state, w, h, missileTracks, enemies, view) {
   for (const t of missileTracks) {
     const p = state.players[t.owner];
     const e = enemies.find((en) => en.id === t.targetId);
@@ -506,8 +521,8 @@ function drawMissileTracks(ctx, state, w, h, missileTracks, enemies) {
     ctx.strokeStyle = `rgba(168,120,255,${0.7 * flicker})`;
     ctx.lineWidth = 4;
     ctx.beginPath();
-    ctx.moveTo(p.x * w, p.y * h);
-    ctx.lineTo(e.x * w, e.y * h);
+    ctx.moveTo(p.x * w, view.py(p.y, h));
+    ctx.lineTo(e.x * w, view.py(e.y, h));
     ctx.stroke();
   }
 }
