@@ -38,9 +38,14 @@ let hostInputs = { host: { x: 0.5, y: 0.9 }, guest: { x: 0.5, y: 0.12 } };
 let resultShown = false;
 /** @type {string | null} */
 let activeRoomId = null;
+let sessionRunning = false;
 
 function gameModeFromKey(key) {
   return key === "sky-coop" ? "coop" : "versus";
+}
+
+function isValidSkyState(state) {
+  return !!(state && state.players && state.players.host && state.players.guest);
 }
 
 function bindSkyOnlineOnce() {
@@ -129,8 +134,16 @@ function skyHandler(gameKey, title) {
       await startGameRoom(roomId, state);
     },
     onPlaying: (snap, ctx) => {
+      if (!isValidSkyState(snap.state)) return;
       resultShown = false;
-      startSkySession(snap, ctx);
+      if (sessionRunning && activeRoomId === snap.roomId) {
+        liveState = snap.state;
+        return;
+      }
+      ctx.deps.showView("skyOnlinePlay");
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => startSkySession(snap, ctx));
+      });
     },
   };
 }
@@ -189,6 +202,7 @@ async function teardownSession() {
   hostSimState = null;
   pointerDown = false;
   activeRoomId = null;
+  sessionRunning = false;
   const panel = $("#online-lobby-sky-panel");
   if (panel) panel.hidden = true;
 }
@@ -208,9 +222,12 @@ function subscribeInputs(roomId, cb) {
 }
 
 function startSkySession(snap, ctx) {
-  if (activeRoomId === snap.roomId) return;
+  if (!isValidSkyState(snap.state)) return;
+  if (sessionRunning && activeRoomId === snap.roomId) return;
+
   activeRoomId = snap.roomId;
-  resultShown = false;
+  sessionRunning = true;
+
   if (rafId) cancelAnimationFrame(rafId);
   if (hostTimer) clearInterval(hostTimer);
   inputUnsub?.();
@@ -219,8 +236,6 @@ function startSkySession(snap, ctx) {
   hostTimer = null;
   inputUnsub = null;
   stateUnsub = null;
-  hostSimState = null;
-  ctx.deps.showView("skyOnlinePlay");
 
   const titleEl = $("#sky-online-title");
   if (titleEl) {
@@ -236,8 +251,9 @@ function startSkySession(snap, ctx) {
   };
 
   liveState = snap.state;
-  bindCanvasInput(ctx.slot, snap.state?.mode);
+  bindCanvasInput(ctx.slot, snap.state.mode);
   renderLoop(ctx.slot, names);
+  void sendInputNow();
 
   if (ctx.slot === "host") {
     hostSimState = cloneState(snap.state);
@@ -249,9 +265,8 @@ function startSkySession(snap, ctx) {
       if (inputs.host) hostInputs.host = { ...hostInputs.host, ...inputs.host };
       if (inputs.guest) hostInputs.guest = { ...hostInputs.guest, ...inputs.guest };
     });
-    let acc = 0;
-    let last = performance.now();
-    const hostTick = async () => {
+
+    const runHostTick = async () => {
       if (!hostSimState) return;
       if (hostSimState.phase === "end") {
         if (!resultShown) {
@@ -260,31 +275,47 @@ function startSkySession(snap, ctx) {
         }
         return;
       }
-      const now = performance.now();
-      const dt = Math.min(0.05, (now - last) / 1000);
-      last = now;
-      acc += dt;
-      while (acc >= 1 / 30) {
-        applyPlayerInput(hostSimState, "host", hostInputs.host);
-        applyPlayerInput(hostSimState, "guest", hostInputs.guest);
-        stepSimulation(hostSimState, 1 / 30);
-        acc -= 1 / 30;
-      }
+      applyPlayerInput(hostSimState, "host", hostInputs.host);
+      applyPlayerInput(hostSimState, "guest", hostInputs.guest);
+      stepSimulation(hostSimState, 1 / 30);
       liveState = hostSimState;
-      const { db } = await ensureFirebase();
-      await set(ref(db, `rooms/${snap.roomId}/state`), hostSimState);
+      try {
+        const { db } = await ensureFirebase();
+        await set(ref(db, `rooms/${snap.roomId}/state`), hostSimState);
+      } catch (err) {
+        console.error("sky state sync failed", err);
+      }
     };
-    hostTimer = setInterval(() => void hostTick(), 50);
+
+    void runHostTick();
+    hostTimer = setInterval(() => void runHostTick(), 50);
   } else {
     ensureFirebase().then(({ db }) => {
       stateUnsub = onValue(ref(db, `rooms/${snap.roomId}/state`), (val) => {
-        liveState = val.val();
+        const next = val.val();
+        if (isValidSkyState(next)) liveState = next;
         if (liveState?.phase === "end" && !resultShown) {
           resultShown = true;
           showResult(liveState, ctx, names);
         }
       });
     });
+  }
+}
+
+function drawSkyPlaceholder(ctx2d, w, h, msg) {
+  const grad = ctx2d.createLinearGradient(0, 0, 0, h);
+  grad.addColorStop(0, "#1a2848");
+  grad.addColorStop(0.45, "#243858");
+  grad.addColorStop(1, "#1e3028");
+  ctx2d.fillStyle = grad;
+  ctx2d.fillRect(0, 0, w, h);
+  if (msg && w > 0 && h > 0) {
+    ctx2d.fillStyle = "rgba(255,255,255,0.85)";
+    ctx2d.font = "14px sans-serif";
+    ctx2d.textAlign = "center";
+    ctx2d.textBaseline = "middle";
+    ctx2d.fillText(msg, w / 2, h / 2);
   }
 }
 
@@ -299,13 +330,17 @@ function renderLoop(mySlot, names) {
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
     const w = wrap.clientWidth;
     const h = wrap.clientHeight;
-    if (canvas.width !== Math.floor(w * dpr) || canvas.height !== Math.floor(h * dpr)) {
-      canvas.width = Math.floor(w * dpr);
-      canvas.height = Math.floor(h * dpr);
-      ctx2d.setTransform(dpr, 0, 0, dpr, 0, 0);
-    }
-    if (liveState) {
-      drawSkyFrame(ctx2d, liveState, { w, h, mySlot, names });
+    if (w > 0 && h > 0) {
+      if (canvas.width !== Math.floor(w * dpr) || canvas.height !== Math.floor(h * dpr)) {
+        canvas.width = Math.floor(w * dpr);
+        canvas.height = Math.floor(h * dpr);
+        ctx2d.setTransform(dpr, 0, 0, dpr, 0, 0);
+      }
+      if (liveState && isValidSkyState(liveState)) {
+        drawSkyFrame(ctx2d, liveState, { w, h, mySlot, names });
+      } else {
+        drawSkyPlaceholder(ctx2d, w, h, "連線同步中…");
+      }
     }
     rafId = requestAnimationFrame(frame);
   };
@@ -317,6 +352,7 @@ function bindCanvasInput(slot, mode) {
   if (!canvas) return;
   const onPtr = (e) => {
     const rect = canvas.getBoundingClientRect();
+    if (rect.width <= 0) return;
     const x = (e.clientX - rect.left) / rect.width;
     const y = (e.clientY - rect.top) / rect.height;
     localInput.x = x;
@@ -364,9 +400,13 @@ async function sendInputNow() {
     t: now,
   };
   localInput.weaponTap = false;
-  await set(await inputRef(ctx.roomId, ctx.slot), payload);
-  if (ctx.slot === "host" && hostInputs) {
-    hostInputs.host = { ...hostInputs.host, ...payload };
+  try {
+    await set(await inputRef(ctx.roomId, ctx.slot), payload);
+    if (ctx.slot === "host" && hostInputs) {
+      hostInputs.host = { ...hostInputs.host, ...payload };
+    }
+  } catch (err) {
+    console.error("sky input sync failed", err);
   }
 }
 
@@ -375,6 +415,7 @@ function showResult(state, ctx, names) {
   if (hostTimer) clearInterval(hostTimer);
   rafId = null;
   hostTimer = null;
+  sessionRunning = false;
 
   ctx.deps.showView("skyOnlineResult");
   const title = $("#sky-online-result-title");

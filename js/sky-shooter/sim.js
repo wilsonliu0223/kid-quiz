@@ -30,7 +30,7 @@ export function createInitialState(mode, ships) {
     scores: { host: 0, guest: 0 },
     bossKillCredit: null,
     bossSpawned: false,
-    spawnCd: 1.2,
+    spawnCd: 0.35,
     flash: 0,
     players: {
       host: makePlayer("host", hostShip, isCoop ? 0.35 : 0.5, isCoop ? 0.9 : 0.88),
