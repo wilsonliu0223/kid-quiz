@@ -10,8 +10,13 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <title>家裡練習</title>
+    <script>
+      (function () {
+        if (location.search) history.replaceState(null, "", location.pathname + location.hash);
+      })();
+    </script>
     <link rel="manifest" href="manifest.json" />
-    <link rel="stylesheet" href="css/app.css?v=sky-duo-v5" />
+    <link rel="stylesheet" href="css/app.css?v=sky-duo-v6" />
     <script type="importmap">
       {
         "imports": {
@@ -1083,6 +1088,6 @@
       </div>
     </div>
 
-    <script type="module" src="js/app.js?v=sky-duo-v5"></script>
+    <script type="module" src="js/app.js?v=sky-duo-v6"></script>
   </body>
 </html>
