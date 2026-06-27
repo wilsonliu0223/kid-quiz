@@ -24,12 +24,6 @@ export const COOP_Y_BAND = [
 /** 對戰模式：來賓在畫面上方區（世界座標），與房主區上下對稱 */
 export const VERSUS_GUEST_Y_BAND = [1 - COOP_Y_BAND[1], 1 - COOP_Y_BAND[0]];
 
-export function bandMap(y, from, to) {
-  const span = from[1] - from[0];
-  const t = span > 0 ? Math.max(0, Math.min(1, (Number(y) - from[0]) / span)) : 0.5;
-  return to[0] + t * (to[1] - to[0]);
-}
-
 const POWER_OFFSETS = [[0], [-0.02, 0.02], [-0.024, 0, 0.024], [-0.032, -0.016, 0, 0.016, 0.032]];
 
 let nextEntityId = 1;
