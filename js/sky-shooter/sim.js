@@ -1,5 +1,5 @@
-import { shipOrDefault } from "./ships.js?v=sky-duo-v9";
-import { asList } from "./state-util.js?v=sky-duo-v9";
+import { shipOrDefault } from "./ships.js?v=sky-duo-v10";
+import { asList } from "./state-util.js?v=sky-duo-v10";
 
 export const COOP_BOSS_AT = 95;
 export const VERSUS_TIME = 180;
@@ -102,23 +102,49 @@ function otherSlot(slot) {
   return slot === "host" ? "guest" : "host";
 }
 
+/** @param {'host'|'guest'} slot @param {'coop'|'versus'} mode */
+export function clampPointerInput(slot, mode, x, y) {
+  const pad = 0.06;
+  const cx = Math.max(pad, Math.min(1 - pad, Number(x)));
+  let cy = Number(y);
+  if (!Number.isFinite(cx) || !Number.isFinite(cy)) {
+    return { x: 0.5, y: COOP_Y_BAND[1] - 0.04 };
+  }
+  if (mode === "versus") {
+    const band = slot === "host" ? [0.72, 0.94] : [0.06, 0.28];
+    cy = Math.max(band[0], Math.min(band[1], cy));
+  } else {
+    cy = Math.max(COOP_Y_BAND[0], Math.min(COOP_Y_BAND[1], cy));
+  }
+  return { x: cx, y: cy };
+}
+
+/** 每幀強制把玩家限制在戰鬥區內 */
+export function clampPlayersToZone(state) {
+  if (!state?.players) return;
+  for (const slot of ["host", "guest"]) {
+    const p = state.players[slot];
+    if (!p || p.lives <= 0) continue;
+    const c = clampPointerInput(slot, state.mode === "versus" ? "versus" : "coop", p.x, p.y);
+    p.x = c.x;
+    p.y = c.y;
+  }
+}
+
 /** @param {object} state @param {'host'|'guest'} slot @param {{ x?: number, y?: number, weaponTap?: boolean }} input */
 export function applyPlayerInput(state, slot, input) {
   const p = state.players[slot];
   if (!p || p.lives <= 0 || (state.phase !== "play" && state.phase !== "boss")) return;
-  const pad = 0.06;
   const nx = Number(input.x);
-  if (Number.isFinite(nx)) {
-    p.x = Math.max(pad, Math.min(1 - pad, nx));
-  }
   const ny = Number(input.y);
-  if (Number.isFinite(ny)) {
-    if (state.mode === "versus") {
-      const band = slot === "host" ? [0.72, 0.94] : [0.06, 0.28];
-      p.y = Math.max(band[0], Math.min(band[1], ny));
-    } else {
-      p.y = Math.max(COOP_Y_BAND[0], Math.min(COOP_Y_BAND[1], ny));
-    }
+  if (Number.isFinite(nx) && Number.isFinite(ny)) {
+    const c = clampPointerInput(slot, state.mode === "versus" ? "versus" : "coop", nx, ny);
+    p.x = c.x;
+    p.y = c.y;
+  } else if (Number.isFinite(nx)) {
+    p.x = clampPointerInput(slot, state.mode === "versus" ? "versus" : "coop", nx, p.y).x;
+  } else if (Number.isFinite(ny)) {
+    p.y = clampPointerInput(slot, state.mode === "versus" ? "versus" : "coop", p.x, ny).y;
   }
   if (input.weaponTap) cycleWeapon(p);
 }
@@ -161,6 +187,8 @@ export function stepSimulation(state, dt) {
   updateBullets(state, dt);
   updatePickups(state, dt);
   updateParticles(state, dt);
+
+  clampPlayersToZone(state);
 
   if (isCoop) {
     if (state.players.host.lives <= 0 && state.players.guest.lives <= 0) {

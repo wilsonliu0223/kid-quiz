@@ -8,17 +8,19 @@ import {
   openOnlineOnlyDuo,
 } from "./online-duo.js";
 import { startGameRoom } from "./room-service.js";
-import { SHIPS, SHIP_IDS } from "./sky-shooter/ships.js?v=sky-duo-v9";
+import { SHIPS, SHIP_IDS } from "./sky-shooter/ships.js?v=sky-duo-v10";
 import {
   createInitialState,
   stepSimulation,
   applyPlayerInput,
   cloneState,
-} from "./sky-shooter/sim.js?v=sky-duo-v9";
-import { drawSkyFrame } from "./sky-shooter/render.js?v=sky-duo-v9";
-import { normalizeSkyState, isValidSkyState } from "./sky-shooter/state-util.js?v=sky-duo-v9";
+  clampPointerInput,
+  clampPlayersToZone,
+} from "./sky-shooter/sim.js?v=sky-duo-v10";
+import { drawSkyFrame } from "./sky-shooter/render.js?v=sky-duo-v10";
+import { normalizeSkyState, isValidSkyState } from "./sky-shooter/state-util.js?v=sky-duo-v10";
 
-const SKY_BUILD = "v9";
+const SKY_BUILD = "v10";
 
 const $ = (sel) => document.querySelector(sel);
 
@@ -311,6 +313,7 @@ function startSkySession(snap, ctx) {
         const next = val.val();
         if (isValidSkyState(next)) {
           liveState = normalizeSkyState(next);
+          clampPlayersToZone(liveState);
         }
         if (liveState?.phase === "end" && !resultShown) {
           resultShown = true;
@@ -402,19 +405,21 @@ function renderLoop(mySlot, names) {
 
 function applyLocalPointerInput(slot, mode) {
   if (!slot) return;
+  const clamped = clampPointerInput(slot, mode, localInput.x, localInput.y);
+  localInput.x = clamped.x;
+  localInput.y = clamped.y;
   const payload = {
-    x: Number(localInput.x),
-    y: Number(localInput.y),
+    x: clamped.x,
+    y: clamped.y,
     weaponTap: !!localInput.weaponTap,
   };
-  if (slot === "host" && hostInputs) {
-    hostInputs.host = { ...hostInputs.host, x: payload.x, y: payload.y };
-  } else if (slot === "guest" && hostInputs) {
-    hostInputs.guest = { ...hostInputs.guest, x: payload.x, y: payload.y };
+  if (hostInputs && slot) {
+    hostInputs[slot] = { ...hostInputs[slot], x: payload.x, y: payload.y };
   }
   const target = slot === "host" && hostSimState ? hostSimState : liveState;
   if (target && isValidSkyState(target)) {
     applyPlayerInput(target, slot, payload);
+    clampPlayersToZone(target);
     if (slot === "host" && hostSimState) liveState = hostSimState;
   }
 }
@@ -474,8 +479,8 @@ async function sendInputNow() {
   if (now - lastInputSend < 40) return;
   lastInputSend = now;
   const payload = {
-    x: Number(localInput.x),
-    y: Number(localInput.y),
+    x: localInput.x,
+    y: localInput.y,
     weaponTap: !!localInput.weaponTap,
     t: now,
   };

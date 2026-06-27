@@ -1,6 +1,6 @@
-import { shipOrDefault } from "./ships.js?v=sky-duo-v9";
-import { asList } from "./state-util.js?v=sky-duo-v9";
-import { VERSUS_TIME, ZONE_RATIO, COOP_Y_BAND } from "./sim.js?v=sky-duo-v9";
+import { shipOrDefault } from "./ships.js?v=sky-duo-v10";
+import { asList } from "./state-util.js?v=sky-duo-v10";
+import { VERSUS_TIME, ZONE_RATIO, COOP_Y_BAND } from "./sim.js?v=sky-duo-v10";
 
 const WEAPON_LABELS = { straight: "直射", spread: "擴散", laser: "雷射" };
 
@@ -99,17 +99,20 @@ function drawSkyZones(ctx, w, h, time, mode) {
 
   if (mode === "coop") {
     const bandTop = h * COOP_Y_BAND[0];
-    ctx.strokeStyle = "rgba(255, 213, 74, 0.35)";
+    const bandBot = h * COOP_Y_BAND[1];
+    ctx.strokeStyle = "rgba(255, 213, 74, 0.4)";
     ctx.setLineDash([6, 6]);
     ctx.beginPath();
     ctx.moveTo(0, bandTop);
     ctx.lineTo(w, bandTop);
+    ctx.moveTo(0, bandBot);
+    ctx.lineTo(w, bandBot);
     ctx.stroke();
     ctx.setLineDash([]);
     ctx.fillStyle = "rgba(255, 213, 74, 0.45)";
     ctx.font = "10px sans-serif";
     ctx.textAlign = "left";
-    ctx.fillText("合作戰鬥區（可上下左右移動）", 8, bandTop + 14);
+    ctx.fillText("合作戰鬥區（不可飛出黃線）", 8, bandTop + 14);
   } else if (mode === "versus") {
     ctx.strokeStyle = "rgba(255,255,255,0.12)";
     ctx.setLineDash([8, 8]);
