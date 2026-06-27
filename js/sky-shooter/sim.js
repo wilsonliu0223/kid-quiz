@@ -1,5 +1,5 @@
-import { shipOrDefault } from "./ships.js?v=sky-duo-v18";
-import { asList } from "./state-util.js?v=sky-duo-v18";
+import { shipOrDefault } from "./ships.js?v=sky-duo-v19";
+import { asList } from "./state-util.js?v=sky-duo-v19";
 
 export const COOP_BOSS_AT = 95;
 export const VERSUS_TIME = 180;
@@ -11,6 +11,8 @@ export const PVP_MAX_HP = 100;
 export const PVP_BULLET_DAMAGE = 11;
 export const PVP_HIT_INVULN = 1.9;
 export const PVP_LIFE_LOSS_INVULN = 1.35;
+/** 對戰搶分：暫時雙方無敵（只搶分、不掉命） */
+export const VERSUS_PLAYERS_INVINCIBLE = true;
 
 /** 單機同款三區比例（上／中／下） */
 export const ZONE_RATIO = { top: 0.38, mid: 0.34, bot: 0.28 };
@@ -562,11 +564,14 @@ function applyPvpChip(state, targetSlot, attackerSlot, amount) {
   const p = state.players[targetSlot];
   if (!p || p.lives <= 0 || p.invuln > 0) return false;
 
-  const hp = typeof p.pvpHp === "number" ? p.pvpHp : PVP_MAX_HP;
-  p.pvpHp = hp - amount;
   p.invuln = PVP_HIT_INVULN;
   scoreHit(state, attackerSlot, PVP_HIT_SCORE);
   burst(state, p.x, p.y, "#c8a0ff", 6);
+
+  if (state.mode === "versus" && VERSUS_PLAYERS_INVINCIBLE) return true;
+
+  const hp = typeof p.pvpHp === "number" ? p.pvpHp : PVP_MAX_HP;
+  p.pvpHp = hp - amount;
 
   if (p.pvpHp <= 0) {
     const ship = shipOrDefault(p.ship);
@@ -661,6 +666,7 @@ function collectPickup(state, p, type) {
 }
 
 function hurtPlayer(state, slot) {
+  if (state.mode === "versus" && VERSUS_PLAYERS_INVINCIBLE) return;
   const p = state.players[slot];
   const ship = shipOrDefault(p.ship);
   if (p.invuln > 0) return;
