@@ -8,17 +8,17 @@ import {
   openOnlineOnlyDuo,
 } from "./online-duo.js";
 import { startGameRoom } from "./room-service.js";
-import { SHIPS, SHIP_IDS } from "./sky-shooter/ships.js?v=sky-duo-v8";
+import { SHIPS, SHIP_IDS } from "./sky-shooter/ships.js?v=sky-duo-v9";
 import {
   createInitialState,
   stepSimulation,
   applyPlayerInput,
   cloneState,
-} from "./sky-shooter/sim.js?v=sky-duo-v8";
-import { drawSkyFrame } from "./sky-shooter/render.js?v=sky-duo-v8";
-import { normalizeSkyState, isValidSkyState } from "./sky-shooter/state-util.js?v=sky-duo-v8";
+} from "./sky-shooter/sim.js?v=sky-duo-v9";
+import { drawSkyFrame } from "./sky-shooter/render.js?v=sky-duo-v9";
+import { normalizeSkyState, isValidSkyState } from "./sky-shooter/state-util.js?v=sky-duo-v9";
 
-const SKY_BUILD = "v8";
+const SKY_BUILD = "v9";
 
 const $ = (sel) => document.querySelector(sel);
 
@@ -264,8 +264,22 @@ function startSkySession(snap, ctx) {
       guest: { x: hostSimState.players.guest.x, y: hostSimState.players.guest.y },
     };
     inputUnsub = subscribeInputs(snap.roomId, (inputs) => {
-      if (inputs.host) hostInputs.host = { ...hostInputs.host, ...inputs.host };
-      if (inputs.guest) hostInputs.guest = { ...hostInputs.guest, ...inputs.guest };
+      if (inputs.host) {
+        hostInputs.host = {
+          ...hostInputs.host,
+          x: Number(inputs.host.x),
+          y: Number(inputs.host.y),
+          weaponTap: !!inputs.host.weaponTap,
+        };
+      }
+      if (inputs.guest) {
+        hostInputs.guest = {
+          ...hostInputs.guest,
+          x: Number(inputs.guest.x),
+          y: Number(inputs.guest.y),
+          weaponTap: !!inputs.guest.weaponTap,
+        };
+      }
     });
 
     const runHostTick = async () => {
@@ -386,25 +400,49 @@ function renderLoop(mySlot, names) {
   rafId = requestAnimationFrame(frame);
 }
 
+function applyLocalPointerInput(slot, mode) {
+  if (!slot) return;
+  const payload = {
+    x: Number(localInput.x),
+    y: Number(localInput.y),
+    weaponTap: !!localInput.weaponTap,
+  };
+  if (slot === "host" && hostInputs) {
+    hostInputs.host = { ...hostInputs.host, x: payload.x, y: payload.y };
+  } else if (slot === "guest" && hostInputs) {
+    hostInputs.guest = { ...hostInputs.guest, x: payload.x, y: payload.y };
+  }
+  const target = slot === "host" && hostSimState ? hostSimState : liveState;
+  if (target && isValidSkyState(target)) {
+    applyPlayerInput(target, slot, payload);
+    if (slot === "host" && hostSimState) liveState = hostSimState;
+  }
+}
+
 function bindCanvasInput(slot, mode) {
   const canvas = /** @type {HTMLCanvasElement | null} */ ($("#sky-online-canvas"));
   if (!canvas) return;
+
   const onPtr = (e) => {
     const rect = canvas.getBoundingClientRect();
-    if (rect.width <= 0) return;
+    if (rect.width <= 0 || rect.height <= 0) return;
     const x = (e.clientX - rect.left) / rect.width;
     const y = (e.clientY - rect.top) / rect.height;
-    localInput.x = x;
-    localInput.y = y;
+    localInput.x = Math.max(0, Math.min(1, x));
+    localInput.y = Math.max(0, Math.min(1, y));
     pointerDown = e.type !== "pointerup" && e.type !== "pointercancel";
+    applyLocalPointerInput(slot, mode);
     if (pointerDown) void sendInputNow();
   };
+
   canvas.onpointerdown = (e) => {
+    e.preventDefault();
     canvas.setPointerCapture(e.pointerId);
     onPtr(e);
   };
   canvas.onpointermove = (e) => {
     if (!pointerDown) return;
+    e.preventDefault();
     onPtr(e);
   };
   canvas.onpointerup = canvas.onpointercancel = (e) => {
@@ -417,12 +455,15 @@ function bindCanvasInput(slot, mode) {
   };
 
   const moveLoop = () => {
-    if (pointerDown) void sendInputNow();
+    if (pointerDown) {
+      applyLocalPointerInput(slot, mode);
+      void sendInputNow();
+    }
     requestAnimationFrame(moveLoop);
   };
   requestAnimationFrame(moveLoop);
 
-  localInput.y = slot === "host" ? 0.88 : mode === "versus" ? 0.12 : 0.9;
+  localInput.y = mode === "versus" ? (slot === "host" ? 0.88 : 0.12) : 0.88;
   localInput.x = slot === "host" ? 0.35 : 0.65;
 }
 
@@ -430,19 +471,19 @@ async function sendInputNow() {
   const ctx = getOnlineContext();
   if (!ctx.roomId || !ctx.slot) return;
   const now = Date.now();
-  if (now - lastInputSend < 50) return;
+  if (now - lastInputSend < 40) return;
   lastInputSend = now;
   const payload = {
-    x: localInput.x,
-    y: localInput.y,
+    x: Number(localInput.x),
+    y: Number(localInput.y),
     weaponTap: !!localInput.weaponTap,
     t: now,
   };
   localInput.weaponTap = false;
   try {
     await set(await inputRef(ctx.roomId, ctx.slot), payload);
-    if (ctx.slot === "host" && hostInputs) {
-      hostInputs.host = { ...hostInputs.host, ...payload };
+    if (hostInputs && ctx.slot) {
+      hostInputs[ctx.slot] = { ...hostInputs[ctx.slot], x: payload.x, y: payload.y };
     }
   } catch (err) {
     console.error("sky input sync failed", err);
