@@ -3100,6 +3100,34 @@ body {
   overflow: hidden;
 }
 
+.sky-dead-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(8, 18, 32, 0.55);
+  color: #e8f4ff;
+  font-size: 1rem;
+  font-weight: 600;
+  text-align: center;
+  pointer-events: none;
+  z-index: 3;
+}
+
+.sky-dead-overlay[hidden] {
+  display: none !important;
+}
+
+#sky-online-canvas.sky-canvas-locked {
+  pointer-events: none;
+}
+
+.sky-canvas-wrap.sky-canvas-dead #sky-online-canvas {
+  opacity: 0.72;
+}
+
 #sky-online-canvas {
   display: block;
   position: absolute;

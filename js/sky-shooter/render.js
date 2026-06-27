@@ -1,6 +1,6 @@
-import { shipOrDefault } from "./ships.js?v=sky-duo-v10";
-import { asList } from "./state-util.js?v=sky-duo-v10";
-import { VERSUS_TIME, ZONE_RATIO, COOP_Y_BAND } from "./sim.js?v=sky-duo-v10";
+import { shipOrDefault } from "./ships.js?v=sky-duo-v13";
+import { asList } from "./state-util.js?v=sky-duo-v13";
+import { VERSUS_TIME, ZONE_RATIO, COOP_Y_BAND } from "./sim.js?v=sky-duo-v13";
 
 const WEAPON_LABELS = { straight: "直射", spread: "擴散", laser: "雷射" };
 
@@ -49,6 +49,8 @@ export function drawSkyFrame(ctx, state, opts) {
   for (const e of enemies) {
     drawEnemy(ctx, e, w, h, time);
   }
+
+  drawAllPlayerLasers(ctx, state, w, h, time);
 
   for (const slot of ["host", "guest"]) {
     const p = state.players[slot];
@@ -109,10 +111,6 @@ function drawSkyZones(ctx, w, h, time, mode) {
     ctx.lineTo(w, bandBot);
     ctx.stroke();
     ctx.setLineDash([]);
-    ctx.fillStyle = "rgba(255, 213, 74, 0.45)";
-    ctx.font = "10px sans-serif";
-    ctx.textAlign = "left";
-    ctx.fillText("合作戰鬥區（不可飛出黃線）", 8, bandTop + 14);
   } else if (mode === "versus") {
     ctx.strokeStyle = "rgba(255,255,255,0.12)";
     ctx.setLineDash([8, 8]);
@@ -399,18 +397,6 @@ function drawPlayer(ctx, p, w, h, isMe, name, time) {
   ctx.restore();
   ctx.globalAlpha = 1;
 
-  if (p.weapon === "laser") {
-    const dir = faceDown ? 1 : -1;
-    const beamH = h * 0.38;
-    const y0 = y;
-    const y1 = y + dir * beamH;
-    const grd = ctx.createLinearGradient(x, y0, x, y1);
-    grd.addColorStop(0, "rgba(0,220,255,0.55)");
-    grd.addColorStop(1, "rgba(255,255,255,0)");
-    ctx.fillStyle = grd;
-    ctx.fillRect(x - 10, Math.min(y0, y1), 20, Math.abs(beamH));
-  }
-
   ctx.fillStyle = isMe ? "#fff" : "rgba(255,255,255,0.75)";
   ctx.font = "11px sans-serif";
   ctx.textAlign = "center";
@@ -419,6 +405,60 @@ function drawPlayer(ctx, p, w, h, isMe, name, time) {
   const hearts = "♥".repeat(p.lives) + "♡".repeat(Math.max(0, 3 - p.lives));
   ctx.font = "10px sans-serif";
   ctx.fillText(`${hearts} ${WEAPON_LABELS[p.weapon] || ""}`, x, y + (faceDown ? -50 : 50));
+}
+
+function drawAllPlayerLasers(ctx, state, w, h, time) {
+  for (const slot of ["host", "guest"]) {
+    const p = state.players[slot];
+    if (!p || p.lives <= 0 || p.weapon !== "laser") continue;
+    drawPlayerLaserBeam(ctx, p, w, h, time);
+  }
+}
+
+function drawPlayerLaserBeam(ctx, p, w, h, time) {
+  const faceDown = p.y < 0.45;
+  const x = p.x * w;
+  const y0 = p.y * h + (faceDown ? 14 : -14);
+  const { mid } = zoneBounds(h);
+  const top = faceDown ? h * 0.5 : mid + 6;
+  const beamH = Math.abs(y0 - top);
+  if (beamH < 4) return;
+
+  const pulse = time * 14 + (p.slot === "host" ? 0 : 1.7);
+  const flicker = 0.82 + Math.sin(pulse) * 0.12 + Math.sin(time * 42) * 0.06;
+  const beamW = (10 + p.power * 3.5) * (p.ship === "heavy" ? 1.15 : 1);
+  const coreW = (3.5 + p.power * 0.4) * flicker;
+  const midW = beamW * 0.75 * flicker;
+  const yTop = Math.min(y0, top);
+  const yBot = Math.max(y0, top);
+
+  ctx.save();
+  ctx.shadowColor = "#00e5ff";
+  ctx.shadowBlur = 18;
+
+  const outer = ctx.createLinearGradient(x, yBot, x, yTop);
+  outer.addColorStop(0, "rgba(0, 220, 255, 0.55)");
+  outer.addColorStop(0.35, "rgba(80, 200, 255, 0.28)");
+  outer.addColorStop(1, "rgba(255,255,255,0)");
+  ctx.fillStyle = outer;
+  ctx.fillRect(x - midW * 1.4, yTop, midW * 2.8, beamH);
+
+  const midGrd = ctx.createLinearGradient(x, yBot, x, yTop);
+  midGrd.addColorStop(0, "rgba(120, 240, 255, 0.9)");
+  midGrd.addColorStop(0.5, "rgba(60, 180, 255, 0.65)");
+  midGrd.addColorStop(1, "rgba(200,240,255,0)");
+  ctx.fillStyle = midGrd;
+  ctx.fillRect(x - midW, yTop, midW * 2, beamH);
+
+  ctx.fillStyle = `rgba(255,255,255,${0.92 * flicker})`;
+  ctx.fillRect(x - coreW * 0.5, yTop, coreW, beamH);
+
+  ctx.shadowBlur = 0;
+  ctx.fillStyle = "rgba(255,255,255,0.85)";
+  ctx.beginPath();
+  ctx.arc(x, y0 + (faceDown ? -2 : 2), 5 * flicker, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
 }
 
 function drawMissileTracks(ctx, state, w, h, missileTracks, enemies) {

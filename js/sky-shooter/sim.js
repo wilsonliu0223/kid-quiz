@@ -1,5 +1,5 @@
-import { shipOrDefault } from "./ships.js?v=sky-duo-v12";
-import { asList } from "./state-util.js?v=sky-duo-v12";
+import { shipOrDefault } from "./ships.js?v=sky-duo-v13";
+import { asList } from "./state-util.js?v=sky-duo-v13";
 
 export const COOP_BOSS_AT = 95;
 export const VERSUS_TIME = 180;
@@ -134,10 +134,16 @@ export function clampPlayersToZone(state) {
   }
 }
 
+export function canPlayerControl(state, slot) {
+  const p = state?.players?.[slot];
+  if (!p || p.lives <= 0) return false;
+  return state.phase === "play" || state.phase === "boss";
+}
+
 /** @param {object} state @param {'host'|'guest'} slot @param {{ x?: number, y?: number, weaponTap?: boolean }} input */
 export function applyPlayerInput(state, slot, input) {
   const p = state.players[slot];
-  if (!p || p.lives <= 0 || (state.phase !== "play" && state.phase !== "boss")) return;
+  if (!p || !canPlayerControl(state, slot)) return;
   const nx = Number(input.x);
   const ny = Number(input.y);
   if (Number.isFinite(nx) && Number.isFinite(ny)) {

@@ -16,7 +16,7 @@
       })();
     </script>
     <link rel="manifest" href="manifest.json" />
-    <link rel="stylesheet" href="css/app.css?v=sky-duo-v12" />
+    <link rel="stylesheet" href="css/app.css?v=sky-duo-v13" />
     <script type="importmap">
       {
         "imports": {
@@ -842,6 +842,7 @@
         <div class="sky-online-play-body">
           <div class="sky-canvas-wrap" id="sky-canvas-wrap">
             <canvas id="sky-online-canvas" aria-label="天空射擊戰場"></canvas>
+            <div class="sky-dead-overlay" id="sky-dead-overlay" hidden>你已陣亡，等待隊友…</div>
             <div class="sky-debug-status" id="sky-debug-status" aria-hidden="true"></div>
           </div>
           <div class="sky-online-controls">
@@ -1101,7 +1102,7 @@
         el.hidden = false;
         el.textContent = msg;
       };
-      import("./js/app.js?v=sky-duo-v12").catch((e) => {
+      import("./js/app.js?v=sky-duo-v13").catch((e) => {
         console.error(e);
         showLoadError(
           `程式載入失敗：${e.message || e}。請關閉分頁重開；若仍無效請到瀏覽器設定清除此網站快取。`,

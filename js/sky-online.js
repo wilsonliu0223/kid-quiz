@@ -8,7 +8,7 @@ import {
   openOnlineOnlyDuo,
 } from "./online-duo.js";
 import { startGameRoom } from "./room-service.js";
-import { SHIPS, SHIP_IDS, shipLobbyCardHtml } from "./sky-shooter/ships.js?v=sky-duo-v12";
+import { SHIPS, SHIP_IDS, shipLobbyCardHtml } from "./sky-shooter/ships.js?v=sky-duo-v13";
 import {
   createInitialState,
   stepSimulation,
@@ -16,11 +16,12 @@ import {
   cloneState,
   clampPointerInput,
   clampPlayersToZone,
-} from "./sky-shooter/sim.js?v=sky-duo-v12";
-import { drawSkyFrame } from "./sky-shooter/render.js?v=sky-duo-v12";
-import { normalizeSkyState, isValidSkyState } from "./sky-shooter/state-util.js?v=sky-duo-v12";
+  canPlayerControl,
+} from "./sky-shooter/sim.js?v=sky-duo-v13";
+import { drawSkyFrame } from "./sky-shooter/render.js?v=sky-duo-v13";
+import { normalizeSkyState, isValidSkyState } from "./sky-shooter/state-util.js?v=sky-duo-v13";
 
-const SKY_BUILD = "v10";
+const SKY_BUILD = "v13";
 
 const $ = (sel) => document.querySelector(sel);
 
@@ -304,7 +305,7 @@ function startSkySession(snap, ctx) {
       guest: { x: hostSimState.players.guest.x, y: hostSimState.players.guest.y },
     };
     inputUnsub = subscribeInputs(snap.roomId, (inputs) => {
-      if (inputs.host) {
+      if (inputs.host && canPlayerControl(hostSimState, "host")) {
         hostInputs.host = {
           ...hostInputs.host,
           x: Number(inputs.host.x),
@@ -312,7 +313,7 @@ function startSkySession(snap, ctx) {
           weaponTap: !!inputs.host.weaponTap,
         };
       }
-      if (inputs.guest) {
+      if (inputs.guest && canPlayerControl(hostSimState, "guest")) {
         hostInputs.guest = {
           ...hostInputs.guest,
           x: Number(inputs.guest.x),
@@ -331,8 +332,12 @@ function startSkySession(snap, ctx) {
         }
         return;
       }
-      applyPlayerInput(hostSimState, "host", hostInputs.host);
-      applyPlayerInput(hostSimState, "guest", hostInputs.guest);
+      if (canPlayerControl(hostSimState, "host")) {
+        applyPlayerInput(hostSimState, "host", hostInputs.host);
+      }
+      if (canPlayerControl(hostSimState, "guest")) {
+        applyPlayerInput(hostSimState, "guest", hostInputs.guest);
+      }
       stepSimulation(hostSimState, 1 / 30);
       liveState = hostSimState;
       try {
@@ -412,11 +417,13 @@ const WEAPON_HUD = { straight: "直射彈", spread: "擴散彈", laser: "雷射"
 
 function updateSkyHud(mySlot) {
   const p = liveState?.players?.[mySlot];
+  const can = !!(p && canPlayerControl(liveState, mySlot));
   const btnWeapon = $("#btn-sky-hud-weapon");
   if (!btnWeapon) return;
-  if (!p) {
+  if (!p || !can) {
     btnWeapon.textContent = "直射彈";
     btnWeapon.disabled = true;
+    $("#btn-sky-hud-missile")?.setAttribute("disabled", "");
     return;
   }
   btnWeapon.disabled = false;
@@ -460,6 +467,7 @@ function renderLoop(mySlot, names) {
         try {
           drawSkyFrame(ctx2d, liveState, { w, h, mySlot, names });
           updateSkyHud(mySlot);
+          updateCanvasInputLock(mySlot);
         } catch (err) {
           console.error("drawSkyFrame failed", err);
           drawSkyPlaceholder(ctx2d, w, h, `繪圖錯誤 ${SKY_BUILD}`);
@@ -475,8 +483,27 @@ function renderLoop(mySlot, names) {
   rafId = requestAnimationFrame(frame);
 }
 
+function myPlayerCanControl() {
+  const slot = getOnlineContext().slot;
+  if (!slot || !liveState) return false;
+  return canPlayerControl(liveState, slot);
+}
+
+function updateCanvasInputLock(mySlot) {
+  const canvas = $("#sky-online-canvas");
+  const wrap = $("#sky-canvas-wrap");
+  const overlay = $("#sky-dead-overlay");
+  const can = myPlayerCanControl();
+  if (canvas) canvas.classList.toggle("sky-canvas-locked", !can);
+  if (wrap) wrap.classList.toggle("sky-canvas-dead", !can && !!liveState);
+  if (overlay) overlay.hidden = can || !liveState;
+}
+
 function applyLocalPointerInput(slot, mode) {
   if (!slot) return;
+  const stateRef = slot === "host" && hostSimState ? hostSimState : liveState;
+  if (!stateRef || !canPlayerControl(stateRef, slot)) return;
+
   const clamped = clampPointerInput(slot, mode, localInput.x, localInput.y);
   localInput.x = clamped.x;
   localInput.y = clamped.y;
@@ -485,14 +512,14 @@ function applyLocalPointerInput(slot, mode) {
     y: clamped.y,
     weaponTap: !!localInput.weaponTap,
   };
-  if (hostInputs && slot) {
+  if (hostSimState && hostInputs && slot) {
     hostInputs[slot] = { ...hostInputs[slot], x: payload.x, y: payload.y };
   }
-  const target = slot === "host" && hostSimState ? hostSimState : liveState;
+  const target = hostSimState || liveState;
   if (target && isValidSkyState(target)) {
     applyPlayerInput(target, slot, payload);
     clampPlayersToZone(target);
-    if (slot === "host" && hostSimState) liveState = hostSimState;
+    if (hostSimState) liveState = hostSimState;
   }
 }
 
@@ -501,6 +528,7 @@ function bindCanvasInput(slot, mode) {
   if (!canvas) return;
 
   const onPtr = (e) => {
+    if (!myPlayerCanControl()) return;
     const rect = canvas.getBoundingClientRect();
     if (rect.width <= 0 || rect.height <= 0) return;
     const x = (e.clientX - rect.left) / rect.width;
@@ -532,7 +560,7 @@ function bindCanvasInput(slot, mode) {
   };
 
   const moveLoop = () => {
-    if (pointerDown) {
+    if (pointerDown && myPlayerCanControl()) {
       applyLocalPointerInput(slot, mode);
       void sendInputNow();
     }
@@ -547,6 +575,7 @@ function bindCanvasInput(slot, mode) {
 async function sendInputNow() {
   const ctx = getOnlineContext();
   if (!ctx.roomId || !ctx.slot) return;
+  if (!myPlayerCanControl()) return;
   const now = Date.now();
   if (now - lastInputSend < 40) return;
   lastInputSend = now;
