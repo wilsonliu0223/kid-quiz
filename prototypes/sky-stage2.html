@@ -1872,7 +1872,11 @@
           }
         } else if (e.kind === "ember_drone") {
           const tx = player.x + (Math.random() - 0.5) * 36;
-          const ty = Math.min(zoneY.bot - 18, player.y + 48);
+          const footY = player.y + player.h * 0.45;
+          const ty = Math.min(
+            zoneY.botEnd - 10,
+            Math.max(zoneY.bot + 16, footY),
+          );
           spawnEmberGeyser(tx, ty);
           enemyBullets.push({
             x: e.x,
