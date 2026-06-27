@@ -2946,7 +2946,7 @@ body {
   justify-content: flex-start;
   min-height: 52px;
   padding: 12px 14px;
-  background: linear-gradient(135deg, #e8f4ff 0%, #b8d4f0 100%);
+  background: linear-gradient(135deg, #e8f4ff 0%, #d8e8ff 55%, #e0d8f8 100%);
   border: 2px solid #5a9fd4;
   width: 100%;
 }
@@ -2971,30 +2971,6 @@ body {
   line-height: 1.35;
   color: #1a3d5c;
   opacity: 0.88;
-}
-
-.home-zone-duo .card-sky-duo {
-  align-items: stretch;
-  justify-content: flex-start;
-  min-height: 52px;
-  padding: 12px 14px;
-  background: linear-gradient(135deg, #ede8ff 0%, #c8b0f0 100%);
-  border: 2px solid #8a60d4;
-  width: 100%;
-}
-
-.card-sky-duo .card-sky-head {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 2px 8px;
-  width: 100%;
-  text-align: left;
-}
-
-.card-sky-duo .card-title {
-  flex-shrink: 0;
-  color: #3a2860;
 }
 
 .sky-duo-menu-body {

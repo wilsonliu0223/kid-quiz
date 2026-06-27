@@ -11,7 +11,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <title>家裡練習</title>
     <link rel="manifest" href="manifest.json" />
-    <link rel="stylesheet" href="css/app.css?v=sky-duo-v1" />
+    <link rel="stylesheet" href="css/app.css?v=sky-duo-v2" />
     <script type="importmap">
       {
         "imports": {
@@ -111,13 +111,7 @@
             <button type="button" class="card card-sky-shooter" id="btn-start-sky-shooter">
               <span class="card-sky-head">
                 <span class="card-title">天空射擊</span>
-                <span class="card-sky-note">單人 · 手指拖曳閃彈 · 撿 P 球升級</span>
-              </span>
-            </button>
-            <button type="button" class="card card-sky-duo" id="btn-start-sky-duo">
-              <span class="card-sky-head">
-                <span class="card-title">天空雙人</span>
-                <span class="card-sky-note">兩台手機連線 · 合作闖關或對戰搶分 · 選機體</span>
+                <span class="card-sky-note">單機闖關 · 雙機合作或對戰搶分 · 選機體</span>
               </span>
             </button>
           </div>
@@ -818,17 +812,18 @@
         </footer>
       </section>
 
-      <!-- 天空雙人：模式選單 -->
-      <section id="view-sky-duo-menu" class="view view-hidden" aria-label="天空雙人">
+      <!-- 天空射擊：模式選單 -->
+      <section id="view-sky-duo-menu" class="view view-hidden" aria-label="天空射擊">
         <header class="quiz-header">
           <button type="button" class="btn-text" id="btn-sky-duo-menu-back">← 返回</button>
-          <span class="quiz-subject">天空雙人</span>
+          <span class="quiz-subject">天空射擊</span>
         </header>
         <div class="sky-duo-menu-body">
-          <h2 class="flip-first-title">兩台手機連線</h2>
-          <p class="flip-first-hint">同房間選機體 · 一方建房、一方加入 · 拖曳移動自動射擊</p>
-          <button type="button" class="btn btn-primary btn-block" id="btn-sky-duo-coop">合作闖關</button>
-          <button type="button" class="btn btn-secondary btn-block" id="btn-sky-duo-versus">對戰搶分</button>
+          <h2 class="flip-first-title">選擇模式</h2>
+          <p class="flip-first-hint">單機練習，或兩台手機連線合作／對戰</p>
+          <button type="button" class="btn btn-primary btn-block" id="btn-sky-duo-solo">單機闖關</button>
+          <button type="button" class="btn btn-secondary btn-block" id="btn-sky-duo-coop">雙機合作闖關</button>
+          <button type="button" class="btn btn-secondary btn-block" id="btn-sky-duo-versus">雙機對戰搶分</button>
         </div>
       </section>
 
@@ -1087,6 +1082,6 @@
       </div>
     </div>
 
-    <script type="module" src="js/app.js?v=sky-duo-v1"></script>
+    <script type="module" src="js/app.js?v=sky-duo-v2"></script>
   </body>
 </html>

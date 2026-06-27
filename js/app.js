@@ -2237,10 +2237,6 @@ async function init() {
   });
   $("#btn-start-sky-shooter")?.addEventListener("click", (e) => {
     e.preventDefault();
-    window.location.href = "prototypes/sky-stage1.html?v=sky-stage1-v3";
-  });
-  $("#btn-start-sky-duo")?.addEventListener("click", (e) => {
-    e.preventDefault();
     openSkyDuoMenu();
   });
   $("#btn-mul-race-duo")?.addEventListener("click", (e) => {
