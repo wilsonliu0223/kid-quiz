@@ -8,7 +8,7 @@ import {
   openOnlineOnlyDuo,
 } from "./online-duo.js";
 import { startGameRoom } from "./room-service.js";
-import { SHIPS, SHIP_IDS, shipLobbyCardHtml } from "./sky-shooter/ships.js?v=sky-duo-v22";
+import { SHIPS, SHIP_IDS, shipLobbyCardHtml } from "./sky-shooter/ships.js?v=sky-duo-v23";
 import {
   createInitialState,
   stepSimulation,
@@ -18,11 +18,11 @@ import {
   clampPlayersToZone,
   canPlayerControl,
   VERSUS_GUEST_Y_BAND,
-} from "./sky-shooter/sim.js?v=sky-duo-v22";
-import { drawSkyFrame } from "./sky-shooter/render.js?v=sky-duo-v22";
-import { normalizeSkyState, isValidSkyState } from "./sky-shooter/state-util.js?v=sky-duo-v22";
+} from "./sky-shooter/sim.js?v=sky-duo-v23";
+import { drawSkyFrame } from "./sky-shooter/render.js?v=sky-duo-v23";
+import { normalizeSkyState, isValidSkyState } from "./sky-shooter/state-util.js?v=sky-duo-v23";
 
-const SKY_BUILD = "v22";
+const SKY_BUILD = "v23";
 
 const $ = (sel) => document.querySelector(sel);
 
@@ -37,6 +37,7 @@ let inputUnsub = null;
 /** @type {(() => void) | null} */
 let stateUnsub = null;
 
+/** 螢幕正規化座標 [0,1]（勿存世界座標，避免來賓 y 被重複翻轉） */
 let localInput = { x: 0.5, y: 0.9, weaponTap: false };
 let pointerDown = false;
 let lastInputSend = 0;
@@ -524,8 +525,6 @@ function applyLocalPointerInput(slot, mode) {
   if (!stateRef || !canPlayerControl(stateRef, slot)) return;
 
   const clamped = pointerToWorld(slot, mode, localInput.x, localInput.y);
-  localInput.x = clamped.x;
-  localInput.y = clamped.y;
   const payload = {
     x: clamped.x,
     y: clamped.y,
@@ -552,9 +551,8 @@ function bindCanvasInput(slot, mode) {
     if (rect.width <= 0 || rect.height <= 0) return;
     const x = (e.clientX - rect.left) / rect.width;
     const y = (e.clientY - rect.top) / rect.height;
-    const world = pointerToWorld(slot, mode, x, y);
-    localInput.x = world.x;
-    localInput.y = world.y;
+    localInput.x = x;
+    localInput.y = y;
     pointerDown = e.type !== "pointerup" && e.type !== "pointercancel";
     applyLocalPointerInput(slot, mode);
     if (pointerDown) void sendInputNow();
@@ -589,8 +587,9 @@ function bindCanvasInput(slot, mode) {
   requestAnimationFrame(moveLoop);
 
   if (mode === "versus" && slot === "guest") {
-    localInput.y =
+    const worldY =
       VERSUS_GUEST_Y_BAND[0] + (VERSUS_GUEST_Y_BAND[1] - VERSUS_GUEST_Y_BAND[0]) * 0.5;
+    localInput.y = 1 - worldY;
     localInput.x = 0.65;
   } else if (mode === "versus") {
     localInput.y = 0.84;
@@ -608,9 +607,11 @@ async function sendInputNow() {
   const now = Date.now();
   if (now - lastInputSend < 40) return;
   lastInputSend = now;
+  const mode = liveState?.mode || activeSkyMode;
+  const world = pointerToWorld(ctx.slot, mode, localInput.x, localInput.y);
   const payload = {
-    x: localInput.x,
-    y: localInput.y,
+    x: world.x,
+    y: world.y,
     weaponTap: !!localInput.weaponTap,
     t: now,
   };

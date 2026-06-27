@@ -1,5 +1,5 @@
-import { shipOrDefault } from "./ships.js?v=sky-duo-v22";
-import { asList } from "./state-util.js?v=sky-duo-v22";
+import { shipOrDefault } from "./ships.js?v=sky-duo-v23";
+import { asList } from "./state-util.js?v=sky-duo-v23";
 import {
   VERSUS_TIME,
   ZONE_RATIO,
@@ -7,7 +7,7 @@ import {
   VERSUS_GUEST_Y_BAND,
   bandMap,
   SCREEN_ME_BAND,
-} from "./sim.js?v=sky-duo-v22";
+} from "./sim.js?v=sky-duo-v23";
 
 const WEAPON_LABELS = { straight: "直射", spread: "擴散", laser: "雷射" };
 
