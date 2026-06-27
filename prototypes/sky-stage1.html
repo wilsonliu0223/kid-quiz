@@ -598,6 +598,13 @@
           else if (r < 0.68) spawnPowerOrb(x, y, "laser");
           else if (r < 0.78) spawnPowerOrb(x, y, "shield");
           else if (r < 0.88) spawnPowerOrb(x, y, "missile");
+        } else if (kind === "heavy" || kind === "tank") {
+          if (r < 0.35) spawnPowerOrb(x, y, "energy");
+          else if (r < 0.55) spawnPowerOrb(x, y, "power");
+          else if (r < 0.68) spawnPowerOrb(x, y, "spread");
+          else if (r < 0.8) spawnPowerOrb(x, y, "laser");
+          else if (r < 0.9) spawnPowerOrb(x, y, "shield");
+          else spawnPowerOrb(x, y, "missile");
         }
       }
 
@@ -639,10 +646,36 @@
         );
       }
 
+      const ENEMY_KINDS = {
+        grunt: { hp: 2, w: 28, h: 22, speed: 46, speedVar: 16, score: 1 },
+        fast: { hp: 1, w: 22, h: 18, speed: 78, speedVar: 20, score: 2 },
+        heavy: { hp: 4, w: 34, h: 26, speed: 40, speedVar: 10, score: 3 },
+        tank: { hp: 6, w: 40, h: 30, speed: 30, speedVar: 8, score: 5 },
+      };
+
+      function enemyScore(kind) {
+        return ENEMY_KINDS[kind]?.score ?? (kind === "boss" ? 10 : 1);
+      }
+
+      function pickSpawnKind() {
+        const r = Math.random();
+        if (time > 55 && r < 0.1) return "tank";
+        if (r < 0.15) return "fast";
+        if (r < 0.32) return "heavy";
+        if (r < 0.42) return "tank";
+        return "grunt";
+      }
+
       function pickSpawnRoute() {
-        if (campTime > 2.5) return Math.random() < 0.65 ? "top" : "left";
-        if (Math.random() < 0.32) return "top";
-        return "left";
+        const r = Math.random();
+        if (campTime > 2.5) {
+          if (r < 0.45) return "top";
+          if (r < 0.72) return "left";
+          return "right";
+        }
+        if (r < 0.34) return "top";
+        if (r < 0.67) return "left";
+        return "right";
       }
 
       function queueSpawn(kind = "grunt", warn = 0.55) {
@@ -654,7 +687,7 @@
           tx = 36 + Math.random() * (W - 72);
           ty = zoneY.mid + 14;
         } else {
-          tx = 22;
+          tx = route === "left" ? 22 : W - 22;
           ty = zoneY.mid + 24 + Math.random() * (midH - 48);
         }
         pendingSpawns.push({ kind, route, tx, ty, warn });
@@ -663,44 +696,7 @@
       function spawnEnemyAt(spec) {
         const midH = zoneY.bot - zoneY.mid;
         const { kind, route, tx, ty } = spec;
-        const base = {
-          route,
-          spawnShield: route === "top" ? 0.5 : 1.0,
-          movePhase: route === "top" ? "drop" : "cruise",
-        };
-        if (kind === "grunt") {
-          const cruiseY =
-            route === "top" ? ty + (zoneY.bot - zoneY.mid) * 0.38 : 0;
-          enemies.push({
-            ...base,
-            kind: "grunt",
-            x: route === "top" ? tx : -44,
-            y: ty,
-            w: 28,
-            h: 22,
-            hp: 2,
-            speed: 46 + Math.random() * 16,
-            dropVy: 58,
-            cruiseY,
-            fireCd: 1.4 + Math.random() * 1.2,
-          });
-        } else if (kind === "fast") {
-          const cruiseY =
-            route === "top" ? ty + (zoneY.bot - zoneY.mid) * 0.32 : 0;
-          enemies.push({
-            ...base,
-            kind: "fast",
-            x: route === "top" ? tx : -36,
-            y: ty,
-            w: 22,
-            h: 18,
-            hp: 1,
-            speed: 78 + Math.random() * 20,
-            dropVy: 72,
-            cruiseY,
-            fireCd: 1.6 + Math.random() * 1.4,
-          });
-        } else if (kind === "boss") {
+        if (kind === "boss") {
           enemies.push({
             kind: "boss",
             route: "cruise",
@@ -716,6 +712,51 @@
             phase: 0,
             spin: 0,
           });
+          return;
+        }
+        const stat = ENEMY_KINDS[kind] || ENEMY_KINDS.grunt;
+        const spd = stat.speed + Math.random() * stat.speedVar;
+        const base = {
+          route,
+          kind,
+          spawnShield: route === "top" ? 0.5 : 1.0,
+          movePhase: route === "top" ? "drop" : "cruise",
+          w: stat.w,
+          h: stat.h,
+          hp: stat.hp,
+          maxHp: stat.hp,
+          speed: spd,
+          fireCd:
+            kind === "fast"
+              ? 1.6 + Math.random() * 1.4
+              : kind === "tank"
+                ? 1.8 + Math.random() * 1.0
+                : kind === "heavy"
+                  ? 1.3 + Math.random() * 1.0
+                  : 1.4 + Math.random() * 1.2,
+          dropVy:
+            route === "top"
+              ? kind === "fast"
+                ? 72
+                : kind === "tank"
+                  ? 48
+                  : 58
+              : 0,
+        };
+        if (route === "top") {
+          const cruiseFrac =
+            kind === "fast" ? 0.32 : kind === "tank" ? 0.45 : kind === "heavy" ? 0.4 : 0.38;
+          enemies.push({
+            ...base,
+            x: tx,
+            y: ty,
+            vx: spd * 0.35 * (Math.random() < 0.5 ? 1 : -1),
+            cruiseY: ty + (zoneY.bot - zoneY.mid) * cruiseFrac,
+          });
+        } else if (route === "left") {
+          enemies.push({ ...base, x: -44, y: ty, vx: spd });
+        } else {
+          enemies.push({ ...base, x: W + 44, y: ty, vx: -spd });
         }
       }
 
@@ -746,8 +787,10 @@
 
       function missileTrackDps(e) {
         if (e.kind === "boss") return 0.35;
+        if (e.kind === "tank") return 0.009;
+        if (e.kind === "heavy") return 0.011;
         if (e.kind === "fast") return 0.014;
-        return 0.028; // 小兵 hp2 → 約 1.2 秒
+        return 0.028;
       }
 
       function beginEnemyDeath(e) {
@@ -1136,7 +1179,7 @@
       }
 
       function killEnemy(e, idx) {
-        score += e.kind === "boss" ? 10 : e.kind === "fast" ? 2 : 1;
+        score += enemyScore(e.kind);
         if (e.kind === "boss") {
           const { x, y } = e;
           enemies.splice(idx, 1);
@@ -1303,6 +1346,28 @@
               r: 3.5,
             });
           }
+        } else if (e.kind === "heavy") {
+          const ang = Math.atan2(player.y - e.y, player.x - e.x);
+          for (let k = -2; k <= 2; k++) {
+            const a = ang + k * 0.1;
+            enemyBullets.push({
+              x: e.x,
+              y: e.y,
+              vx: Math.cos(a) * 140,
+              vy: Math.sin(a) * 140,
+              r: 4.5,
+            });
+          }
+        } else if (e.kind === "tank") {
+          for (let k = -2; k <= 2; k++) {
+            enemyBullets.push({
+              x: e.x + k * 8,
+              y: e.y + e.h * 0.2,
+              vx: k * 28,
+              vy: 130,
+              r: 5,
+            });
+          }
         }
       }
 
@@ -1379,7 +1444,7 @@
           if (campTime > 2.5 && Math.random() < 0.4) {
             queueSpawn("fast");
           } else {
-            queueSpawn(Math.random() < 0.28 ? "fast" : "grunt");
+            queueSpawn(pickSpawnKind());
           }
         }
 
@@ -1518,16 +1583,18 @@
           if (e.kind !== "boss") {
             if (e.movePhase === "drop") {
               e.y += e.dropVy * dt;
-              e.x += e.speed * 0.35 * dt;
+              e.x += (e.vx ?? e.speed * 0.35) * dt;
               if (e.y >= e.cruiseY) e.movePhase = "cruise";
             } else {
-              e.x += e.speed * dt;
+              e.x += e.vx ?? e.speed * dt;
             }
           } else {
             e.x += e.speed * dt * (e.x > W * 0.55 ? -1 : 1);
           }
 
-          if (e.x > W + 40) {
+          const offField =
+            e.x < -40 || e.x > W + 40 || e.y > zoneY.botEnd + 30;
+          if (offField) {
             if (e.kind !== "boss") {
               escaped += 1;
               score = Math.max(0, score - 1);
@@ -1548,7 +1615,14 @@
               e.fireCd = e.hp < 60 ? 0.38 : 0.52;
               bossAttack(e);
             } else {
-              e.fireCd = e.kind === "fast" ? 1.1 + Math.random() * 0.6 : 0.9 + Math.random() * 0.8;
+              e.fireCd =
+                e.kind === "fast"
+                  ? 1.1 + Math.random() * 0.6
+                  : e.kind === "tank"
+                    ? 1.4 + Math.random() * 0.9
+                    : e.kind === "heavy"
+                      ? 1.0 + Math.random() * 0.7
+                      : 0.9 + Math.random() * 0.8;
               enemyAttack(e);
             }
           }
@@ -1629,31 +1703,6 @@
         grdBot.addColorStop(1, "#0a1628");
         ctx.fillStyle = grdBot;
         ctx.fillRect(0, zoneY.bot, W, zoneY.botEnd - zoneY.bot);
-
-        ctx.strokeStyle = "rgba(61, 107, 138, 0.65)";
-        ctx.lineWidth = 1;
-        ctx.beginPath();
-        ctx.moveTo(0, zoneY.mid);
-        ctx.lineTo(W, zoneY.mid);
-        ctx.moveTo(0, zoneY.bot);
-        ctx.lineTo(W, zoneY.bot);
-        ctx.stroke();
-
-        ctx.fillStyle = "rgba(255, 140, 66, 0.35)";
-        ctx.font = "11px sans-serif";
-        ctx.fillText("← 出生", 8, zoneY.mid + 18);
-        ctx.textAlign = "right";
-        ctx.fillText("逃走 →", W - 8, zoneY.mid + 18);
-        ctx.textAlign = "left";
-
-        for (let i = 0; i < 5; i++) {
-          const mx = ((time * 12 + i * 90) % (W + 80)) - 40;
-          const my = zoneY.mid * 0.25 + i * 14;
-          ctx.fillStyle = "rgba(100, 140, 180, 0.2)";
-          ctx.beginPath();
-          ctx.ellipse(mx, my, 28, 10, 0, 0, Math.PI * 2);
-          ctx.fill();
-        }
       }
 
       function drawRaidenFighter(x, y, palette) {
@@ -1771,7 +1820,8 @@
       function drawSpawnWarnings() {
         for (const p of pendingSpawns) {
           const pulse = 0.5 + Math.sin(time * 18) * 0.35;
-          ctx.strokeStyle = p.route === "top" ? "#7ad4ff" : "#ffaa55";
+          ctx.strokeStyle =
+            p.route === "top" ? "#7ad4ff" : p.route === "right" ? "#ff8866" : "#ffaa55";
           ctx.globalAlpha = pulse;
           ctx.lineWidth = 2;
           ctx.setLineDash([4, 4]);
@@ -1781,8 +1831,14 @@
             ctx.lineTo(p.tx + 14, p.ty);
             ctx.moveTo(p.tx, p.ty - 10);
             ctx.lineTo(p.tx, p.ty + 6);
+          } else if (p.route === "right") {
+            ctx.moveTo(p.tx - 6, p.ty - 12);
+            ctx.lineTo(p.tx + 10, p.ty);
+            ctx.lineTo(p.tx - 6, p.ty + 12);
           } else {
-            ctx.arc(p.tx, p.ty, 16, 0, Math.PI * 2);
+            ctx.moveTo(p.tx + 6, p.ty - 12);
+            ctx.lineTo(p.tx - 10, p.ty);
+            ctx.lineTo(p.tx + 6, p.ty + 12);
           }
           ctx.stroke();
           ctx.setLineDash([]);
@@ -1847,9 +1903,10 @@
       }
 
       function drawJetEnemy(e) {
+        const faceRight = (e.vx ?? e.speed) > 0;
         ctx.save();
         ctx.translate(e.x, e.y);
-        ctx.scale(-1, 1);
+        ctx.scale(faceRight ? -1 : 1, 1);
         ctx.fillStyle = "#4a5a6a";
         ctx.beginPath();
         ctx.moveTo(14, 0);
@@ -1866,6 +1923,65 @@
         ctx.fill();
         ctx.shadowBlur = 0;
         ctx.restore();
+      }
+
+      function drawHeavyEnemy(e) {
+        const rot = time * 10;
+        ctx.save();
+        ctx.translate(e.x, e.y);
+        ctx.fillStyle = "#4a5568";
+        ctx.fillRect(-e.w / 2, -6, e.w, 14);
+        ctx.fillStyle = "#6a4050";
+        ctx.fillRect(-10, -12, 20, 10);
+        ctx.strokeStyle = "rgba(255,180,120,0.75)";
+        ctx.lineWidth = 2;
+        ctx.strokeRect(-e.w / 2 + 2, -4, e.w - 4, 10);
+        ctx.save();
+        ctx.rotate(rot);
+        ctx.strokeStyle = "rgba(255,220,180,0.5)";
+        ctx.beginPath();
+        ctx.moveTo(-18, 0);
+        ctx.lineTo(18, 0);
+        ctx.stroke();
+        ctx.restore();
+        ctx.fillStyle = "#ff7040";
+        ctx.beginPath();
+        ctx.arc(e.w / 2 - 4, 2, 4, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+
+      function drawTankEnemy(e) {
+        ctx.save();
+        ctx.translate(e.x, e.y);
+        const dir = (e.vx ?? e.speed) >= 0 ? 1 : -1;
+        ctx.scale(dir, 1);
+        ctx.fillStyle = "#3a4858";
+        ctx.fillRect(-e.w / 2, -e.h / 2 + 4, e.w, e.h - 6);
+        ctx.fillStyle = "#2a3540";
+        ctx.fillRect(-e.w / 2 + 4, -e.h / 2, e.w - 8, 10);
+        ctx.fillStyle = "#5a6878";
+        ctx.fillRect(-8, -2, 16, 14);
+        ctx.fillStyle = "#ff5030";
+        ctx.beginPath();
+        ctx.arc(-e.w / 2 + 8, 6, 4, 0, Math.PI * 2);
+        ctx.arc(e.w / 2 - 8, 6, 4, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = "#8898a8";
+        ctx.fillRect(e.w / 2 - 6, -2, 14, 5);
+        ctx.restore();
+      }
+
+      function drawEnemyHpBar(e) {
+        if (!e.maxHp || e.maxHp <= 2 || e.kind === "boss") return;
+        const ratio = Math.max(0, e.hp / e.maxHp);
+        const barW = e.w * 0.95;
+        const bx = e.x - barW / 2;
+        const by = e.y - e.h / 2 - 12;
+        ctx.fillStyle = "rgba(0,0,0,0.5)";
+        ctx.fillRect(bx, by, barW, 4);
+        ctx.fillStyle = ratio < 0.35 ? "#ff5050" : "#44cc88";
+        ctx.fillRect(bx, by, barW * ratio, 4);
       }
 
       function drawBoss(e) {
@@ -2064,8 +2180,11 @@
           }
           if (e.kind === "boss") drawBoss(e);
           else if (e.kind === "fast") drawJetEnemy(e);
+          else if (e.kind === "heavy") drawHeavyEnemy(e);
+          else if (e.kind === "tank") drawTankEnemy(e);
           else drawHelicopter(e);
           drawEnemyShield(e);
+          drawEnemyHpBar(e);
           if (e.dying) {
             ctx.strokeStyle = `rgba(128, 232, 255, ${0.45 + Math.sin(time * 32) * 0.25})`;
             ctx.lineWidth = 2;
