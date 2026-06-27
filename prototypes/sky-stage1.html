@@ -822,15 +822,15 @@
 
       function spawnRate() {
         if (bossSpawned) return 999;
-        if (time < 40) return 2.2;
-        if (time < 90) return 1.5;
-        return 1.0;
+        if (time < 40) return 1.5;
+        if (time < 90) return 1.0;
+        return 0.75;
       }
 
       function maxEnemies() {
-        if (time < 40) return 4;
-        if (time < 90) return 6;
-        return 8;
+        if (time < 40) return 7;
+        if (time < 90) return 9;
+        return 11;
       }
 
       function laserMuzzle() {
@@ -1509,7 +1509,7 @@
         const pendingCount = pendingSpawns.length;
         if (
           spawnCd <= 0 &&
-          pendingCount < 2 &&
+          pendingCount < 4 &&
           !bossSpawned &&
           enemies.filter((e) => e.kind !== "boss").length < maxEnemies()
         ) {
@@ -1517,6 +1517,10 @@
           if (campTime > 2.5 && Math.random() < 0.4) {
             queueSpawn("fast");
           } else {
+            queueSpawn();
+          }
+          const grunts = enemies.filter((e) => e.kind !== "boss").length + pendingSpawns.length;
+          if (grunts < maxEnemies() && Math.random() < 0.28) {
             queueSpawn();
           }
         }

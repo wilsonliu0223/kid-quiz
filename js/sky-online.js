@@ -59,7 +59,7 @@ function bindSkyOnlineOnce() {
   bindSkyOnlineOnce.done = true;
 
   $("#btn-sky-duo-solo")?.addEventListener("click", () => {
-    window.location.href = "prototypes/sky-stage1.html?v=sky-stage1-v5";
+    window.location.href = "prototypes/sky-stage1.html?v=sky-stage1-v6";
   });
   $("#btn-sky-duo-coop")?.addEventListener("click", () =>
     openSkyDuo("sky-coop", "天空射擊 · 合作"),
