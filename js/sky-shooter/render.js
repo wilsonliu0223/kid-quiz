@@ -1,4 +1,5 @@
 import { shipOrDefault } from "./ships.js";
+import { asList } from "./state-util.js";
 import { VERSUS_TIME } from "./sim.js";
 
 const WEAPON_LABELS = { straight: "直射", spread: "擴散", laser: "雷射" };
@@ -6,6 +7,13 @@ const WEAPON_LABELS = { straight: "直射", spread: "擴散", laser: "雷射" };
 /** @param {CanvasRenderingContext2D} ctx @param {object} state @param {{ w: number, h: number, mySlot: string, names: Record<string,string> }} opts */
 export function drawSkyFrame(ctx, state, opts) {
   const { w, h, mySlot, names } = opts;
+  const particles = asList(state.particles);
+  const pickups = asList(state.pickups);
+  const eBullets = asList(state.eBullets);
+  const bullets = asList(state.bullets);
+  const enemies = asList(state.enemies);
+  const missileTracks = asList(state.missileTracks);
+
   ctx.clearRect(0, 0, w, h);
 
   const grad = ctx.createLinearGradient(0, 0, 0, h);
@@ -30,7 +38,7 @@ export function drawSkyFrame(ctx, state, opts) {
     ctx.fillRect(0, 0, w, h);
   }
 
-  for (const p of state.particles) {
+  for (const p of particles) {
     ctx.globalAlpha = Math.min(1, p.life * 2);
     ctx.fillStyle = p.color;
     ctx.beginPath();
@@ -39,27 +47,27 @@ export function drawSkyFrame(ctx, state, opts) {
   }
   ctx.globalAlpha = 1;
 
-  for (const o of state.pickups) {
+  for (const o of pickups) {
     drawPickup(ctx, o, w, h);
   }
 
-  for (const eb of state.eBullets) {
+  for (const eb of eBullets) {
     ctx.fillStyle = "#ff4080";
     ctx.beginPath();
     ctx.arc(eb.x * w, eb.y * h, eb.r * w, 0, Math.PI * 2);
     ctx.fill();
   }
 
-  for (const b of state.bullets) {
+  for (const b of bullets) {
     ctx.fillStyle = b.pvp ? "#e0c8ff" : "#fff6a0";
     ctx.beginPath();
     ctx.arc(b.x * w, b.y * h, b.r * w, 0, Math.PI * 2);
     ctx.fill();
   }
 
-  drawMissileTracks(ctx, state, w, h);
+  drawMissileTracks(ctx, state, w, h, missileTracks, enemies);
 
-  for (const e of state.enemies) {
+  for (const e of enemies) {
     drawEnemy(ctx, e, w, h);
   }
 
@@ -168,10 +176,10 @@ function drawPlayer(ctx, p, w, h, isMe, name) {
   ctx.fillText(`${hearts} ${WEAPON_LABELS[p.weapon] || ""}`, x, y + (p.y < 0.5 ? -ph - 20 : ph + 26));
 }
 
-function drawMissileTracks(ctx, state, w, h) {
-  for (const t of state.missileTracks) {
+function drawMissileTracks(ctx, state, w, h, missileTracks, enemies) {
+  for (const t of missileTracks) {
     const p = state.players[t.owner];
-    const e = state.enemies.find((en) => en.id === t.targetId);
+    const e = enemies.find((en) => en.id === t.targetId);
     if (!p || !e) continue;
     const flicker = 0.8 + Math.sin((t.pulse || 0) * 3) * 0.15;
     ctx.strokeStyle = `rgba(168,120,255,${0.7 * flicker})`;

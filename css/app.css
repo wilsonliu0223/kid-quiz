@@ -3042,6 +3042,8 @@ body {
   overflow: hidden;
   padding: calc(6px + var(--safe-top)) 8px calc(6px + var(--safe-bottom));
   max-width: 100%;
+  min-height: 100dvh;
+  height: 100dvh;
 }
 
 .sky-online-play-body {
@@ -3049,22 +3051,38 @@ body {
   display: flex;
   flex-direction: column;
   min-height: 0;
-  min-height: 55dvh;
+  position: relative;
 }
 
 .sky-canvas-wrap {
-  flex: 1;
-  min-height: 280px;
-  height: 0;
+  flex: 1 1 auto;
+  min-height: 55dvh;
   position: relative;
   background: #1a2848;
+  overflow: hidden;
 }
 
 #sky-online-canvas {
   display: block;
+  position: absolute;
+  inset: 0;
   width: 100%;
   height: 100%;
   touch-action: none;
+}
+
+.sky-debug-status {
+  position: absolute;
+  left: 6px;
+  bottom: 6px;
+  z-index: 2;
+  padding: 2px 6px;
+  font-size: 10px;
+  font-family: monospace;
+  color: rgba(255, 255, 255, 0.65);
+  background: rgba(0, 0, 0, 0.35);
+  border-radius: 4px;
+  pointer-events: none;
 }
 
 .quiz-header-sky {

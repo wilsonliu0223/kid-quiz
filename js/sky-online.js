@@ -16,6 +16,7 @@ import {
   cloneState,
 } from "./sky-shooter/sim.js";
 import { drawSkyFrame } from "./sky-shooter/render.js";
+import { normalizeSkyState, isValidSkyState } from "./sky-shooter/state-util.js";
 
 const $ = (sel) => document.querySelector(sel);
 
@@ -44,11 +45,6 @@ function gameModeFromKey(key) {
   return key === "sky-coop" ? "coop" : "versus";
 }
 
-function isValidSkyState(state) {
-  return !!(state && state.players && state.players.host && state.players.guest);
-}
-
-function bindSkyOnlineOnce() {
   if (bindSkyOnlineOnce.done) return;
   bindSkyOnlineOnce.done = true;
 
@@ -135,6 +131,7 @@ function skyHandler(gameKey, title) {
     },
     onPlaying: (snap, ctx) => {
       if (!isValidSkyState(snap.state)) return;
+      normalizeSkyState(snap.state);
       resultShown = false;
       if (sessionRunning && activeRoomId === snap.roomId) {
         liveState = snap.state;
@@ -225,6 +222,8 @@ function startSkySession(snap, ctx) {
   if (!isValidSkyState(snap.state)) return;
   if (sessionRunning && activeRoomId === snap.roomId) return;
 
+  normalizeSkyState(snap.state);
+
   activeRoomId = snap.roomId;
   sessionRunning = true;
 
@@ -293,7 +292,9 @@ function startSkySession(snap, ctx) {
     ensureFirebase().then(({ db }) => {
       stateUnsub = onValue(ref(db, `rooms/${snap.roomId}/state`), (val) => {
         const next = val.val();
-        if (isValidSkyState(next)) liveState = next;
+        if (isValidSkyState(next)) {
+          liveState = normalizeSkyState(next);
+        }
         if (liveState?.phase === "end" && !resultShown) {
           resultShown = true;
           showResult(liveState, ctx, names);
@@ -319,6 +320,33 @@ function drawSkyPlaceholder(ctx2d, w, h, msg) {
   }
 }
 
+function getCanvasDims(canvas, wrap) {
+  let w = wrap?.clientWidth || 0;
+  let h = wrap?.clientHeight || 0;
+  if (w <= 0 || h <= 0) {
+    const rect = canvas.getBoundingClientRect();
+    w = rect.width || 0;
+    h = rect.height || 0;
+  }
+  if (w <= 0 || h <= 0) {
+    const header = $("#view-sky-online-play .quiz-header-sky");
+    const controls = $(".sky-online-controls");
+    const headerH = header?.getBoundingClientRect().height || 48;
+    const ctrlH = controls?.getBoundingClientRect().height || 88;
+    w = window.innerWidth;
+    h = Math.max(280, window.innerHeight - headerH - ctrlH - 16);
+  }
+  return { w, h };
+}
+
+function updateDebugStatus(w, h, state) {
+  const el = $("#sky-debug-status");
+  if (!el) return;
+  const enemies = state?.enemies?.length ?? "?";
+  const phase = state?.phase || "—";
+  el.textContent = `${SKY_BUILD} · ${Math.round(w)}×${Math.round(h)} · 敵${enemies} · ${phase}`;
+}
+
 function renderLoop(mySlot, names) {
   const canvas = /** @type {HTMLCanvasElement | null} */ ($("#sky-online-canvas"));
   if (!canvas) return;
@@ -326,20 +354,28 @@ function renderLoop(mySlot, names) {
   const wrap = canvas.parentElement;
 
   const frame = () => {
-    if (!ctx2d || !wrap) return;
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
-    const w = wrap.clientWidth;
-    const h = wrap.clientHeight;
+    if (!ctx2d) return;
+    const { w, h } = getCanvasDims(canvas, wrap);
     if (w > 0 && h > 0) {
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
       if (canvas.width !== Math.floor(w * dpr) || canvas.height !== Math.floor(h * dpr)) {
         canvas.width = Math.floor(w * dpr);
         canvas.height = Math.floor(h * dpr);
         ctx2d.setTransform(dpr, 0, 0, dpr, 0, 0);
       }
       if (liveState && isValidSkyState(liveState)) {
-        drawSkyFrame(ctx2d, liveState, { w, h, mySlot, names });
+        normalizeSkyState(liveState);
+        try {
+          drawSkyFrame(ctx2d, liveState, { w, h, mySlot, names });
+          updateDebugStatus(w, h, liveState);
+        } catch (err) {
+          console.error("drawSkyFrame failed", err);
+          drawSkyPlaceholder(ctx2d, w, h, `繪圖錯誤 ${SKY_BUILD}`);
+          updateDebugStatus(w, h, null);
+        }
       } else {
         drawSkyPlaceholder(ctx2d, w, h, "連線同步中…");
+        updateDebugStatus(w, h, null);
       }
     }
     rafId = requestAnimationFrame(frame);

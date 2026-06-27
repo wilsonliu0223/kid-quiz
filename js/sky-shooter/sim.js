@@ -1,4 +1,5 @@
 import { shipOrDefault } from "./ships.js";
+import { asList } from "./state-util.js";
 
 export const COOP_BOSS_AT = 95;
 export const VERSUS_TIME = 180;
@@ -20,7 +21,7 @@ export function createInitialState(mode, ships) {
   const guestShip = shipOrDefault(ships.guest);
   const isCoop = mode === "coop";
 
-  return {
+  const state = {
     mode,
     t: 0,
     phase: "play",
@@ -43,6 +44,33 @@ export function createInitialState(mode, ships) {
     particles: [],
     missileTracks: [],
   };
+  state.enemies.push(
+    {
+      id: eid(),
+      kind: "grunt",
+      x: 0.55,
+      y: 0.35,
+      w: 0.05,
+      h: 0.042,
+      hp: 2,
+      speed: 0.14,
+      fireCd: 1.5,
+      shield: 0,
+    },
+    {
+      id: eid(),
+      kind: "fast",
+      x: 0.72,
+      y: 0.42,
+      w: 0.04,
+      h: 0.035,
+      hp: 1,
+      speed: 0.2,
+      fireCd: 1.2,
+      shield: 0,
+    },
+  );
+  return state;
 }
 
 function makePlayer(slot, ship, x, y) {
@@ -96,6 +124,12 @@ function cycleWeapon(p) {
 /** @param {object} state @param {number} dt */
 export function stepSimulation(state, dt) {
   if (state.phase !== "play" && state.phase !== "boss") return state;
+  state.enemies = asList(state.enemies);
+  state.bullets = asList(state.bullets);
+  state.eBullets = asList(state.eBullets);
+  state.pickups = asList(state.pickups);
+  state.particles = asList(state.particles);
+  state.missileTracks = asList(state.missileTracks);
   state.t += dt;
   if (state.flash > 0) state.flash -= dt;
 
@@ -529,6 +563,7 @@ function updateParticles(state, dt) {
     p.y += p.vy * dt;
   }
   state.particles = state.particles.filter((p) => p.life > 0);
+  if (state.particles.length > 100) state.particles.length = 100;
 }
 
 function burst(state, x, y, color, n) {
