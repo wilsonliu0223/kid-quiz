@@ -1,31 +1,50 @@
-import { shipOrDefault } from "./ships.js?v=sky-duo-v16";
-import { asList } from "./state-util.js?v=sky-duo-v16";
-import { VERSUS_TIME, ZONE_RATIO, COOP_Y_BAND, VERSUS_GUEST_Y_BAND } from "./sim.js?v=sky-duo-v16";
+import { shipOrDefault } from "./ships.js?v=sky-duo-v17";
+import { asList } from "./state-util.js?v=sky-duo-v17";
+import { VERSUS_TIME, ZONE_RATIO, COOP_Y_BAND, VERSUS_GUEST_Y_BAND, versusYBand } from "./sim.js?v=sky-duo-v17";
 
 const WEAPON_LABELS = { straight: "直射", spread: "擴散", laser: "雷射" };
 
-/** 對戰來賓端：世界 Y 翻轉成螢幕 Y，自己在下、對手在上 */
+function bandMap(y, from, to) {
+  const span = from[1] - from[0];
+  const t = span > 0 ? Math.max(0, Math.min(1, (y - from[0]) / span)) : 0.5;
+  return to[0] + t * (to[1] - to[0]);
+}
+
+/**
+ * 對戰視角：自己在螢幕下方朝上，對手在上方朝下（房主／來賓皆同邏輯）
+ * @param {'coop'|'versus'} mode
+ * @param {'host'|'guest'|null|undefined} mySlot
+ */
 function createView(mode, mySlot) {
-  const flip = mode === "versus" && mySlot === "guest";
+  const versus = mode === "versus" && (mySlot === "host" || mySlot === "guest");
   return {
-    flip,
-    y(ny) {
-      return flip ? 1 - ny : ny;
+    mySlot,
+    versus,
+    /** 敵機、子彈、道具等中立物件 */
+    entityPy(ny, h) {
+      if (!versus) return ny * h;
+      if (mySlot === "guest") return (1 - ny) * h;
+      return ny * h;
     },
-    py(ny, h) {
-      return this.y(ny) * h;
+    /** 玩家飛機：永遠映射到自己下方／對手上方 */
+    playerPy(ny, h, slot) {
+      if (!versus) return ny * h;
+      const from = versusYBand(slot, "versus");
+      const to = slot === mySlot ? COOP_Y_BAND : VERSUS_GUEST_Y_BAND;
+      return bandMap(ny, from, to) * h;
     },
-    /** 依螢幕位置決定機頭朝向（下方朝上、上方朝下） */
-    faceDown(ny) {
-      return this.y(ny) < 0.45;
+    playerFaceDown(slot, worldY) {
+      if (!versus) return worldY < 0.45;
+      return slot !== mySlot;
     },
   };
 }
 
-/** @param {CanvasRenderingContext2D} ctx @param {object} state @param {{ w: number, h: number, mySlot: string, names: Record<string,string> }} opts */
+/** @param {CanvasRenderingContext2D} ctx @param {object} state @param {{ w: number, h: number, mySlot: string, mode?: string, names: Record<string,string> }} opts */
 export function drawSkyFrame(ctx, state, opts) {
   const { w, h, mySlot, names } = opts;
-  const view = createView(state.mode, mySlot);
+  const mode = opts.mode || state.mode || "coop";
+  const view = createView(mode, mySlot);
   const particles = asList(state.particles);
   const pickups = asList(state.pickups);
   const eBullets = asList(state.eBullets);
@@ -36,13 +55,13 @@ export function drawSkyFrame(ctx, state, opts) {
 
   ctx.clearRect(0, 0, w, h);
 
-  if (view.flip) {
+  if (view.versus && mySlot === "guest") {
     ctx.save();
     ctx.translate(0, h);
     ctx.scale(1, -1);
   }
-  drawSkyZones(ctx, w, h, time, state.mode);
-  if (view.flip) ctx.restore();
+  drawSkyZones(ctx, w, h, time, mode);
+  if (view.versus && mySlot === "guest") ctx.restore();
 
   if (state.flash > 0) {
     ctx.fillStyle = `rgba(255,255,255,${state.flash * 0.35})`;
@@ -53,7 +72,7 @@ export function drawSkyFrame(ctx, state, opts) {
     ctx.globalAlpha = Math.min(1, p.life * 2);
     ctx.fillStyle = p.color;
     ctx.beginPath();
-    ctx.arc(p.x * w, view.py(p.y, h), 3, 0, Math.PI * 2);
+    ctx.arc(p.x * w, view.entityPy(p.y, h), 3, 0, Math.PI * 2);
     ctx.fill();
   }
   ctx.globalAlpha = 1;
@@ -181,7 +200,7 @@ function drawPickup(ctx, o, w, h, time, view) {
     missile: "#a060ff",
   };
   const x = o.x * w;
-  const y = view.py(o.y, h);
+  const y = view.entityPy(o.y, h);
   const pulse = 0.85 + Math.sin(time * 8 + o.id) * 0.15;
   ctx.save();
   ctx.shadowColor = colors[o.type] || "#fff";
@@ -201,7 +220,7 @@ function drawPickup(ctx, o, w, h, time, view) {
 
 function drawPlayerBullet(ctx, b, w, h, view) {
   const x = b.x * w;
-  const y = view.py(b.y, h);
+  const y = view.entityPy(b.y, h);
   const r = b.r * w;
   ctx.save();
   if (b.pvp) {
@@ -224,7 +243,7 @@ function drawPlayerBullet(ctx, b, w, h, view) {
 
 function drawEnemyBullet(ctx, eb, w, h, view) {
   const x = eb.x * w;
-  const y = view.py(eb.y, h);
+  const y = view.entityPy(eb.y, h);
   const r = eb.r * w;
   const grd = ctx.createRadialGradient(x, y, 0, x, y, r * 2);
   grd.addColorStop(0, "#fff");
@@ -241,7 +260,7 @@ function drawEnemyBullet(ctx, eb, w, h, view) {
 
 function drawEnemy(ctx, e, w, h, time, view) {
   const x = e.x * w;
-  const y = view.py(e.y, h);
+  const y = view.entityPy(e.y, h);
   const ew = e.w * w;
   const eh = e.h * h;
 
@@ -427,8 +446,8 @@ function drawRaidenFighter(ctx, x, y, palette, time) {
 function drawPlayerShip(ctx, p, w, h, time, view) {
   const ship = shipOrDefault(p.ship);
   const x = p.x * w;
-  const y = view.py(p.y, h);
-  const faceDown = view.faceDown(p.y);
+  const y = view.playerPy(p.y, h, p.slot);
+  const faceDown = view.playerFaceDown(p.slot, p.y);
 
   if (p.invuln > 0 && Math.sin(time * 12) > 0) ctx.globalAlpha = 0.55;
 
@@ -442,8 +461,8 @@ function drawPlayerShip(ctx, p, w, h, time, view) {
 
 function drawPlayerLabels(ctx, p, w, h, isMe, name, view) {
   const x = p.x * w;
-  const sy = view.py(p.y, h);
-  const faceDown = view.faceDown(p.y);
+  const sy = view.playerPy(p.y, h, p.slot);
+  const faceDown = view.playerFaceDown(p.slot, p.y);
   const nameOff = faceDown ? -36 : 36;
   const statOff = faceDown ? -50 : 50;
 
@@ -467,11 +486,15 @@ function drawAllPlayerLasers(ctx, state, w, h, time, view) {
 }
 
 function drawPlayerLaserBeam(ctx, p, w, h, time, view) {
-  const faceDown = view.faceDown(p.y);
+  const faceDown = view.playerFaceDown(p.slot, p.y);
   const x = p.x * w;
-  const y0 = view.py(p.y, h) + (faceDown ? 14 : -14);
+  const y0 = view.playerPy(p.y, h, p.slot) + (faceDown ? 14 : -14);
   const { mid } = zoneBounds(h);
-  const aimY = faceDown ? view.py(0.5, h) : mid + 6;
+  const aimY = faceDown
+    ? view.versus
+      ? view.entityPy(0.52, h)
+      : h * 0.5
+    : mid + 6;
   const beamH = Math.abs(y0 - aimY);
   if (beamH < 4) return;
 
@@ -521,8 +544,8 @@ function drawMissileTracks(ctx, state, w, h, missileTracks, enemies, view) {
     ctx.strokeStyle = `rgba(168,120,255,${0.7 * flicker})`;
     ctx.lineWidth = 4;
     ctx.beginPath();
-    ctx.moveTo(p.x * w, view.py(p.y, h));
-    ctx.lineTo(e.x * w, view.py(e.y, h));
+    ctx.moveTo(p.x * w, view.playerPy(p.y, h, p.slot));
+    ctx.lineTo(e.x * w, view.entityPy(e.y, h));
     ctx.stroke();
   }
 }
@@ -565,8 +588,9 @@ function drawHud(ctx, state, w, h, mySlot, names) {
     );
     ctx.font = "10px sans-serif";
     ctx.fillStyle = "#e8f4ff";
-    ctx.fillText(`你 · ${names[mySlot] || ""}`, w * 0.2, 20);
-    ctx.fillText(`${names[other(mySlot)] || ""}`, w * 0.8, 20);
+    const role = mySlot === "host" ? "房主" : "來賓";
+    ctx.fillText(`你 · ${names[mySlot] || ""}（${role}）`, w * 0.2, 20);
+    ctx.fillText(`對手 · ${names[other(mySlot)] || ""}`, w * 0.8, 20);
   }
 }
 

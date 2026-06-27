@@ -8,7 +8,7 @@ import {
   openOnlineOnlyDuo,
 } from "./online-duo.js";
 import { startGameRoom } from "./room-service.js";
-import { SHIPS, SHIP_IDS, shipLobbyCardHtml } from "./sky-shooter/ships.js?v=sky-duo-v16";
+import { SHIPS, SHIP_IDS, shipLobbyCardHtml } from "./sky-shooter/ships.js?v=sky-duo-v17";
 import {
   createInitialState,
   stepSimulation,
@@ -18,11 +18,11 @@ import {
   clampPlayersToZone,
   canPlayerControl,
   VERSUS_GUEST_Y_BAND,
-} from "./sky-shooter/sim.js?v=sky-duo-v16";
-import { drawSkyFrame } from "./sky-shooter/render.js?v=sky-duo-v16";
-import { normalizeSkyState, isValidSkyState } from "./sky-shooter/state-util.js?v=sky-duo-v16";
+} from "./sky-shooter/sim.js?v=sky-duo-v17";
+import { drawSkyFrame } from "./sky-shooter/render.js?v=sky-duo-v17";
+import { normalizeSkyState, isValidSkyState } from "./sky-shooter/state-util.js?v=sky-duo-v17";
 
-const SKY_BUILD = "v16";
+const SKY_BUILD = "v17";
 
 const $ = (sel) => document.querySelector(sel);
 
@@ -46,6 +46,8 @@ let resultShown = false;
 /** @type {string | null} */
 let activeRoomId = null;
 let sessionRunning = false;
+/** @type {'coop'|'versus'} */
+let activeSkyMode = "coop";
 
 function gameModeFromKey(key) {
   return key === "sky-coop" ? "coop" : "versus";
@@ -104,6 +106,12 @@ function openSkyDuo(game, title) {
   });
 }
 
+function ensureStateMode(state, fallback) {
+  if (!state) return state;
+  if (!state.mode) state.mode = fallback;
+  return state;
+}
+
 function skyHandler(gameKey, title) {
   return {
     startHint: "雙方選好機體並準備後，房主按開始",
@@ -127,6 +135,7 @@ function skyHandler(gameKey, title) {
     },
     startGame: async (roomId, _slot, snap) => {
       const mode = gameModeFromKey(gameKey);
+      activeSkyMode = mode;
       const ships = {
         host: snap.players.host?.ship || "swift",
         guest: snap.players.guest?.ship || "heavy",
@@ -139,6 +148,8 @@ function skyHandler(gameKey, title) {
     onPlaying: (snap, ctx) => {
       if (!isValidSkyState(snap.state)) return;
       normalizeSkyState(snap.state);
+      ensureStateMode(snap.state, gameModeFromKey(gameKey));
+      activeSkyMode = snap.state.mode;
 
       const names = {
         host: snap.players.host?.name || "房主",
@@ -154,6 +165,7 @@ function skyHandler(gameKey, title) {
 
       if (sessionRunning && activeRoomId === snap.roomId) {
         liveState = snap.state;
+        ensureStateMode(liveState, activeSkyMode);
         return;
       }
       ctx.deps.showView("skyOnlinePlay");
@@ -268,6 +280,8 @@ function startSkySession(snap, ctx) {
 
   resultShown = false;
   normalizeSkyState(snap.state);
+  activeSkyMode = snap.state.mode || gameModeFromKey(snap.meta?.game || "sky-coop");
+  ensureStateMode(snap.state, activeSkyMode);
 
   activeRoomId = snap.roomId;
   sessionRunning = true;
@@ -295,8 +309,9 @@ function startSkySession(snap, ctx) {
   };
 
   liveState = snap.state;
-  bindCanvasInput(ctx.slot, snap.state.mode);
-  renderLoop(ctx.slot, names);
+  const playMode = liveState.mode || activeSkyMode;
+  bindCanvasInput(ctx.slot, playMode);
+  renderLoop(names);
   void sendInputNow();
 
   if (ctx.slot === "host") {
@@ -446,7 +461,7 @@ function updateSkyHud(mySlot) {
   }
 }
 
-function renderLoop(mySlot, names) {
+function renderLoop(names) {
   const canvas = /** @type {HTMLCanvasElement | null} */ ($("#sky-online-canvas"));
   if (!canvas) return;
   const ctx2d = canvas.getContext("2d");
@@ -464,9 +479,12 @@ function renderLoop(mySlot, names) {
       }
       if (liveState && isValidSkyState(liveState)) {
         normalizeSkyState(liveState);
+        ensureStateMode(liveState, activeSkyMode);
         clampPlayersToZone(liveState);
+        const mySlot = getOnlineContext().slot;
+        const mode = liveState.mode || activeSkyMode;
         try {
-          drawSkyFrame(ctx2d, liveState, { w, h, mySlot, names });
+          drawSkyFrame(ctx2d, liveState, { w, h, mySlot, mode, names });
           updateSkyHud(mySlot);
           updateCanvasInputLock(mySlot);
         } catch (err) {

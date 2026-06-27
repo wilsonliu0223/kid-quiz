@@ -1,5 +1,5 @@
-import { shipOrDefault } from "./ships.js?v=sky-duo-v16";
-import { asList } from "./state-util.js?v=sky-duo-v16";
+import { shipOrDefault } from "./ships.js?v=sky-duo-v17";
+import { asList } from "./state-util.js?v=sky-duo-v17";
 
 export const COOP_BOSS_AT = 95;
 export const VERSUS_TIME = 180;
