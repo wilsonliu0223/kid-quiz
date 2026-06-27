@@ -426,11 +426,34 @@
       function resize() {
         const wrap = document.getElementById("game-wrap");
         const dpr = Math.min(window.devicePixelRatio || 1, 2);
+        const prevW = W;
+        const prevH = H;
         W = wrap.clientWidth;
         H = wrap.clientHeight;
         canvas.width = Math.floor(W * dpr);
         canvas.height = Math.floor(H * dpr);
         ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        if (prevW > 0 && prevH > 0 && (prevW !== W || prevH !== H)) {
+          const sx = W / prevW;
+          const sy = H / prevH;
+          const scaleEnt = (o) => {
+            o.x *= sx;
+            o.y *= sy;
+          };
+          player.x *= sx;
+          player.y *= sy;
+          for (const e of enemies) {
+            scaleEnt(e);
+            if (e.cruiseY != null) e.cruiseY *= sy;
+          }
+          for (const b of bullets) scaleEnt(b);
+          for (const eb of enemyBullets) scaleEnt(eb);
+          for (const o of powerOrbs) scaleEnt(o);
+          for (const p of pendingSpawns) {
+            p.tx *= sx;
+            p.ty *= sy;
+          }
+        }
         zoneBounds();
         if (!running && !gameOver) {
           player.x = W / 2;
@@ -598,7 +621,7 @@
           else if (r < 0.68) spawnPowerOrb(x, y, "laser");
           else if (r < 0.78) spawnPowerOrb(x, y, "shield");
           else if (r < 0.88) spawnPowerOrb(x, y, "missile");
-        } else if (kind === "heavy" || kind === "tank") {
+        } else if (kind === "heavy" || kind === "tank" || kind === "drone" || kind === "bomber") {
           if (r < 0.35) spawnPowerOrb(x, y, "energy");
           else if (r < 0.55) spawnPowerOrb(x, y, "power");
           else if (r < 0.68) spawnPowerOrb(x, y, "spread");
@@ -651,18 +674,30 @@
         fast: { hp: 1, w: 22, h: 18, speed: 78, speedVar: 20, score: 2 },
         heavy: { hp: 4, w: 34, h: 26, speed: 40, speedVar: 10, score: 3 },
         tank: { hp: 6, w: 40, h: 30, speed: 30, speedVar: 8, score: 5 },
+        drone: { hp: 3, w: 26, h: 20, speed: 52, speedVar: 12, score: 2 },
+        bomber: { hp: 5, w: 36, h: 28, speed: 34, speedVar: 8, score: 4 },
       };
 
       function enemyScore(kind) {
         return ENEMY_KINDS[kind]?.score ?? (kind === "boss" ? 10 : 1);
       }
 
-      function pickSpawnKind() {
+      function pickSpawnKind(route) {
         const r = Math.random();
+        if (route === "top") {
+          if (time > 50 && r < 0.12) return "tank";
+          if (r < 0.2) return "bomber";
+          if (r < 0.38) return "drone";
+          if (r < 0.52) return "heavy";
+          if (r < 0.64) return "fast";
+          if (r < 0.76) return "tank";
+          return "grunt";
+        }
         if (time > 55 && r < 0.1) return "tank";
         if (r < 0.15) return "fast";
         if (r < 0.32) return "heavy";
         if (r < 0.42) return "tank";
+        if (r < 0.52) return "drone";
         return "grunt";
       }
 
@@ -678,9 +713,10 @@
         return "right";
       }
 
-      function queueSpawn(kind = "grunt", warn = 0.55) {
+      function queueSpawn(kind, warn = 0.55) {
         const midH = zoneY.bot - zoneY.mid;
         const route = pickSpawnRoute();
+        const enemyKind = kind || pickSpawnKind(route);
         let tx;
         let ty;
         if (route === "top") {
@@ -690,7 +726,7 @@
           tx = route === "left" ? 22 : W - 22;
           ty = zoneY.mid + 24 + Math.random() * (midH - 48);
         }
-        pendingSpawns.push({ kind, route, tx, ty, warn });
+        pendingSpawns.push({ kind: enemyKind, route, tx, ty, warn });
       }
 
       function spawnEnemyAt(spec) {
@@ -731,27 +767,47 @@
               ? 1.6 + Math.random() * 1.4
               : kind === "tank"
                 ? 1.8 + Math.random() * 1.0
-                : kind === "heavy"
-                  ? 1.3 + Math.random() * 1.0
-                  : 1.4 + Math.random() * 1.2,
+                : kind === "bomber"
+                  ? 1.5 + Math.random() * 1.0
+                  : kind === "drone"
+                    ? 1.2 + Math.random() * 0.8
+                    : kind === "heavy"
+                      ? 1.3 + Math.random() * 1.0
+                      : 1.4 + Math.random() * 1.2,
           dropVy:
             route === "top"
               ? kind === "fast"
                 ? 72
-                : kind === "tank"
-                  ? 48
-                  : 58
+                : kind === "bomber"
+                  ? 42
+                  : kind === "tank"
+                    ? 48
+                    : kind === "drone"
+                      ? 64
+                      : 58
               : 0,
+          wobble: kind === "drone" ? Math.random() * Math.PI * 2 : 0,
         };
         if (route === "top") {
           const cruiseFrac =
-            kind === "fast" ? 0.32 : kind === "tank" ? 0.45 : kind === "heavy" ? 0.4 : 0.38;
+            kind === "fast"
+              ? 0.32
+              : kind === "tank"
+                ? 0.45
+                : kind === "bomber"
+                  ? 0.52
+                  : kind === "drone"
+                    ? 0.35
+                    : kind === "heavy"
+                      ? 0.4
+                      : 0.38;
           enemies.push({
             ...base,
             x: tx,
             y: ty,
             vx: spd * 0.35 * (Math.random() < 0.5 ? 1 : -1),
             cruiseY: ty + (zoneY.bot - zoneY.mid) * cruiseFrac,
+            cruiseVy: kind === "bomber" ? 18 : kind === "drone" ? 12 : 0,
           });
         } else if (route === "left") {
           enemies.push({ ...base, x: -44, y: ty, vx: spd });
@@ -788,7 +844,9 @@
       function missileTrackDps(e) {
         if (e.kind === "boss") return 0.35;
         if (e.kind === "tank") return 0.009;
+        if (e.kind === "bomber") return 0.01;
         if (e.kind === "heavy") return 0.011;
+        if (e.kind === "drone") return 0.013;
         if (e.kind === "fast") return 0.014;
         return 0.028;
       }
@@ -917,7 +975,7 @@
       function updatePlayerLaser(dt) {
         const x = player.x;
         const y0 = player.y - player.h * 0.35;
-        const top = zoneY.mid + 6;
+        const top = 0;
         const beamW = 10 + powerLevel * 3.5;
         const half = beamW * 0.55;
         const dps = 4.8 + powerLevel * 0.9;
@@ -926,11 +984,7 @@
         for (let j = enemies.length - 1; j >= 0; j--) {
           const e = enemies[j];
           if (e.spawnShield > 0 || e.dying) continue;
-          if (
-            Math.abs(e.x - x) < half + e.w * 0.4 &&
-            e.y <= y0 &&
-            e.y >= top
-          ) {
+          if (Math.abs(e.x - x) < half + e.w * 0.4 && e.y <= y0 && e.y >= top) {
             e.hp -= dps * dt * 60;
             if (e.hp <= 0) killEnemy(e, j);
             else if (e.kind === "boss" && Math.random() < 0.06)
@@ -1368,6 +1422,25 @@
               r: 5,
             });
           }
+        } else if (e.kind === "drone") {
+          const ang = Math.atan2(player.y - e.y, player.x - e.x);
+          enemyBullets.push({
+            x: e.x,
+            y: e.y,
+            vx: Math.cos(ang) * 155,
+            vy: Math.sin(ang) * 155,
+            r: 3.5,
+          });
+        } else if (e.kind === "bomber") {
+          for (let k = -1; k <= 1; k++) {
+            enemyBullets.push({
+              x: e.x + k * 10,
+              y: e.y + e.h * 0.15,
+              vx: k * 40,
+              vy: 155,
+              r: 4.5,
+            });
+          }
         }
       }
 
@@ -1444,7 +1517,7 @@
           if (campTime > 2.5 && Math.random() < 0.4) {
             queueSpawn("fast");
           } else {
-            queueSpawn(pickSpawnKind());
+            queueSpawn();
           }
         }
 
@@ -1568,7 +1641,7 @@
         }
         for (let i = bullets.length - 1; i >= 0; i--) {
           const b = bullets[i];
-          if (b.y < zoneY.mid - 20 || b.y > zoneY.botEnd + 30) bullets.splice(i, 1);
+          if (b.y < -40 || b.y > zoneY.botEnd + 30) bullets.splice(i, 1);
           else if (b.life != null && b.life <= 0) bullets.splice(i, 1);
         }
 
@@ -1584,9 +1657,17 @@
             if (e.movePhase === "drop") {
               e.y += e.dropVy * dt;
               e.x += (e.vx ?? e.speed * 0.35) * dt;
-              if (e.y >= e.cruiseY) e.movePhase = "cruise";
+              if (e.y >= e.cruiseY) {
+                e.y = e.cruiseY;
+                e.movePhase = "cruise";
+              }
             } else {
-              e.x += e.vx ?? e.speed * dt;
+              e.x += (e.vx ?? e.speed) * dt;
+              if (e.cruiseVy) e.y += e.cruiseVy * dt;
+              if (e.kind === "drone") {
+                e.wobble = (e.wobble || 0) + dt * 4.5;
+                e.x += Math.sin(e.wobble) * 28 * dt;
+              }
             }
           } else {
             e.x += e.speed * dt * (e.x > W * 0.55 ? -1 : 1);
@@ -1620,9 +1701,13 @@
                   ? 1.1 + Math.random() * 0.6
                   : e.kind === "tank"
                     ? 1.4 + Math.random() * 0.9
-                    : e.kind === "heavy"
-                      ? 1.0 + Math.random() * 0.7
-                      : 0.9 + Math.random() * 0.8;
+                    : e.kind === "bomber"
+                      ? 1.2 + Math.random() * 0.8
+                      : e.kind === "drone"
+                        ? 0.95 + Math.random() * 0.55
+                        : e.kind === "heavy"
+                          ? 1.0 + Math.random() * 0.7
+                          : 0.9 + Math.random() * 0.8;
               enemyAttack(e);
             }
           }
@@ -1703,6 +1788,16 @@
         grdBot.addColorStop(1, "#0a1628");
         ctx.fillStyle = grdBot;
         ctx.fillRect(0, zoneY.bot, W, zoneY.botEnd - zoneY.bot);
+
+        for (let i = 0; i < 7; i++) {
+          const mx = ((time * 10 + i * 110) % (W + 100)) - 50;
+          const my = zoneY.mid + (zoneY.bot - zoneY.mid) * (0.12 + i * 0.11);
+          const rw = 24 + (i % 3) * 6;
+          ctx.fillStyle = `rgba(100, 140, 180, ${0.14 + (i % 2) * 0.06})`;
+          ctx.beginPath();
+          ctx.ellipse(mx, my, rw, 9, 0, 0, Math.PI * 2);
+          ctx.fill();
+        }
       }
 
       function drawRaidenFighter(x, y, palette) {
@@ -1972,6 +2067,59 @@
         ctx.restore();
       }
 
+      function drawDroneEnemy(e) {
+        const rot = time * 16;
+        ctx.save();
+        ctx.translate(e.x, e.y);
+        ctx.fillStyle = "#5a6880";
+        ctx.beginPath();
+        ctx.ellipse(0, 0, e.w * 0.45, e.h * 0.35, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = "#88a8c8";
+        ctx.fillRect(-4, -6, 8, 10);
+        ctx.strokeStyle = "rgba(180,220,255,0.6)";
+        ctx.lineWidth = 1.5;
+        ctx.save();
+        ctx.rotate(rot);
+        ctx.beginPath();
+        ctx.moveTo(-14, 0);
+        ctx.lineTo(14, 0);
+        ctx.moveTo(0, -14);
+        ctx.lineTo(0, 14);
+        ctx.stroke();
+        ctx.restore();
+        ctx.fillStyle = "#40d0ff";
+        ctx.beginPath();
+        ctx.arc(0, 0, 3, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+
+      function drawBomberEnemy(e) {
+        const faceRight = (e.vx ?? e.speed) > 0;
+        ctx.save();
+        ctx.translate(e.x, e.y);
+        ctx.scale(faceRight ? -1 : 1, 1);
+        ctx.fillStyle = "#4a3848";
+        ctx.beginPath();
+        ctx.moveTo(-16, 4);
+        ctx.lineTo(12, -8);
+        ctx.lineTo(16, 0);
+        ctx.lineTo(12, 8);
+        ctx.closePath();
+        ctx.fill();
+        ctx.fillStyle = "#6a5060";
+        ctx.fillRect(-8, -4, 16, 10);
+        ctx.fillStyle = "#ff6040";
+        ctx.beginPath();
+        ctx.arc(-10, 6, 4, 0, Math.PI * 2);
+        ctx.arc(8, 6, 4, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = "#8898a8";
+        ctx.fillRect(10, -2, 10, 4);
+        ctx.restore();
+      }
+
       function drawEnemyHpBar(e) {
         if (!e.maxHp || e.maxHp <= 2 || e.kind === "boss") return;
         const ratio = Math.max(0, e.hp / e.maxHp);
@@ -2182,6 +2330,8 @@
           else if (e.kind === "fast") drawJetEnemy(e);
           else if (e.kind === "heavy") drawHeavyEnemy(e);
           else if (e.kind === "tank") drawTankEnemy(e);
+          else if (e.kind === "drone") drawDroneEnemy(e);
+          else if (e.kind === "bomber") drawBomberEnemy(e);
           else drawHelicopter(e);
           drawEnemyShield(e);
           drawEnemyHpBar(e);
