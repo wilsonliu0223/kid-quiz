@@ -1,19 +1,17 @@
-import { shipOrDefault } from "./ships.js?v=sky-duo-v23";
-import { asList } from "./state-util.js?v=sky-duo-v23";
+import { shipOrDefault } from "./ships.js?v=sky-duo-v24";
+import { asList } from "./state-util.js?v=sky-duo-v24";
 import {
   VERSUS_TIME,
   ZONE_RATIO,
   COOP_Y_BAND,
   VERSUS_GUEST_Y_BAND,
-  bandMap,
-  SCREEN_ME_BAND,
-} from "./sim.js?v=sky-duo-v23";
+} from "./sim.js?v=sky-duo-v24";
 
 const WEAPON_LABELS = { straight: "直射", spread: "擴散", laser: "雷射" };
 
 /**
  * 對戰：世界座標一致；來賓端整場上下翻轉，自己在下、對手在上。
- * 合作：僅把玩家略上移離底。
+ * 合作／對戰繪製皆用世界座標，與碰撞、子彈軌跡一致。
  */
 function createView(mode, mySlot) {
   const versus = mode === "versus" && (mySlot === "host" || mySlot === "guest");
@@ -22,20 +20,11 @@ function createView(mode, mySlot) {
     mySlot,
     versus,
     flip,
-    /** 世界 y → 畫布 y（翻轉前） */
-    wpy(ny, h) {
+    playerY(_mode, ny, h) {
       return ny * h;
     },
-    /** 文字標籤用（翻轉後螢幕座標） */
     labelPy(ny, h) {
       return flip ? (1 - ny) * h : ny * h;
-    },
-    /** 合作模式玩家顯示帶 */
-    coopPlayerPy(ny, h) {
-      return bandMap(ny, COOP_Y_BAND, SCREEN_ME_BAND) * h;
-    },
-    playerY(mode, ny, h) {
-      return mode === "coop" ? bandMap(ny, COOP_Y_BAND, SCREEN_ME_BAND) * h : ny * h;
     },
     faceDownWorld(ny) {
       return ny < 0.45;
@@ -72,7 +61,7 @@ export function drawSkyFrame(ctx, state, opts) {
     ctx.scale(1, -1);
   }
 
-  drawSkyZones(ctx, w, h, time, mode);
+  drawSkyZones(ctx, w, h, time);
 
   if (state.flash > 0) {
     ctx.fillStyle = `rgba(255,255,255,${state.flash * 0.35})`;
@@ -83,7 +72,7 @@ export function drawSkyFrame(ctx, state, opts) {
     ctx.globalAlpha = Math.min(1, p.life * 2);
     ctx.fillStyle = p.color;
     ctx.beginPath();
-    ctx.arc(p.x * w, view.wpy(p.y, h), 3, 0, Math.PI * 2);
+    ctx.arc(p.x * w, view.playerY(mode, p.y, h), 3, 0, Math.PI * 2);
     ctx.fill();
   }
   ctx.globalAlpha = 1;
@@ -132,7 +121,7 @@ function zoneBounds(h) {
   return { mid, bot, botEnd };
 }
 
-function drawSkyZones(ctx, w, h, time, mode) {
+function drawSkyZones(ctx, w, h, time) {
   const { mid, bot, botEnd } = zoneBounds(h);
 
   const grdTop = ctx.createLinearGradient(0, 0, 0, mid);
@@ -162,38 +151,6 @@ function drawSkyZones(ctx, w, h, time, mode) {
   ctx.moveTo(0, bot);
   ctx.lineTo(w, bot);
   ctx.stroke();
-
-  if (mode === "coop") {
-    const bandTop = h * COOP_Y_BAND[0];
-    const bandBot = h * COOP_Y_BAND[1];
-    ctx.strokeStyle = "rgba(255, 213, 74, 0.4)";
-    ctx.setLineDash([6, 6]);
-    ctx.beginPath();
-    ctx.moveTo(0, bandTop);
-    ctx.lineTo(w, bandTop);
-    ctx.moveTo(0, bandBot);
-    ctx.lineTo(w, bandBot);
-    ctx.stroke();
-    ctx.setLineDash([]);
-  } else if (mode === "versus") {
-    const gTop = h * VERSUS_GUEST_Y_BAND[0];
-    const gBot = h * VERSUS_GUEST_Y_BAND[1];
-    const hTop = h * COOP_Y_BAND[0];
-    const hBot = h * COOP_Y_BAND[1];
-    ctx.strokeStyle = "rgba(255, 213, 74, 0.35)";
-    ctx.setLineDash([6, 6]);
-    ctx.beginPath();
-    ctx.moveTo(0, gTop);
-    ctx.lineTo(w, gTop);
-    ctx.moveTo(0, gBot);
-    ctx.lineTo(w, gBot);
-    ctx.moveTo(0, hTop);
-    ctx.lineTo(w, hTop);
-    ctx.moveTo(0, hBot);
-    ctx.lineTo(w, hBot);
-    ctx.stroke();
-    ctx.setLineDash([]);
-  }
 
   for (let i = 0; i < 5; i++) {
     const mx = ((time * 12 + i * 90) % (w + 80)) - 40;

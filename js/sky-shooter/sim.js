@@ -1,5 +1,5 @@
-import { shipOrDefault } from "./ships.js?v=sky-duo-v23";
-import { asList } from "./state-util.js?v=sky-duo-v23";
+import { shipOrDefault } from "./ships.js?v=sky-duo-v24";
+import { asList } from "./state-util.js?v=sky-duo-v24";
 
 export const COOP_BOSS_AT = 95;
 export const VERSUS_TIME = 180;
@@ -23,12 +23,6 @@ export const COOP_Y_BAND = [
 ];
 /** 對戰模式：來賓在畫面上方區（世界座標），與房主區上下對稱 */
 export const VERSUS_GUEST_Y_BAND = [1 - COOP_Y_BAND[1], 1 - COOP_Y_BAND[0]];
-
-/** 螢幕顯示帶（雙端一致） */
-export const SCREEN_ME_BAND = [0.72, 0.86];
-export const SCREEN_OPPO_BAND = [0.14, 0.28];
-export const SCREEN_MID_BAND = [0.3, 0.68];
-export const WORLD_MID_BAND = [0.22, 0.78];
 
 export function bandMap(y, from, to) {
   const span = from[1] - from[0];
