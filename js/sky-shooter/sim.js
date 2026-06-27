@@ -1,5 +1,5 @@
-import { shipOrDefault } from "./ships.js?v=sky-duo-v10";
-import { asList } from "./state-util.js?v=sky-duo-v10";
+import { shipOrDefault } from "./ships.js?v=sky-duo-v12";
+import { asList } from "./state-util.js?v=sky-duo-v12";
 
 export const COOP_BOSS_AT = 95;
 export const VERSUS_TIME = 180;
@@ -7,10 +7,13 @@ export const VERSUS_BOSS_AT = 95;
 export const BOSS_KILL_BONUS = 15;
 export const PVP_HIT_SCORE = 3;
 
-/** 合作模式：可在中下方戰鬥區自由移動（約畫面 40%～96% 高度） */
-export const COOP_Y_BAND = [0.4, 0.96];
 /** 單機同款三區比例（上／中／下） */
 export const ZONE_RATIO = { top: 0.38, mid: 0.34, bot: 0.28 };
+/** 合作模式：僅限下方戰鬥區（與單機相同，不可進中間敵區） */
+export const COOP_Y_BAND = [
+  ZONE_RATIO.top + ZONE_RATIO.mid + 0.025,
+  ZONE_RATIO.top + ZONE_RATIO.mid + ZONE_RATIO.bot - 0.025,
+];
 
 const POWER_OFFSETS = [[0], [-0.02, 0.02], [-0.024, 0, 0.024], [-0.032, -0.016, 0, 0.016, 0.032]];
 

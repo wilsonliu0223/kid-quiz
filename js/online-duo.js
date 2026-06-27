@@ -325,7 +325,7 @@ function onRoomSnapshot(snapshot) {
   }
 
   deps?.showView("onlineLobby");
-  gameHandlers.get(snapshot.meta?.game || "")?.onEnterLobby?.();
+  gameHandlers.get(snapshot.meta?.game || "")?.onEnterLobby?.(snapshot);
   renderLobby(snapshot);
 }
 

@@ -8,7 +8,7 @@ import {
   openOnlineOnlyDuo,
 } from "./online-duo.js";
 import { startGameRoom } from "./room-service.js";
-import { SHIPS, SHIP_IDS, shipLobbyCardHtml } from "./sky-shooter/ships.js?v=sky-duo-v11";
+import { SHIPS, SHIP_IDS, shipLobbyCardHtml } from "./sky-shooter/ships.js?v=sky-duo-v12";
 import {
   createInitialState,
   stepSimulation,
@@ -16,9 +16,9 @@ import {
   cloneState,
   clampPointerInput,
   clampPlayersToZone,
-} from "./sky-shooter/sim.js?v=sky-duo-v10";
-import { drawSkyFrame } from "./sky-shooter/render.js?v=sky-duo-v10";
-import { normalizeSkyState, isValidSkyState } from "./sky-shooter/state-util.js?v=sky-duo-v10";
+} from "./sky-shooter/sim.js?v=sky-duo-v12";
+import { drawSkyFrame } from "./sky-shooter/render.js?v=sky-duo-v12";
+import { normalizeSkyState, isValidSkyState } from "./sky-shooter/state-util.js?v=sky-duo-v12";
 
 const SKY_BUILD = "v10";
 
@@ -83,7 +83,7 @@ function bindSkyOnlineOnce() {
     await leaveOnlineRoom();
     getOnlineContext().deps?.showView("home");
   });
-  $("#btn-sky-canvas-weapon")?.addEventListener("click", () => {
+  $("#btn-sky-hud-weapon")?.addEventListener("click", () => {
     localInput.weaponTap = true;
     void sendInputNow();
   });
@@ -105,9 +105,9 @@ function openSkyDuo(game, title) {
 function skyHandler(gameKey, title) {
   return {
     startHint: "雙方選好機體並準備後，房主按開始",
-    onEnterLobby: () => {
+    onEnterLobby: (snap) => {
       void teardownSession();
-      renderShipLobby(title);
+      ensureShipLobby(title, snap);
     },
     onLeave: () => teardownSession(),
     renderStartButtons: (panel, snap, onStart) => {
@@ -137,7 +137,19 @@ function skyHandler(gameKey, title) {
     onPlaying: (snap, ctx) => {
       if (!isValidSkyState(snap.state)) return;
       normalizeSkyState(snap.state);
-      resultShown = false;
+
+      const names = {
+        host: snap.players.host?.name || "房主",
+        guest: snap.players.guest?.name || "來賓",
+      };
+
+      if (snap.state.phase === "end") {
+        if (!resultShown) showResult(snap.state, ctx, names);
+        return;
+      }
+
+      if (resultShown) return;
+
       if (sessionRunning && activeRoomId === snap.roomId) {
         liveState = snap.state;
         return;
@@ -155,7 +167,24 @@ async function setPlayerShip(roomId, slot, shipId) {
   await update(ref(db, `rooms/${roomId}`), { [`players/${slot}/ship`]: shipId });
 }
 
-function renderShipLobby(title) {
+function resetShipLobby() {
+  const pick = $("#sky-lobby-ship-pick");
+  if (pick) {
+    pick.innerHTML = "";
+    delete pick.dataset.built;
+  }
+}
+
+function syncShipLobbyFromSnap(snap) {
+  const slot = getOnlineContext().slot;
+  if (!slot || !snap?.players) return;
+  const myShip = snap.players[slot]?.ship;
+  document.querySelectorAll(".sky-ship-card").forEach((el) => {
+    el.classList.toggle("sky-ship-card-active", !!(myShip && el.dataset.ship === myShip));
+  });
+}
+
+function ensureShipLobby(title, snap) {
   const panel = $("#online-lobby-sky-panel");
   const pick = $("#sky-lobby-ship-pick");
   if (!panel || !pick) return;
@@ -164,30 +193,37 @@ function renderShipLobby(title) {
   const slot = ctx.slot;
   if (!slot) return;
 
-  pick.innerHTML = "";
-  const label = document.createElement("p");
-  label.className = "sky-lobby-ship-label";
-  label.textContent = `${title} · 選擇你的機體`;
-  pick.appendChild(label);
+  if (pick.dataset.built !== "1") {
+    pick.innerHTML = "";
+    const label = document.createElement("p");
+    label.className = "sky-lobby-ship-label";
+    label.textContent = `${title} · 選擇你的機體`;
+    pick.appendChild(label);
 
-  const row = document.createElement("div");
-  row.className = "sky-ship-pick-row";
-  SHIP_IDS.forEach((id) => {
-    const btn = document.createElement("button");
-    btn.type = "button";
-    btn.className = `sky-ship-card sky-ship-card-${id}`;
-    btn.dataset.ship = id;
-    btn.innerHTML = shipLobbyCardHtml(id);
-    btn.addEventListener("click", async () => {
-      if (!ctx.roomId || !slot) return;
-      await setPlayerShip(ctx.roomId, slot, id);
-      row.querySelectorAll(".sky-ship-card").forEach((el) => {
-        el.classList.toggle("sky-ship-card-active", el.dataset.ship === id);
+    const row = document.createElement("div");
+    row.className = "sky-ship-pick-row";
+    SHIP_IDS.forEach((id) => {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = `sky-ship-card sky-ship-card-${id}`;
+      btn.dataset.ship = id;
+      btn.innerHTML = shipLobbyCardHtml(id);
+      btn.addEventListener("click", () => {
+        if (!ctx.roomId || !slot) return;
+        row.querySelectorAll(".sky-ship-card").forEach((el) => {
+          el.classList.toggle("sky-ship-card-active", el.dataset.ship === id);
+        });
+        void setPlayerShip(ctx.roomId, slot, id).catch((err) => {
+          console.error("setPlayerShip failed", err);
+        });
       });
+      row.appendChild(btn);
     });
-    row.appendChild(btn);
-  });
-  pick.appendChild(row);
+    pick.appendChild(row);
+    pick.dataset.built = "1";
+  }
+
+  syncShipLobbyFromSnap(snap);
 }
 
 async function teardownSession() {
@@ -204,6 +240,7 @@ async function teardownSession() {
   pointerDown = false;
   activeRoomId = null;
   sessionRunning = false;
+  resetShipLobby();
   const panel = $("#online-lobby-sky-panel");
   if (panel) panel.hidden = true;
 }
@@ -224,8 +261,10 @@ function subscribeInputs(roomId, cb) {
 
 function startSkySession(snap, ctx) {
   if (!isValidSkyState(snap.state)) return;
+  if (snap.state.phase === "end") return;
   if (sessionRunning && activeRoomId === snap.roomId) return;
 
+  resultShown = false;
   normalizeSkyState(snap.state);
 
   activeRoomId = snap.roomId;
@@ -314,9 +353,12 @@ function startSkySession(snap, ctx) {
           liveState = normalizeSkyState(next);
           clampPlayersToZone(liveState);
         }
-        if (liveState?.phase === "end" && !resultShown) {
-          resultShown = true;
-          showResult(liveState, ctx, names);
+        if (liveState?.phase === "end") {
+          if (!resultShown) {
+            resultShown = true;
+            showResult(liveState, ctx, names);
+          }
+          return;
         }
       });
     });
@@ -366,6 +408,36 @@ function updateDebugStatus(w, h, state) {
   el.textContent = `${SKY_BUILD} · ${Math.round(w)}×${Math.round(h)} · 敵${enemies} · ${phase}`;
 }
 
+const WEAPON_HUD = { straight: "直射彈", spread: "擴散彈", laser: "雷射" };
+
+function updateSkyHud(mySlot) {
+  const p = liveState?.players?.[mySlot];
+  const btnWeapon = $("#btn-sky-hud-weapon");
+  if (!btnWeapon) return;
+  if (!p) {
+    btnWeapon.textContent = "直射彈";
+    btnWeapon.disabled = true;
+    return;
+  }
+  btnWeapon.disabled = false;
+  btnWeapon.textContent = WEAPON_HUD[p.weapon] || "直射彈";
+  btnWeapon.classList.toggle("sky-hud-active", p.weapon !== "straight");
+  btnWeapon.classList.toggle("sky-hud-laser", p.weapon === "laser");
+
+  const btnMissile = $("#btn-sky-hud-missile");
+  if (btnMissile) {
+    if (p.missileT > 0) {
+      btnMissile.disabled = false;
+      btnMissile.textContent = `導彈 ${Math.ceil(p.missileT)}s`;
+      btnMissile.classList.add("sky-hud-active");
+    } else {
+      btnMissile.disabled = true;
+      btnMissile.textContent = "導彈";
+      btnMissile.classList.remove("sky-hud-active");
+    }
+  }
+}
+
 function renderLoop(mySlot, names) {
   const canvas = /** @type {HTMLCanvasElement | null} */ ($("#sky-online-canvas"));
   if (!canvas) return;
@@ -384,9 +456,10 @@ function renderLoop(mySlot, names) {
       }
       if (liveState && isValidSkyState(liveState)) {
         normalizeSkyState(liveState);
+        clampPlayersToZone(liveState);
         try {
           drawSkyFrame(ctx2d, liveState, { w, h, mySlot, names });
-          updateDebugStatus(w, h, liveState);
+          updateSkyHud(mySlot);
         } catch (err) {
           console.error("drawSkyFrame failed", err);
           drawSkyPlaceholder(ctx2d, w, h, `繪圖錯誤 ${SKY_BUILD}`);
@@ -495,11 +568,16 @@ async function sendInputNow() {
 }
 
 function showResult(state, ctx, names) {
+  if (resultShown && sessionRunning === false && rafId === null) return;
+  resultShown = true;
   if (rafId) cancelAnimationFrame(rafId);
   if (hostTimer) clearInterval(hostTimer);
   rafId = null;
   hostTimer = null;
   sessionRunning = false;
+  pointerDown = false;
+  stateUnsub?.();
+  stateUnsub = null;
 
   ctx.deps.showView("skyOnlineResult");
   const title = $("#sky-online-result-title");

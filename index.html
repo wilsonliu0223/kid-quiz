@@ -16,7 +16,7 @@
       })();
     </script>
     <link rel="manifest" href="manifest.json" />
-    <link rel="stylesheet" href="css/app.css?v=sky-duo-v11" />
+    <link rel="stylesheet" href="css/app.css?v=sky-duo-v12" />
     <script type="importmap">
       {
         "imports": {
@@ -845,8 +845,14 @@
             <div class="sky-debug-status" id="sky-debug-status" aria-hidden="true"></div>
           </div>
           <div class="sky-online-controls">
-            <button type="button" class="btn btn-secondary" id="btn-sky-canvas-weapon">切換武器</button>
-            <p class="sky-online-hint">手指拖曳上下左右移動 · 自動射擊 · 撿 P/S/L/M 球強化</p>
+            <div class="sky-online-hud" id="sky-online-hud" role="toolbar" aria-label="戰鬥操作">
+              <button type="button" class="sky-hud-btn sky-hud-active" id="btn-sky-hud-weapon">直射彈</button>
+              <button type="button" class="sky-hud-btn" id="btn-sky-hud-shield" disabled>無敵盾 ×0</button>
+              <button type="button" class="sky-hud-btn" id="btn-sky-hud-missile" disabled>導彈</button>
+              <button type="button" class="sky-hud-btn" id="btn-sky-hud-bomb" disabled>炸彈 ×0</button>
+              <button type="button" class="sky-hud-btn" id="btn-sky-hud-ult" disabled>必殺 0/3</button>
+            </div>
+            <p class="sky-online-hint">手指拖曳移動 · 自動射擊 · 撿 P/S/L/M 球強化</p>
           </div>
         </div>
       </section>
@@ -1095,7 +1101,7 @@
         el.hidden = false;
         el.textContent = msg;
       };
-      import("./js/app.js?v=sky-duo-v11").catch((e) => {
+      import("./js/app.js?v=sky-duo-v12").catch((e) => {
         console.error(e);
         showLoadError(
           `程式載入失敗：${e.message || e}。請關閉分頁重開；若仍無效請到瀏覽器設定清除此網站快取。`,
