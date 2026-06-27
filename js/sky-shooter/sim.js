@@ -1,11 +1,16 @@
-import { shipOrDefault } from "./ships.js?v=sky-duo-v7";
-import { asList } from "./state-util.js?v=sky-duo-v7";
+import { shipOrDefault } from "./ships.js?v=sky-duo-v8";
+import { asList } from "./state-util.js?v=sky-duo-v8";
 
 export const COOP_BOSS_AT = 95;
 export const VERSUS_TIME = 180;
 export const VERSUS_BOSS_AT = 95;
 export const BOSS_KILL_BONUS = 15;
 export const PVP_HIT_SCORE = 3;
+
+/** 合作模式：兩人都在下方戰鬥區，可上下左右移動 */
+export const COOP_Y_BAND = [0.72, 0.94];
+/** 單機同款三區比例（上／中／下） */
+export const ZONE_RATIO = { top: 0.38, mid: 0.34, bot: 0.28 };
 
 const POWER_OFFSETS = [[0], [-0.02, 0.02], [-0.024, 0, 0.024], [-0.032, -0.016, 0, 0.016, 0.032]];
 
@@ -105,9 +110,13 @@ export function applyPlayerInput(state, slot, input) {
   if (typeof input.x === "number") {
     p.x = Math.max(pad, Math.min(1 - pad, input.x));
   }
-  if (state.mode === "versus" && typeof input.y === "number") {
-    const band = slot === "host" ? [0.72, 0.94] : [0.06, 0.28];
-    p.y = Math.max(band[0], Math.min(band[1], input.y));
+  if (typeof input.y === "number") {
+    if (state.mode === "versus") {
+      const band = slot === "host" ? [0.72, 0.94] : [0.06, 0.28];
+      p.y = Math.max(band[0], Math.min(band[1], input.y));
+    } else if (state.mode === "coop") {
+      p.y = Math.max(COOP_Y_BAND[0], Math.min(COOP_Y_BAND[1], input.y));
+    }
   }
   if (input.weaponTap) cycleWeapon(p);
 }

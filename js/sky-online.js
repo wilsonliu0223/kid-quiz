@@ -8,17 +8,17 @@ import {
   openOnlineOnlyDuo,
 } from "./online-duo.js";
 import { startGameRoom } from "./room-service.js";
-import { SHIPS, SHIP_IDS } from "./sky-shooter/ships.js?v=sky-duo-v7";
+import { SHIPS, SHIP_IDS } from "./sky-shooter/ships.js?v=sky-duo-v8";
 import {
   createInitialState,
   stepSimulation,
   applyPlayerInput,
   cloneState,
-} from "./sky-shooter/sim.js?v=sky-duo-v7";
-import { drawSkyFrame } from "./sky-shooter/render.js?v=sky-duo-v7";
-import { normalizeSkyState, isValidSkyState } from "./sky-shooter/state-util.js?v=sky-duo-v7";
+} from "./sky-shooter/sim.js?v=sky-duo-v8";
+import { drawSkyFrame } from "./sky-shooter/render.js?v=sky-duo-v8";
+import { normalizeSkyState, isValidSkyState } from "./sky-shooter/state-util.js?v=sky-duo-v8";
 
-const SKY_BUILD = "v7";
+const SKY_BUILD = "v8";
 
 const $ = (sel) => document.querySelector(sel);
 
@@ -395,7 +395,7 @@ function bindCanvasInput(slot, mode) {
     const x = (e.clientX - rect.left) / rect.width;
     const y = (e.clientY - rect.top) / rect.height;
     localInput.x = x;
-    if (mode === "versus") localInput.y = y;
+    localInput.y = y;
     pointerDown = e.type !== "pointerup" && e.type !== "pointercancel";
     if (pointerDown) void sendInputNow();
   };

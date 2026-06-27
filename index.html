@@ -16,7 +16,7 @@
       })();
     </script>
     <link rel="manifest" href="manifest.json" />
-    <link rel="stylesheet" href="css/app.css?v=sky-duo-v7" />
+    <link rel="stylesheet" href="css/app.css?v=sky-duo-v8" />
     <script type="importmap">
       {
         "imports": {
@@ -846,7 +846,7 @@
           </div>
           <div class="sky-online-controls">
             <button type="button" class="btn btn-secondary" id="btn-sky-canvas-weapon">切換武器</button>
-            <p class="sky-online-hint">手指拖曳移動 · 自動射擊 · 撿 P/S/L/M 球強化</p>
+            <p class="sky-online-hint">手指拖曳上下左右移動 · 自動射擊 · 撿 P/S/L/M 球強化</p>
           </div>
         </div>
       </section>
@@ -1095,7 +1095,7 @@
         el.hidden = false;
         el.textContent = msg;
       };
-      import("./js/app.js?v=sky-duo-v7").catch((e) => {
+      import("./js/app.js?v=sky-duo-v8").catch((e) => {
         console.error(e);
         showLoadError(
           `程式載入失敗：${e.message || e}。請關閉分頁重開；若仍無效請到瀏覽器設定清除此網站快取。`,
