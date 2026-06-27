@@ -1,9 +1,10 @@
-import { shipOrDefault } from "./ships.js?v=sky-duo-v26";
-import { asList } from "./state-util.js?v=sky-duo-v26";
+import { shipOrDefault } from "./ships.js?v=sky-duo-v27";
+import { asList } from "./state-util.js?v=sky-duo-v27";
 
 export const COOP_BOSS_AT = 95;
 /** 單人關卡1 同款：Boss HP、巡邏、三種彈幕 */
-export const COOP_BOSS_HP = 120;
+export const COOP_BOSS_HP = 240;
+export const VERSUS_BOSS_HP = 200;
 export const COOP_BOSS_HOMING_SEC = 3;
 export const VERSUS_TIME = 180;
 export const VERSUS_BOSS_AT = 95;
@@ -316,8 +317,8 @@ function spawnBoss(state) {
       y: 0.35,
       w: 0.12,
       h: 0.08,
-      hp: 100,
-      maxHp: 100,
+      hp: VERSUS_BOSS_HP,
+      maxHp: VERSUS_BOSS_HP,
       fireCd: 0.6,
       shield: 0,
     });

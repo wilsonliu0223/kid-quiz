@@ -395,6 +395,7 @@
       const ENEMY_DEATH_LINGER_SEC = 0.4;
       const BOSS_HOMING_SEC = 3;
       const STAGE1_BOSS_AT = 95;
+      const STAGE1_BOSS_HP = 240;
       const VICTORY_EXPLODE_END = 3;
       const VICTORY_TOTAL_END = 6.5;
       const bullets = [];
@@ -792,7 +793,7 @@
             y: zoneY.mid + midH * 0.32,
             w: 88,
             h: 56,
-            hp: 120,
+            hp: STAGE1_BOSS_HP,
             speed: 22,
             fireCd: 0.5,
             phase: 0,
@@ -1857,7 +1858,7 @@
               : e.y > zoneY.mid + 12 && e.y < zoneY.bot + 8)
           ) {
             if (e.kind === "boss") {
-              e.fireCd = e.hp < 60 ? 0.38 : 0.52;
+              e.fireCd = e.hp < STAGE1_BOSS_HP * 0.5 ? 0.38 : 0.52;
               bossAttack(e);
             } else {
               e.fireCd =
