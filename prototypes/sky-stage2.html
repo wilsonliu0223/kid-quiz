@@ -1785,11 +1785,12 @@
               v.fireT = 1.1;
               v.cd = 5 + Math.random() * 2;
             }
-          } else if (v.fireT > 0) {
+          } else           if (v.fireT > 0) {
             v.fireT -= dt;
+            const h = 110;
             if (
-              Math.abs(player.x - v.x) < 20 &&
-              player.y > v.y - 120 &&
+              Math.abs(player.x - v.x) < 14 &&
+              player.y > v.y - h &&
               player.y < v.y + 8 &&
               invuln <= 0
             ) {
@@ -1801,19 +1802,46 @@
         }
       }
 
+      function spawnEmberGeyser(x, y) {
+        emberPools.push({
+          x,
+          y,
+          age: 0,
+          warnDur: 1.2,
+          eruptDur: 0.5,
+          coolDur: 1.3,
+          hitOnce: false,
+          seed: Math.random() * 100,
+        });
+      }
+
+      function geyserTotalLife(p) {
+        return p.warnDur + p.eruptDur + p.coolDur;
+      }
+
+      function geyserPhase(p) {
+        if (p.age < p.warnDur) return "warn";
+        if (p.age < p.warnDur + p.eruptDur) return "erupt";
+        if (p.age < geyserTotalLife(p)) return "cool";
+        return "done";
+      }
+
       function updateEmberPools(dt) {
         for (const p of emberPools) {
-          p.life -= dt;
-          if (
-            p.life > 0 &&
-            Math.hypot(player.x - p.x, player.y - p.y) < p.r &&
-            invuln <= 0
-          ) {
-            hitPlayer();
+          p.age += dt;
+          const phase = geyserPhase(p);
+          if (phase === "erupt" && !p.hitOnce && invuln <= 0) {
+            const t = (p.age - p.warnDur) / p.eruptDur;
+            const hitR = 7 + Math.sin(t * Math.PI) * 9;
+            const cy = p.y - 32 * t;
+            if (Math.hypot(player.x - p.x, player.y - cy) < hitR) {
+              p.hitOnce = true;
+              hitPlayer();
+            }
           }
         }
         for (let i = emberPools.length - 1; i >= 0; i--) {
-          if (emberPools[i].life <= 0) emberPools.splice(i, 1);
+          if (geyserPhase(emberPools[i]) === "done") emberPools.splice(i, 1);
         }
       }
 
@@ -1843,7 +1871,9 @@
             });
           }
         } else if (e.kind === "ember_drone") {
-          emberPools.push({ x: player.x, y: player.y + 40, r: 28, life: 2.2 });
+          const tx = player.x + (Math.random() - 0.5) * 36;
+          const ty = Math.min(zoneY.bot - 18, player.y + 48);
+          spawnEmberGeyser(tx, ty);
           enemyBullets.push({
             x: e.x,
             y: e.y,
@@ -2282,12 +2312,141 @@
         if (victorySeq) updateVictory(dt);
       }
 
+      function drawCanyonLayer() {
+        const midH = zoneY.bot - zoneY.mid;
+        const cliffL = W * 0.2;
+        const cliffR = W * 0.8;
+
+        // 峽谷深處光（中央通道較亮）
+        const pathGrad = ctx.createLinearGradient(cliffL, 0, cliffR, 0);
+        pathGrad.addColorStop(0, "rgba(0,0,0,0.35)");
+        pathGrad.addColorStop(0.22, "rgba(255,80,30,0.06)");
+        pathGrad.addColorStop(0.5, "rgba(255,120,50,0.1)");
+        pathGrad.addColorStop(0.78, "rgba(255,80,30,0.06)");
+        pathGrad.addColorStop(1, "rgba(0,0,0,0.35)");
+        ctx.fillStyle = pathGrad;
+        ctx.fillRect(cliffL, zoneY.mid, cliffR - cliffL, midH);
+
+        // 左峭壁
+        ctx.fillStyle = "#140808";
+        ctx.beginPath();
+        ctx.moveTo(0, zoneY.mid);
+        ctx.lineTo(cliffL, zoneY.mid);
+        ctx.lineTo(cliffL - 8, zoneY.mid + midH * 0.25);
+        ctx.lineTo(cliffL + 6, zoneY.mid + midH * 0.55);
+        ctx.lineTo(cliffL - 4, zoneY.bot);
+        ctx.lineTo(0, zoneY.bot);
+        ctx.closePath();
+        ctx.fill();
+        ctx.fillStyle = "#1f0c0a";
+        ctx.beginPath();
+        ctx.moveTo(0, zoneY.mid + midH * 0.15);
+        ctx.lineTo(cliffL - 12, zoneY.mid + midH * 0.35);
+        ctx.lineTo(cliffL - 6, zoneY.mid + midH * 0.7);
+        ctx.lineTo(0, zoneY.bot - 8);
+        ctx.closePath();
+        ctx.fill();
+
+        // 右峭壁
+        ctx.fillStyle = "#140808";
+        ctx.beginPath();
+        ctx.moveTo(W, zoneY.mid);
+        ctx.lineTo(cliffR, zoneY.mid);
+        ctx.lineTo(cliffR + 8, zoneY.mid + midH * 0.22);
+        ctx.lineTo(cliffR - 6, zoneY.mid + midH * 0.58);
+        ctx.lineTo(cliffR + 4, zoneY.bot);
+        ctx.lineTo(W, zoneY.bot);
+        ctx.closePath();
+        ctx.fill();
+        ctx.fillStyle = "#1f0c0a";
+        ctx.beginPath();
+        ctx.moveTo(W, zoneY.mid + midH * 0.12);
+        ctx.lineTo(cliffR + 12, zoneY.mid + midH * 0.38);
+        ctx.lineTo(cliffR + 6, zoneY.mid + midH * 0.72);
+        ctx.lineTo(W, zoneY.bot - 8);
+        ctx.closePath();
+        ctx.fill();
+
+        // 峭壁岩層線
+        ctx.strokeStyle = "rgba(60, 28, 22, 0.55)";
+        ctx.lineWidth = 1.5;
+        for (let side = -1; side <= 1; side += 2) {
+          const base = side < 0 ? cliffL : cliffR;
+          ctx.beginPath();
+          for (let i = 0; i < 5; i++) {
+            const ly = zoneY.mid + midH * (0.18 + i * 0.16);
+            const lx = base + side * (8 + i * 3);
+            if (i === 0) ctx.moveTo(lx, ly);
+            else ctx.lineTo(lx, ly);
+          }
+          ctx.stroke();
+        }
+
+        // 底部岩漿河
+        const riverY = zoneY.mid + midH * 0.78;
+        const riverPulse = 0.85 + Math.sin(time * 3.5) * 0.15;
+        const riverW = W * 0.22 * riverPulse;
+        const rg = ctx.createLinearGradient(W / 2 - riverW, riverY, W / 2 + riverW, riverY);
+        rg.addColorStop(0, "rgba(80, 15, 5, 0)");
+        rg.addColorStop(0.3, "rgba(255, 90, 20, 0.45)");
+        rg.addColorStop(0.5, "rgba(255, 180, 60, 0.7)");
+        rg.addColorStop(0.7, "rgba(255, 90, 20, 0.45)");
+        rg.addColorStop(1, "rgba(80, 15, 5, 0)");
+        ctx.fillStyle = rg;
+        ctx.fillRect(W / 2 - riverW, riverY - 6, riverW * 2, 14);
+        ctx.fillStyle = `rgba(255, 220, 100, ${0.25 + Math.sin(time * 5) * 0.1})`;
+        ctx.fillRect(W / 2 - riverW * 0.55, riverY - 2, riverW * 1.1, 4);
+
+        // 飄浮火星
+        for (let i = 0; i < 12; i++) {
+          const fx = ((time * 22 + i * 47) % (W + 40)) - 20;
+          const fy =
+            zoneY.mid +
+            midH * 0.2 +
+            ((time * 18 + i * 31) % (midH * 0.75));
+          ctx.globalAlpha = 0.25 + (i % 3) * 0.12;
+          ctx.fillStyle = i % 2 ? "#ff6020" : "#ffb040";
+          ctx.beginPath();
+          ctx.arc(fx, fy, 1 + (i % 2), 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.globalAlpha = 1;
+      }
+
+      function drawSkyVolcanoes() {
+        const peaks = [
+          { x: W * 0.18, h: zoneY.mid * 0.55 },
+          { x: W * 0.52, h: zoneY.mid * 0.72 },
+          { x: W * 0.82, h: zoneY.mid * 0.48 },
+        ];
+        for (const pk of peaks) {
+          const top = zoneY.mid - pk.h;
+          ctx.fillStyle = "#1a1018";
+          ctx.beginPath();
+          ctx.moveTo(pk.x - 38, zoneY.mid);
+          ctx.lineTo(pk.x, top);
+          ctx.lineTo(pk.x + 42, zoneY.mid);
+          ctx.closePath();
+          ctx.fill();
+          const glow = 0.5 + Math.sin(time * 2.2 + pk.x) * 0.3;
+          ctx.fillStyle = `rgba(255, ${80 + glow * 60}, 30, ${0.35 + glow * 0.25})`;
+          ctx.beginPath();
+          ctx.moveTo(pk.x - 10, top + 18);
+          ctx.lineTo(pk.x, top + 4);
+          ctx.lineTo(pk.x + 10, top + 18);
+          ctx.closePath();
+          ctx.fill();
+        }
+      }
+
       function drawBg() {
         const grdTop = ctx.createLinearGradient(0, 0, 0, zoneY.mid);
         grdTop.addColorStop(0, "#120810");
         grdTop.addColorStop(1, "#2a1420");
         ctx.fillStyle = grdTop;
         ctx.fillRect(0, 0, W, zoneY.mid);
+
+        drawSkyVolcanoes();
 
         const skyRed = ctx.createLinearGradient(0, 0, 0, zoneY.mid);
         skyRed.addColorStop(0, "rgba(255, 70, 50, 0.12)");
@@ -2307,6 +2466,8 @@
         midRed.addColorStop(1, "rgba(255, 80, 30, 0.03)");
         ctx.fillStyle = midRed;
         ctx.fillRect(0, zoneY.mid, W, zoneY.bot - zoneY.mid);
+
+        drawCanyonLayer();
 
         const grdBot = ctx.createLinearGradient(0, zoneY.bot, 0, zoneY.botEnd);
         grdBot.addColorStop(0, "#140c10");
@@ -2344,38 +2505,108 @@
 
       function drawVents() {
         for (const v of vents) {
+          ctx.fillStyle = "rgba(30, 12, 8, 0.85)";
+          ctx.beginPath();
+          ctx.ellipse(v.x, v.y + 2, 16, 5, 0, 0, Math.PI * 2);
+          ctx.fill();
           if (v.warn > 0) {
             const pulse = 0.5 + Math.sin(time * 18) * 0.35;
-            ctx.strokeStyle = `rgba(255, 180, 60, ${pulse})`;
+            ctx.strokeStyle = `rgba(255, 200, 80, ${pulse})`;
             ctx.lineWidth = 2;
             ctx.setLineDash([4, 4]);
             ctx.beginPath();
             ctx.moveTo(v.x, v.y);
-            ctx.lineTo(v.x, v.y - 90);
+            ctx.lineTo(v.x, v.y - 100);
             ctx.stroke();
             ctx.setLineDash([]);
+            ctx.strokeStyle = `rgba(255, 160, 50, ${pulse * 0.6})`;
+            ctx.beginPath();
+            ctx.ellipse(v.x, v.y, 14 + pulse * 4, 5 + pulse * 2, 0, 0, Math.PI * 2);
+            ctx.stroke();
           }
           if (v.fireT > 0) {
-            const g = ctx.createLinearGradient(v.x, v.y, v.x, v.y - 100);
-            g.addColorStop(0, "rgba(255, 220, 80, 0.85)");
-            g.addColorStop(0.5, "rgba(255, 100, 30, 0.55)");
-            g.addColorStop(1, "rgba(255, 60, 20, 0)");
+            const h = 110 * (v.fireT / 1.1);
+            const g = ctx.createLinearGradient(v.x, v.y, v.x, v.y - h);
+            g.addColorStop(0, "rgba(255, 230, 100, 0.9)");
+            g.addColorStop(0.35, "rgba(255, 120, 35, 0.65)");
+            g.addColorStop(0.7, "rgba(255, 60, 15, 0.25)");
+            g.addColorStop(1, "rgba(255, 40, 10, 0)");
             ctx.fillStyle = g;
-            ctx.fillRect(v.x - 14, v.y - 100, 28, 100);
+            ctx.beginPath();
+            ctx.moveTo(v.x - 12, v.y);
+            ctx.quadraticCurveTo(v.x - 6, v.y - h * 0.6, v.x, v.y - h);
+            ctx.quadraticCurveTo(v.x + 6, v.y - h * 0.6, v.x + 12, v.y);
+            ctx.closePath();
+            ctx.fill();
+            for (let s = 0; s < 4; s++) {
+              const sx = v.x + Math.sin(time * 14 + s * 2) * 8;
+              const sy = v.y - h * (0.35 + s * 0.15);
+              ctx.fillStyle = `rgba(255, 200, 80, ${0.5 * v.fireT})`;
+              ctx.beginPath();
+              ctx.arc(sx, sy, 2.5, 0, Math.PI * 2);
+              ctx.fill();
+            }
           }
         }
       }
 
       function drawEmberPools() {
         for (const p of emberPools) {
-          const a = Math.min(1, p.life / 2.2);
-          ctx.fillStyle = `rgba(255, 100, 30, ${0.22 * a})`;
-          ctx.beginPath();
-          ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.strokeStyle = `rgba(255, 180, 60, ${0.45 * a})`;
-          ctx.lineWidth = 2;
-          ctx.stroke();
+          const phase = geyserPhase(p);
+          if (phase === "done") continue;
+
+          if (phase === "warn") {
+            const t = p.age / p.warnDur;
+            const pulse = 0.5 + Math.sin(time * 16 + p.seed) * 0.35;
+            ctx.strokeStyle = `rgba(255, 190, 70, ${pulse})`;
+            ctx.lineWidth = 2;
+            ctx.setLineDash([5, 4]);
+            ctx.beginPath();
+            ctx.ellipse(p.x, p.y, 16 + t * 4, 7 + t * 2, 0, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.setLineDash([]);
+            ctx.fillStyle = `rgba(255, 100, 30, ${0.08 + t * 0.1})`;
+            ctx.beginPath();
+            ctx.ellipse(p.x, p.y, 12 + t * 3, 5, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = `rgba(255, 80, 40, ${0.35 + pulse * 0.25})`;
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(p.x - 10, p.y);
+            ctx.lineTo(p.x + 8, p.y - 2);
+            ctx.moveTo(p.x - 4, p.y + 2);
+            ctx.lineTo(p.x + 12, p.y);
+            ctx.stroke();
+          } else if (phase === "erupt") {
+            const t = (p.age - p.warnDur) / p.eruptDur;
+            const h = 75 * Math.sin(t * Math.PI);
+            const g = ctx.createLinearGradient(p.x, p.y, p.x, p.y - h);
+            g.addColorStop(0, "rgba(255, 220, 90, 0.95)");
+            g.addColorStop(0.4, "rgba(255, 110, 25, 0.75)");
+            g.addColorStop(1, "rgba(255, 50, 10, 0)");
+            ctx.fillStyle = g;
+            ctx.beginPath();
+            ctx.moveTo(p.x - 10, p.y);
+            ctx.quadraticCurveTo(p.x - 5, p.y - h * 0.55, p.x, p.y - h);
+            ctx.quadraticCurveTo(p.x + 5, p.y - h * 0.55, p.x + 10, p.y);
+            ctx.closePath();
+            ctx.fill();
+            for (let d = 0; d < 5; d++) {
+              const dx = p.x + Math.sin(time * 20 + p.seed + d) * 14;
+              const dy = p.y - h * (0.3 + d * 0.14) - Math.abs(Math.sin(time * 12 + d)) * 6;
+              ctx.fillStyle = `rgba(255, ${160 + d * 15}, 50, ${0.7 * (1 - t * 0.3)})`;
+              ctx.beginPath();
+              ctx.arc(dx, dy, 2 + d * 0.3, 0, Math.PI * 2);
+              ctx.fill();
+            }
+          } else {
+            const coolT = (p.age - p.warnDur - p.eruptDur) / p.coolDur;
+            const a = (1 - coolT) * 0.35;
+            ctx.fillStyle = `rgba(255, 80, 25, ${a})`;
+            ctx.beginPath();
+            ctx.ellipse(p.x, p.y + 2, 10 * (1 - coolT * 0.4), 4, 0, 0, Math.PI * 2);
+            ctx.fill();
+          }
         }
       }
 
