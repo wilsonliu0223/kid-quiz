@@ -1,5 +1,5 @@
-import { shipOrDefault } from "./ships.js?v=sky-duo-v13";
-import { asList } from "./state-util.js?v=sky-duo-v13";
+import { shipOrDefault } from "./ships.js?v=sky-duo-v15";
+import { asList } from "./state-util.js?v=sky-duo-v15";
 
 export const COOP_BOSS_AT = 95;
 export const VERSUS_TIME = 180;
@@ -14,6 +14,8 @@ export const COOP_Y_BAND = [
   ZONE_RATIO.top + ZONE_RATIO.mid + 0.025,
   ZONE_RATIO.top + ZONE_RATIO.mid + ZONE_RATIO.bot - 0.025,
 ];
+/** 對戰模式：來賓在畫面上方區（世界座標），與房主區上下對稱 */
+export const VERSUS_GUEST_Y_BAND = [1 - COOP_Y_BAND[1], 1 - COOP_Y_BAND[0]];
 
 const POWER_OFFSETS = [[0], [-0.02, 0.02], [-0.024, 0, 0.024], [-0.032, -0.016, 0, 0.016, 0.032]];
 
@@ -42,8 +44,8 @@ export function createInitialState(mode, ships) {
     spawnCd: 0.35,
     flash: 0,
     players: {
-      host: makePlayer("host", hostShip, isCoop ? 0.35 : 0.5, isCoop ? 0.9 : 0.88),
-      guest: makePlayer("guest", guestShip, isCoop ? 0.65 : 0.5, isCoop ? 0.9 : 0.12),
+      host: makePlayer("host", hostShip, 0.35, isCoop ? 0.9 : 0.88),
+      guest: makePlayer("guest", guestShip, 0.65, isCoop ? 0.9 : VERSUS_GUEST_Y_BAND[0] + 0.095),
     },
     enemies: [],
     bullets: [],
@@ -106,19 +108,28 @@ function otherSlot(slot) {
 }
 
 /** @param {'host'|'guest'} slot @param {'coop'|'versus'} mode */
+export function versusYBand(slot, mode) {
+  if (mode !== "versus") return COOP_Y_BAND;
+  return slot === "guest" ? VERSUS_GUEST_Y_BAND : COOP_Y_BAND;
+}
+
+/** 螢幕觸控 → 世界座標（對戰來賓端 Y 軸翻轉） */
+export function pointerToWorld(slot, mode, screenX, screenY) {
+  let y = Number(screenY);
+  if (mode === "versus" && slot === "guest") y = 1 - y;
+  return clampPointerInput(slot, mode, screenX, y);
+}
+
+/** @param {'host'|'guest'} slot @param {'coop'|'versus'} mode */
 export function clampPointerInput(slot, mode, x, y) {
   const pad = 0.06;
   const cx = Math.max(pad, Math.min(1 - pad, Number(x)));
   let cy = Number(y);
+  const band = versusYBand(slot, mode);
   if (!Number.isFinite(cx) || !Number.isFinite(cy)) {
-    return { x: 0.5, y: COOP_Y_BAND[1] - 0.04 };
+    return { x: 0.5, y: band[1] - 0.04 };
   }
-  if (mode === "versus") {
-    const band = slot === "host" ? [0.72, 0.94] : [0.06, 0.28];
-    cy = Math.max(band[0], Math.min(band[1], cy));
-  } else {
-    cy = Math.max(COOP_Y_BAND[0], Math.min(COOP_Y_BAND[1], cy));
-  }
+  cy = Math.max(band[0], Math.min(band[1], cy));
   return { x: cx, y: cy };
 }
 
@@ -204,6 +215,8 @@ export function stepSimulation(state, dt) {
       state.phase = "end";
       state.endReason = "fail";
     }
+  } else {
+    checkVersusElimination(state);
   }
 
   if (state.phase === "boss" && !state.enemies.some((e) => e.kind === "boss")) {
@@ -223,7 +236,26 @@ function endVersus(state) {
   if (h > g) state.winner = "host";
   else if (g > h) state.winner = "guest";
   else state.winner = null;
-  state.endReason = "time";
+  if (!state.endReason) state.endReason = "time";
+}
+
+function checkVersusElimination(state) {
+  const hDead = state.players.host.lives <= 0;
+  const gDead = state.players.guest.lives <= 0;
+  if (!hDead && !gDead) return;
+  state.phase = "end";
+  state.endReason = "elim";
+  if (hDead && gDead) {
+    const h = state.scores.host;
+    const g = state.scores.guest;
+    if (h > g) state.winner = "host";
+    else if (g > h) state.winner = "guest";
+    else state.winner = null;
+  } else if (hDead) {
+    state.winner = "guest";
+  } else {
+    state.winner = "host";
+  }
 }
 
 function spawnBoss(state) {
@@ -337,12 +369,12 @@ function spawnHomingBullet(state, p) {
 }
 
 function fireLaser(state, p, ship, dt) {
-  const dir = p.slot === "guest" && state.mode === "versus" ? 1 : -1;
+  const down = p.slot === "guest" && state.mode === "versus";
   const half = (0.04 + p.power * 0.012) * ship.laserWidth;
   const dps = (4 + p.power) * dt * 8;
   for (const e of state.enemies) {
     if (e.shield > 0) continue;
-    if (Math.abs(e.x - p.x) < half + e.w && (dir < 0 ? e.y < p.y : e.y > p.y)) {
+    if (Math.abs(e.x - p.x) < half + e.w && (down ? e.y > p.y : e.y < p.y)) {
       damageEnemy(state, e, dps, p.slot);
     }
   }

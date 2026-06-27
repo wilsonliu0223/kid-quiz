@@ -8,20 +8,21 @@ import {
   openOnlineOnlyDuo,
 } from "./online-duo.js";
 import { startGameRoom } from "./room-service.js";
-import { SHIPS, SHIP_IDS, shipLobbyCardHtml } from "./sky-shooter/ships.js?v=sky-duo-v13";
+import { SHIPS, SHIP_IDS, shipLobbyCardHtml } from "./sky-shooter/ships.js?v=sky-duo-v15";
 import {
   createInitialState,
   stepSimulation,
   applyPlayerInput,
   cloneState,
-  clampPointerInput,
+  pointerToWorld,
   clampPlayersToZone,
   canPlayerControl,
-} from "./sky-shooter/sim.js?v=sky-duo-v13";
-import { drawSkyFrame } from "./sky-shooter/render.js?v=sky-duo-v13";
-import { normalizeSkyState, isValidSkyState } from "./sky-shooter/state-util.js?v=sky-duo-v13";
+  VERSUS_GUEST_Y_BAND,
+} from "./sky-shooter/sim.js?v=sky-duo-v15";
+import { drawSkyFrame } from "./sky-shooter/render.js?v=sky-duo-v15";
+import { normalizeSkyState, isValidSkyState } from "./sky-shooter/state-util.js?v=sky-duo-v15";
 
-const SKY_BUILD = "v13";
+const SKY_BUILD = "v15";
 
 const $ = (sel) => document.querySelector(sel);
 
@@ -40,7 +41,7 @@ let localInput = { x: 0.5, y: 0.9, weaponTap: false };
 let pointerDown = false;
 let lastInputSend = 0;
 let hostSimState = null;
-let hostInputs = { host: { x: 0.5, y: 0.9 }, guest: { x: 0.5, y: 0.12 } };
+let hostInputs = { host: { x: 0.35, y: 0.88 }, guest: { x: 0.65, y: 0.12 } };
 let resultShown = false;
 /** @type {string | null} */
 let activeRoomId = null;
@@ -504,7 +505,7 @@ function applyLocalPointerInput(slot, mode) {
   const stateRef = slot === "host" && hostSimState ? hostSimState : liveState;
   if (!stateRef || !canPlayerControl(stateRef, slot)) return;
 
-  const clamped = clampPointerInput(slot, mode, localInput.x, localInput.y);
+  const clamped = pointerToWorld(slot, mode, localInput.x, localInput.y);
   localInput.x = clamped.x;
   localInput.y = clamped.y;
   const payload = {
@@ -533,8 +534,9 @@ function bindCanvasInput(slot, mode) {
     if (rect.width <= 0 || rect.height <= 0) return;
     const x = (e.clientX - rect.left) / rect.width;
     const y = (e.clientY - rect.top) / rect.height;
-    localInput.x = Math.max(0, Math.min(1, x));
-    localInput.y = Math.max(0, Math.min(1, y));
+    const world = pointerToWorld(slot, mode, x, y);
+    localInput.x = world.x;
+    localInput.y = world.y;
     pointerDown = e.type !== "pointerup" && e.type !== "pointercancel";
     applyLocalPointerInput(slot, mode);
     if (pointerDown) void sendInputNow();
@@ -568,8 +570,13 @@ function bindCanvasInput(slot, mode) {
   };
   requestAnimationFrame(moveLoop);
 
-  localInput.y = mode === "versus" ? (slot === "host" ? 0.88 : 0.12) : 0.88;
-  localInput.x = slot === "host" ? 0.35 : 0.65;
+  if (mode === "versus" && slot === "guest") {
+    localInput.y = VERSUS_GUEST_Y_BAND[0] + 0.095;
+    localInput.x = 0.65;
+  } else {
+    localInput.y = 0.88;
+    localInput.x = slot === "host" ? 0.35 : 0.65;
+  }
 }
 
 async function sendInputNow() {
@@ -630,7 +637,13 @@ function showResult(state, ctx, names) {
       const bossLine = state.bossKillCredit
         ? ` · Boss 最後一擊 +15（${names[state.bossKillCredit]}）`
         : "";
-      detail.textContent = `${names.host} ${state.scores.host} : ${state.scores.guest} ${names.guest}${bossLine}`;
+      const elimLine =
+        state.endReason === "elim"
+          ? state.winner === null
+            ? " · 雙方陣亡，比總分"
+            : " · 擊落對手"
+          : "";
+      detail.textContent = `${names.host} ${state.scores.host} : ${state.scores.guest} ${names.guest}${bossLine}${elimLine}`;
     }
   }
 }

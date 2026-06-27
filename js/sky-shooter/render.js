@@ -1,6 +1,6 @@
-import { shipOrDefault } from "./ships.js?v=sky-duo-v13";
-import { asList } from "./state-util.js?v=sky-duo-v13";
-import { VERSUS_TIME, ZONE_RATIO, COOP_Y_BAND } from "./sim.js?v=sky-duo-v13";
+import { shipOrDefault } from "./ships.js?v=sky-duo-v15";
+import { asList } from "./state-util.js?v=sky-duo-v15";
+import { VERSUS_TIME, ZONE_RATIO, COOP_Y_BAND, VERSUS_GUEST_Y_BAND } from "./sim.js?v=sky-duo-v15";
 
 const WEAPON_LABELS = { straight: "直射", spread: "擴散", laser: "雷射" };
 
@@ -14,8 +14,16 @@ export function drawSkyFrame(ctx, state, opts) {
   const enemies = asList(state.enemies);
   const missileTracks = asList(state.missileTracks);
   const time = state.t || 0;
+  const viewFlipped = state.mode === "versus" && mySlot === "guest";
 
   ctx.clearRect(0, 0, w, h);
+
+  if (viewFlipped) {
+    ctx.save();
+    ctx.translate(0, h);
+    ctx.scale(1, -1);
+  }
+
   drawSkyZones(ctx, w, h, time, state.mode);
 
   if (state.flash > 0) {
@@ -55,7 +63,15 @@ export function drawSkyFrame(ctx, state, opts) {
   for (const slot of ["host", "guest"]) {
     const p = state.players[slot];
     if (p.lives <= 0) continue;
-    drawPlayer(ctx, p, w, h, slot === mySlot, names[slot] || slot, time);
+    drawPlayerShip(ctx, p, w, h, time);
+  }
+
+  if (viewFlipped) ctx.restore();
+
+  for (const slot of ["host", "guest"]) {
+    const p = state.players[slot];
+    if (p.lives <= 0) continue;
+    drawPlayerLabels(ctx, p, w, h, slot === mySlot, names[slot] || slot, viewFlipped);
   }
 
   drawHud(ctx, state, w, h, mySlot, names);
@@ -112,11 +128,21 @@ function drawSkyZones(ctx, w, h, time, mode) {
     ctx.stroke();
     ctx.setLineDash([]);
   } else if (mode === "versus") {
-    ctx.strokeStyle = "rgba(255,255,255,0.12)";
-    ctx.setLineDash([8, 8]);
+    const gTop = h * VERSUS_GUEST_Y_BAND[0];
+    const gBot = h * VERSUS_GUEST_Y_BAND[1];
+    const hTop = h * COOP_Y_BAND[0];
+    const hBot = h * COOP_Y_BAND[1];
+    ctx.strokeStyle = "rgba(255, 213, 74, 0.3)";
+    ctx.setLineDash([6, 6]);
     ctx.beginPath();
-    ctx.moveTo(0, h * 0.5);
-    ctx.lineTo(w, h * 0.5);
+    ctx.moveTo(0, gTop);
+    ctx.lineTo(w, gTop);
+    ctx.moveTo(0, gBot);
+    ctx.lineTo(w, gBot);
+    ctx.moveTo(0, hTop);
+    ctx.lineTo(w, hTop);
+    ctx.moveTo(0, hBot);
+    ctx.lineTo(w, hBot);
     ctx.stroke();
     ctx.setLineDash([]);
   }
@@ -382,7 +408,7 @@ function drawRaidenFighter(ctx, x, y, palette, time) {
   ctx.restore();
 }
 
-function drawPlayer(ctx, p, w, h, isMe, name, time) {
+function drawPlayerShip(ctx, p, w, h, time) {
   const ship = shipOrDefault(p.ship);
   const x = p.x * w;
   const y = p.y * h;
@@ -396,26 +422,36 @@ function drawPlayer(ctx, p, w, h, isMe, name, time) {
   drawRaidenFighter(ctx, 0, 0, shipPalette(ship), time);
   ctx.restore();
   ctx.globalAlpha = 1;
+}
+
+function drawPlayerLabels(ctx, p, w, h, isMe, name, viewFlipped) {
+  const x = p.x * w;
+  const sy = viewFlipped ? (1 - p.y) * h : p.y * h;
+  const faceDown = p.y < 0.45;
+  const labelSign = viewFlipped ? -1 : 1;
+  const nameOff = (faceDown ? -36 : 36) * labelSign;
+  const statOff = (faceDown ? -50 : 50) * labelSign;
 
   ctx.fillStyle = isMe ? "#fff" : "rgba(255,255,255,0.75)";
   ctx.font = "11px sans-serif";
   ctx.textAlign = "center";
-  ctx.fillText(name, x, y + (faceDown ? -36 : 36));
+  ctx.textBaseline = "middle";
+  ctx.fillText(name, x, sy + nameOff);
 
   const hearts = "♥".repeat(p.lives) + "♡".repeat(Math.max(0, 3 - p.lives));
   ctx.font = "10px sans-serif";
-  ctx.fillText(`${hearts} ${WEAPON_LABELS[p.weapon] || ""}`, x, y + (faceDown ? -50 : 50));
+  ctx.fillText(`${hearts} ${WEAPON_LABELS[p.weapon] || ""}`, x, sy + statOff);
 }
 
 function drawAllPlayerLasers(ctx, state, w, h, time) {
   for (const slot of ["host", "guest"]) {
     const p = state.players[slot];
     if (!p || p.lives <= 0 || p.weapon !== "laser") continue;
-    drawPlayerLaserBeam(ctx, p, w, h, time);
+    drawPlayerLaserBeam(ctx, p, w, h, time, state.mode);
   }
 }
 
-function drawPlayerLaserBeam(ctx, p, w, h, time) {
+function drawPlayerLaserBeam(ctx, p, w, h, time, mode) {
   const faceDown = p.y < 0.45;
   const x = p.x * w;
   const y0 = p.y * h + (faceDown ? 14 : -14);
