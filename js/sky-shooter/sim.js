@@ -1,5 +1,5 @@
-import { shipOrDefault } from "./ships.js?v=sky-duo-v20";
-import { asList } from "./state-util.js?v=sky-duo-v20";
+import { shipOrDefault } from "./ships.js?v=sky-duo-v21";
+import { asList } from "./state-util.js?v=sky-duo-v21";
 
 export const COOP_BOSS_AT = 95;
 export const VERSUS_TIME = 180;
@@ -23,6 +23,18 @@ export const COOP_Y_BAND = [
 ];
 /** 對戰模式：來賓在畫面上方區（世界座標），與房主區上下對稱 */
 export const VERSUS_GUEST_Y_BAND = [1 - COOP_Y_BAND[1], 1 - COOP_Y_BAND[0]];
+
+/** 螢幕顯示帶（雙端一致） */
+export const SCREEN_ME_BAND = [0.72, 0.86];
+export const SCREEN_OPPO_BAND = [0.14, 0.28];
+export const SCREEN_MID_BAND = [0.3, 0.68];
+export const WORLD_MID_BAND = [0.22, 0.78];
+
+export function bandMap(y, from, to) {
+  const span = from[1] - from[0];
+  const t = span > 0 ? Math.max(0, Math.min(1, (Number(y) - from[0]) / span)) : 0.5;
+  return to[0] + t * (to[1] - to[0]);
+}
 
 const POWER_OFFSETS = [[0], [-0.02, 0.02], [-0.024, 0, 0.024], [-0.032, -0.016, 0, 0.016, 0.032]];
 
@@ -121,10 +133,12 @@ export function versusYBand(slot, mode) {
   return slot === "guest" ? VERSUS_GUEST_Y_BAND : COOP_Y_BAND;
 }
 
-/** 螢幕觸控 → 世界座標（對戰來賓端 Y 軸翻轉） */
+/** 螢幕觸控 → 世界座標（對戰：雙方都在螢幕下方同一帶拖曳） */
 export function pointerToWorld(slot, mode, screenX, screenY) {
   let y = Number(screenY);
-  if (mode === "versus" && slot === "guest") y = 1 - y;
+  if (mode === "versus") {
+    y = bandMap(y, SCREEN_ME_BAND, versusYBand(slot, "versus"));
+  }
   return clampPointerInput(slot, mode, screenX, y);
 }
 

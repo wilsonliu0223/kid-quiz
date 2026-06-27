@@ -1,18 +1,18 @@
-import { shipOrDefault } from "./ships.js?v=sky-duo-v20";
-import { asList } from "./state-util.js?v=sky-duo-v20";
-import { VERSUS_TIME, ZONE_RATIO, COOP_Y_BAND, VERSUS_GUEST_Y_BAND, versusYBand } from "./sim.js?v=sky-duo-v20";
+import { shipOrDefault } from "./ships.js?v=sky-duo-v21";
+import { asList } from "./state-util.js?v=sky-duo-v21";
+import {
+  VERSUS_TIME,
+  ZONE_RATIO,
+  COOP_Y_BAND,
+  versusYBand,
+  bandMap,
+  SCREEN_ME_BAND,
+  SCREEN_OPPO_BAND,
+  SCREEN_MID_BAND,
+  WORLD_MID_BAND,
+} from "./sim.js?v=sky-duo-v21";
 
 const WEAPON_LABELS = { straight: "直射", spread: "擴散", laser: "雷射" };
-
-/** 螢幕上自己／對手的顯示帶（略離底，避免手機上貼邊） */
-const SCREEN_ME_BAND = [0.72, 0.86];
-const SCREEN_OPPO_BAND = [0.14, 0.28];
-
-function bandMap(y, from, to) {
-  const span = from[1] - from[0];
-  const t = span > 0 ? Math.max(0, Math.min(1, (y - from[0]) / span)) : 0.5;
-  return to[0] + t * (to[1] - to[0]);
-}
 
 /**
  * 對戰視角：自己在螢幕下方朝上，對手在上方朝下（房主／來賓皆同邏輯）
@@ -24,11 +24,10 @@ function createView(mode, mySlot) {
   return {
     mySlot,
     versus,
-    /** 敵機、子彈、道具等中立物件 */
+    /** 敵機、子彈、道具：雙端同一套螢幕座標（不替來賓翻轉） */
     entityPy(ny, h) {
       if (!versus) return ny * h;
-      if (mySlot === "guest") return (1 - ny) * h;
-      return ny * h;
+      return bandMap(ny, WORLD_MID_BAND, SCREEN_MID_BAND) * h;
     },
     /** 玩家飛機：永遠映射到自己下方／對手上方 */
     playerPy(ny, h, slot) {
@@ -62,13 +61,7 @@ export function drawSkyFrame(ctx, state, opts) {
 
   ctx.clearRect(0, 0, w, h);
 
-  if (view.versus && mySlot === "guest") {
-    ctx.save();
-    ctx.translate(0, h);
-    ctx.scale(1, -1);
-  }
-  drawSkyZones(ctx, w, h, time, mode);
-  if (view.versus && mySlot === "guest") ctx.restore();
+  drawSkyZones(ctx, w, h, time, mode, view);
 
   if (state.flash > 0) {
     ctx.fillStyle = `rgba(255,255,255,${state.flash * 0.35})`;
@@ -126,7 +119,7 @@ function zoneBounds(h) {
   return { mid, bot, botEnd };
 }
 
-function drawSkyZones(ctx, w, h, time, mode) {
+function drawSkyZones(ctx, w, h, time, mode, view) {
   const { mid, bot, botEnd } = zoneBounds(h);
 
   const grdTop = ctx.createLinearGradient(0, 0, 0, mid);
@@ -170,21 +163,27 @@ function drawSkyZones(ctx, w, h, time, mode) {
     ctx.stroke();
     ctx.setLineDash([]);
   } else if (mode === "versus") {
-    const gTop = h * VERSUS_GUEST_Y_BAND[0];
-    const gBot = h * VERSUS_GUEST_Y_BAND[1];
-    const hTop = h * COOP_Y_BAND[0];
-    const hBot = h * COOP_Y_BAND[1];
-    ctx.strokeStyle = "rgba(255, 213, 74, 0.3)";
+    const oTop = h * SCREEN_OPPO_BAND[0];
+    const oBot = h * SCREEN_OPPO_BAND[1];
+    const mTop = h * SCREEN_MID_BAND[0];
+    const mBot = h * SCREEN_MID_BAND[1];
+    const meTop = h * SCREEN_ME_BAND[0];
+    const meBot = h * SCREEN_ME_BAND[1];
+    ctx.strokeStyle = "rgba(255, 213, 74, 0.35)";
     ctx.setLineDash([6, 6]);
     ctx.beginPath();
-    ctx.moveTo(0, gTop);
-    ctx.lineTo(w, gTop);
-    ctx.moveTo(0, gBot);
-    ctx.lineTo(w, gBot);
-    ctx.moveTo(0, hTop);
-    ctx.lineTo(w, hTop);
-    ctx.moveTo(0, hBot);
-    ctx.lineTo(w, hBot);
+    ctx.moveTo(0, oTop);
+    ctx.lineTo(w, oTop);
+    ctx.moveTo(0, oBot);
+    ctx.lineTo(w, oBot);
+    ctx.moveTo(0, mTop);
+    ctx.lineTo(w, mTop);
+    ctx.moveTo(0, mBot);
+    ctx.lineTo(w, mBot);
+    ctx.moveTo(0, meTop);
+    ctx.lineTo(w, meTop);
+    ctx.moveTo(0, meBot);
+    ctx.lineTo(w, meBot);
     ctx.stroke();
     ctx.setLineDash([]);
   }
