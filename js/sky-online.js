@@ -8,7 +8,7 @@ import {
   openOnlineOnlyDuo,
 } from "./online-duo.js";
 import { startGameRoom } from "./room-service.js";
-import { SHIPS, SHIP_IDS, shipLobbyCardHtml } from "./sky-shooter/ships.js?v=sky-duo-v28";
+import { SHIPS, SHIP_IDS, shipLobbyCardHtml } from "./sky-shooter/ships.js?v=sky-duo-v29";
 import {
   createInitialState,
   stepSimulation,
@@ -18,9 +18,9 @@ import {
   clampPlayersToZone,
   canPlayerControl,
   VERSUS_GUEST_Y_BAND,
-} from "./sky-shooter/sim.js?v=sky-duo-v28";
-import { drawSkyFrame } from "./sky-shooter/render.js?v=sky-duo-v28";
-import { normalizeSkyState, isValidSkyState } from "./sky-shooter/state-util.js?v=sky-duo-v28";
+} from "./sky-shooter/sim.js?v=sky-duo-v29";
+import { drawSkyFrame } from "./sky-shooter/render.js?v=sky-duo-v29";
+import { normalizeSkyState, isValidSkyState } from "./sky-shooter/state-util.js?v=sky-duo-v29";
 
 const SKY_BUILD = "v27";
 
@@ -60,6 +60,9 @@ function bindSkyOnlineOnce() {
 
   $("#btn-sky-duo-solo")?.addEventListener("click", () => {
     window.location.href = "prototypes/sky-stage1.html?v=sky-stage1-v9";
+  });
+  $("#btn-sky-duo-solo2")?.addEventListener("click", () => {
+    window.location.href = "prototypes/sky-stage2.html?v=sky-stage2-v1";
   });
   $("#btn-sky-duo-coop")?.addEventListener("click", () =>
     openSkyDuo("sky-coop", "天空射擊 · 合作"),

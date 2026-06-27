@@ -16,7 +16,7 @@
       })();
     </script>
     <link rel="manifest" href="manifest.json" />
-    <link rel="stylesheet" href="css/app.css?v=sky-duo-v28" />
+    <link rel="stylesheet" href="css/app.css?v=sky-duo-v29" />
     <script type="importmap">
       {
         "imports": {
@@ -825,10 +825,11 @@
         </header>
         <div class="sky-duo-menu-body">
           <h2 class="flip-first-title">選擇模式</h2>
-          <p class="flip-first-hint">單機練習，或兩台手機連線合作／對戰</p>
-          <button type="button" class="btn btn-primary btn-block" id="btn-sky-duo-solo">單機闖關</button>
+          <p class="flip-first-hint">單機練習，或兩台手機連線合作（對戰之後開放）</p>
+          <button type="button" class="btn btn-primary btn-block" id="btn-sky-duo-solo">關卡1 · 海岸線</button>
+          <button type="button" class="btn btn-primary btn-block" id="btn-sky-duo-solo2">關卡2 · 火山峽谷</button>
           <button type="button" class="btn btn-secondary btn-block" id="btn-sky-duo-coop">雙機合作闖關</button>
-          <button type="button" class="btn btn-secondary btn-block" id="btn-sky-duo-versus">雙機對戰搶分</button>
+          <button type="button" class="btn btn-secondary btn-block" id="btn-sky-duo-versus" disabled title="之後開放">雙機對戰搶分（之後開放）</button>
         </div>
       </section>
 
@@ -1102,7 +1103,7 @@
         el.hidden = false;
         el.textContent = msg;
       };
-      import("./js/app.js?v=sky-duo-v28").catch((e) => {
+      import("./js/app.js?v=sky-duo-v29").catch((e) => {
         console.error(e);
         showLoadError(
           `程式載入失敗：${e.message || e}。請關閉分頁重開；若仍無效請到瀏覽器設定清除此網站快取。`,
