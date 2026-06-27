@@ -16,7 +16,7 @@
       })();
     </script>
     <link rel="manifest" href="manifest.json" />
-    <link rel="stylesheet" href="css/app.css?v=sky-duo-v6" />
+    <link rel="stylesheet" href="css/app.css?v=sky-duo-v7" />
     <script type="importmap">
       {
         "imports": {
@@ -1088,6 +1088,24 @@
       </div>
     </div>
 
-    <script type="module" src="js/app.js?v=sky-duo-v6"></script>
+    <script type="module">
+      const showLoadError = (msg) => {
+        const el = document.getElementById("boot-error");
+        if (!el) return;
+        el.hidden = false;
+        el.textContent = msg;
+      };
+      import("./js/app.js?v=sky-duo-v7").catch((e) => {
+        console.error(e);
+        showLoadError(
+          `程式載入失敗：${e.message || e}。請關閉分頁重開；若仍無效請到瀏覽器設定清除此網站快取。`,
+        );
+      });
+      setTimeout(() => {
+        if (!window.__kidQuizReady) {
+          showLoadError("程式尚未啟動。請關閉分頁重開；若仍無效請清除瀏覽器快取。");
+        }
+      }, 5000);
+    </script>
   </body>
 </html>

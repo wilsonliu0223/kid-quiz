@@ -68,7 +68,7 @@ import {
 } from "./flip-math-deck30.js";
 import { initGomoku, renderGomokuHomePlayers } from "./gomoku.js";
 import { initOnlineDuo } from "./online-duo.js";
-import { initSkyOnline, openSkyDuoMenu } from "./sky-online.js";
+import { initSkyOnline, openSkyDuoMenu } from "./sky-online.js?v=sky-duo-v7";
 import "./flip-zh-online.js";
 import "./flip-math-online.js";
 import "./gomoku-online.js";
@@ -2127,28 +2127,29 @@ function bindEvents() {
   });
 
   const title = $("#home-title");
-  title.addEventListener("touchstart", (e) => {
+  title?.addEventListener("touchstart", (e) => {
     homeTitlePressTimer = setTimeout(() => {
       e.preventDefault();
       openParentGate();
     }, 800);
   });
-  title.addEventListener("touchend", () => clearTimeout(homeTitlePressTimer));
-  title.addEventListener("touchmove", () => clearTimeout(homeTitlePressTimer));
-  title.addEventListener("mousedown", () => {
+  title?.addEventListener("touchend", () => clearTimeout(homeTitlePressTimer));
+  title?.addEventListener("touchmove", () => clearTimeout(homeTitlePressTimer));
+  title?.addEventListener("mousedown", () => {
     homeTitlePressTimer = setTimeout(openParentGate, 800);
   });
-  title.addEventListener("mouseup", () => clearTimeout(homeTitlePressTimer));
-  title.addEventListener("mouseleave", () => clearTimeout(homeTitlePressTimer));
+  title?.addEventListener("mouseup", () => clearTimeout(homeTitlePressTimer));
+  title?.addEventListener("mouseleave", () => clearTimeout(homeTitlePressTimer));
 }
 
 async function init() {
   if (!$("#view-home") || !$("#btn-start-zh")) {
-    showBootError("頁面載入不完整，請確認用 http://localhost:8787 開啟。");
+    showBootError("頁面載入不完整，請重新整理或清除快取後再試。");
     return;
   }
 
   bindEvents();
+  window.__kidQuizReady = true;
   setupQuizAutoSave();
   initChildPicker();
   initParentNameList();
@@ -2254,7 +2255,7 @@ window.startEnQuiz = startEnQuiz;
 
 init().catch((e) => {
   console.error(e);
-  showBootError(`程式錯誤：${e.message}。請用 http://localhost:8787 開啟。`);
+  showBootError(`程式錯誤：${e.message}。請關閉分頁重開；若仍無效請清除瀏覽器快取。`);
 });
 
 async function ensureOcrReady() {

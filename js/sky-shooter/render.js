@@ -1,6 +1,6 @@
-import { shipOrDefault } from "./ships.js";
-import { asList } from "./state-util.js";
-import { VERSUS_TIME } from "./sim.js";
+import { shipOrDefault } from "./ships.js?v=sky-duo-v7";
+import { asList } from "./state-util.js?v=sky-duo-v7";
+import { VERSUS_TIME } from "./sim.js?v=sky-duo-v7";
 
 const WEAPON_LABELS = { straight: "直射", spread: "擴散", laser: "雷射" };
 
