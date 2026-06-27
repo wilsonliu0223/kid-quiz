@@ -371,6 +371,8 @@
       let weapon = "straight";
       let fireCd = 0;
       let spawnCd = 0;
+      let spawnCdSky = 0;
+      let spawnCdMid = 0;
       let bossSpawned = false;
       let flash = 0;
       let campTime = 0;
@@ -512,6 +514,8 @@
         shieldVisualT = 0;
         fireCd = 0;
         spawnCd = 0;
+        spawnCdSky = 0;
+        spawnCdMid = 0;
         bossSpawned = false;
         flash = 0;
         bullets.length = 0;
@@ -621,6 +625,10 @@
           else if (r < 0.68) spawnPowerOrb(x, y, "laser");
           else if (r < 0.78) spawnPowerOrb(x, y, "shield");
           else if (r < 0.88) spawnPowerOrb(x, y, "missile");
+        } else if (kind === "striker") {
+          if (r < 0.3) spawnPowerOrb(x, y, "energy");
+          else if (r < 0.5) spawnPowerOrb(x, y, "power");
+          else if (r < 0.68) spawnPowerOrb(x, y, "spread");
         } else if (kind === "heavy" || kind === "tank" || kind === "drone" || kind === "bomber") {
           if (r < 0.35) spawnPowerOrb(x, y, "energy");
           else if (r < 0.55) spawnPowerOrb(x, y, "power");
@@ -670,42 +678,56 @@
       }
 
       const ENEMY_KINDS = {
-        grunt: { hp: 2, w: 28, h: 22, speed: 46, speedVar: 16, score: 1 },
-        fast: { hp: 1, w: 22, h: 18, speed: 78, speedVar: 20, score: 2 },
-        heavy: { hp: 4, w: 34, h: 26, speed: 40, speedVar: 10, score: 3 },
-        tank: { hp: 6, w: 40, h: 30, speed: 30, speedVar: 8, score: 5 },
-        drone: { hp: 3, w: 26, h: 20, speed: 52, speedVar: 12, score: 2 },
-        bomber: { hp: 5, w: 36, h: 28, speed: 34, speedVar: 8, score: 4 },
+        striker: { hp: 2, w: 20, h: 16, speed: 98, speedVar: 22, score: 2, zone: "sky" },
+        grunt: { hp: 2, w: 28, h: 22, speed: 46, speedVar: 16, score: 1, zone: "mid" },
+        fast: { hp: 1, w: 22, h: 18, speed: 78, speedVar: 20, score: 2, zone: "mid" },
+        heavy: { hp: 4, w: 34, h: 26, speed: 40, speedVar: 10, score: 3, zone: "mid" },
+        tank: { hp: 6, w: 40, h: 30, speed: 30, speedVar: 8, score: 5, zone: "mid" },
+        drone: { hp: 3, w: 26, h: 20, speed: 52, speedVar: 12, score: 2, zone: "mid" },
+        bomber: { hp: 5, w: 36, h: 28, speed: 34, speedVar: 8, score: 4, zone: "mid" },
       };
+
+      function enemyZone(e) {
+        return e.zone || (e.kind === "striker" ? "sky" : "mid");
+      }
+
+      function countEnemiesInZone(zone) {
+        return enemies.filter((e) => e.kind !== "boss" && enemyZone(e) === zone).length;
+      }
+
+      function countPendingInZone(zone) {
+        return pendingSpawns.filter((p) => p.zone === zone).length;
+      }
 
       function enemyScore(kind) {
         return ENEMY_KINDS[kind]?.score ?? (kind === "boss" ? 10 : 1);
       }
 
-      function pickSpawnKind(route) {
+      /** 雲層區（第二區）敵機種類 */
+      function pickSpawnKindMid(route) {
         const r = Math.random();
         if (route === "top") {
           if (time > 50 && r < 0.12) return "tank";
-          if (r < 0.2) return "bomber";
-          if (r < 0.38) return "drone";
-          if (r < 0.52) return "heavy";
-          if (r < 0.64) return "fast";
-          if (r < 0.76) return "tank";
+          if (r < 0.22) return "bomber";
+          if (r < 0.42) return "drone";
+          if (r < 0.58) return "heavy";
+          if (r < 0.72) return "fast";
+          if (r < 0.84) return "tank";
           return "grunt";
         }
         if (time > 55 && r < 0.1) return "tank";
-        if (r < 0.15) return "fast";
-        if (r < 0.32) return "heavy";
-        if (r < 0.42) return "tank";
-        if (r < 0.52) return "drone";
+        if (r < 0.18) return "fast";
+        if (r < 0.36) return "heavy";
+        if (r < 0.48) return "tank";
+        if (r < 0.6) return "drone";
         return "grunt";
       }
 
-      function pickSpawnRoute() {
+      function pickSpawnRouteMid() {
         const r = Math.random();
         if (campTime > 2.5) {
-          if (r < 0.45) return "top";
-          if (r < 0.72) return "left";
+          if (r < 0.42) return "top";
+          if (r < 0.71) return "left";
           return "right";
         }
         if (r < 0.34) return "top";
@@ -713,10 +735,33 @@
         return "right";
       }
 
-      function queueSpawn(kind, warn = 0.55) {
+      /** 天空上區：快速連射敵機 */
+      function pickSpawnRouteSky() {
+        const r = Math.random();
+        if (r < 0.38) return "skyTop";
+        if (r < 0.69) return "left";
+        return "right";
+      }
+
+      function queueSpawnSky(warn = 0.42) {
+        const route = pickSpawnRouteSky();
+        const skyBot = zoneY.mid - 28;
+        let tx;
+        let ty;
+        if (route === "skyTop") {
+          tx = 36 + Math.random() * (W - 72);
+          ty = 14;
+        } else {
+          tx = route === "left" ? 22 : W - 22;
+          ty = 24 + Math.random() * Math.max(40, skyBot - 48);
+        }
+        pendingSpawns.push({ kind: "striker", route, tx, ty, warn, zone: "sky" });
+      }
+
+      function queueSpawnMid(kind, warn = 0.55) {
         const midH = zoneY.bot - zoneY.mid;
-        const route = pickSpawnRoute();
-        const enemyKind = kind || pickSpawnKind(route);
+        const route = pickSpawnRouteMid();
+        const enemyKind = kind && kind !== "striker" ? kind : pickSpawnKindMid(route);
         let tx;
         let ty;
         if (route === "top") {
@@ -726,12 +771,17 @@
           tx = route === "left" ? 22 : W - 22;
           ty = zoneY.mid + 24 + Math.random() * (midH - 48);
         }
-        pendingSpawns.push({ kind: enemyKind, route, tx, ty, warn });
+        pendingSpawns.push({ kind: enemyKind, route, tx, ty, warn, zone: "mid" });
+      }
+
+      function queueSpawn(kind, warn = 0.55) {
+        queueSpawnMid(kind, warn);
       }
 
       function spawnEnemyAt(spec) {
         const midH = zoneY.bot - zoneY.mid;
         const { kind, route, tx, ty } = spec;
+        const zone = spec.zone || (kind === "striker" ? "sky" : "mid");
         if (kind === "boss") {
           enemies.push({
             kind: "boss",
@@ -750,9 +800,54 @@
           });
           return;
         }
+        if (kind === "striker") {
+          const spd = 98 + Math.random() * 22;
+          const cruiseY = Math.min(zoneY.mid - 32, ty + zoneY.mid * 0.22);
+          if (route === "skyTop") {
+            enemies.push({
+              kind: "striker",
+              zone: "sky",
+              route,
+              spawnShield: 0.35,
+              movePhase: "drop",
+              x: tx,
+              y: ty,
+              w: 20,
+              h: 16,
+              hp: 2,
+              maxHp: 2,
+              speed: spd,
+              vx: spd * 0.42 * (Math.random() < 0.5 ? 1 : -1),
+              dropVy: 88,
+              cruiseY,
+              fireCd: 0.15 + Math.random() * 0.2,
+              wobble: Math.random() * Math.PI * 2,
+            });
+          } else {
+            enemies.push({
+              kind: "striker",
+              zone: "sky",
+              route,
+              spawnShield: 0.7,
+              movePhase: "cruise",
+              x: route === "left" ? -36 : W + 36,
+              y: ty,
+              w: 20,
+              h: 16,
+              hp: 2,
+              maxHp: 2,
+              speed: spd,
+              vx: route === "left" ? spd : -spd,
+              fireCd: 0.18 + Math.random() * 0.22,
+              wobble: Math.random() * Math.PI * 2,
+            });
+          }
+          return;
+        }
         const stat = ENEMY_KINDS[kind] || ENEMY_KINDS.grunt;
         const spd = stat.speed + Math.random() * stat.speedVar;
         const base = {
+          zone: "mid",
           route,
           kind,
           spawnShield: route === "top" ? 0.5 : 1.0,
@@ -820,6 +915,19 @@
         queueSpawn(kind);
       }
 
+      function skySpawnRate() {
+        if (bossSpawned) return 999;
+        if (time < 40) return 1.1;
+        if (time < 90) return 0.85;
+        return 0.65;
+      }
+
+      function maxSkyEnemies() {
+        if (time < 40) return 4;
+        if (time < 90) return 5;
+        return 6;
+      }
+
       function spawnRate() {
         if (bossSpawned) return 999;
         if (time < 40) return 1.5;
@@ -833,6 +941,10 @@
         return 11;
       }
 
+      function maxMidEnemies() {
+        return maxEnemies();
+      }
+
       function laserMuzzle() {
         return { x: player.x, y: player.y - player.h * 0.35 };
       }
@@ -843,6 +955,7 @@
 
       function missileTrackDps(e) {
         if (e.kind === "boss") return 0.35;
+        if (e.kind === "striker") return 0.016;
         if (e.kind === "tank") return 0.009;
         if (e.kind === "bomber") return 0.01;
         if (e.kind === "heavy") return 0.011;
@@ -1400,6 +1513,27 @@
               r: 3.5,
             });
           }
+        } else if (e.kind === "striker") {
+          const ang = Math.atan2(player.y - e.y, player.x - e.x);
+          enemyBullets.push({
+            x: e.x,
+            y: e.y + 5,
+            vx: Math.cos(ang) * 235,
+            vy: Math.sin(ang) * 235,
+            r: 3,
+            glow: true,
+          });
+          if (Math.random() < 0.35) {
+            const a2 = ang + (Math.random() - 0.5) * 0.18;
+            enemyBullets.push({
+              x: e.x,
+              y: e.y + 5,
+              vx: Math.cos(a2) * 220,
+              vy: Math.sin(a2) * 220,
+              r: 2.5,
+              glow: true,
+            });
+          }
         } else if (e.kind === "heavy") {
           const ang = Math.atan2(player.y - e.y, player.x - e.x);
           for (let k = -2; k <= 2; k++) {
@@ -1505,23 +1639,40 @@
           }
         }
 
-        spawnCd -= dt;
-        const pendingCount = pendingSpawns.length;
+        spawnCdSky -= dt;
+        spawnCdMid -= dt;
+
         if (
-          spawnCd <= 0 &&
-          pendingCount < 4 &&
+          spawnCdSky <= 0 &&
+          countPendingInZone("sky") < 2 &&
           !bossSpawned &&
-          enemies.filter((e) => e.kind !== "boss").length < maxEnemies()
+          countEnemiesInZone("sky") < maxSkyEnemies()
         ) {
-          spawnCd = spawnRate();
-          if (campTime > 2.5 && Math.random() < 0.4) {
-            queueSpawn("fast");
-          } else {
-            queueSpawn();
+          spawnCdSky = skySpawnRate();
+          queueSpawnSky();
+          if (
+            countEnemiesInZone("sky") + countPendingInZone("sky") < maxSkyEnemies() &&
+            Math.random() < 0.22
+          ) {
+            queueSpawnSky();
           }
-          const grunts = enemies.filter((e) => e.kind !== "boss").length + pendingSpawns.length;
-          if (grunts < maxEnemies() && Math.random() < 0.28) {
-            queueSpawn();
+        }
+
+        if (
+          spawnCdMid <= 0 &&
+          countPendingInZone("mid") < 4 &&
+          !bossSpawned &&
+          countEnemiesInZone("mid") < maxMidEnemies()
+        ) {
+          spawnCdMid = spawnRate();
+          if (campTime > 2.5 && Math.random() < 0.4) {
+            queueSpawnMid("fast");
+          } else {
+            queueSpawnMid();
+          }
+          const midTotal = countEnemiesInZone("mid") + countPendingInZone("mid");
+          if (midTotal < maxMidEnemies() && Math.random() < 0.28) {
+            queueSpawnMid();
           }
         }
 
@@ -1668,7 +1819,11 @@
             } else {
               e.x += (e.vx ?? e.speed) * dt;
               if (e.cruiseVy) e.y += e.cruiseVy * dt;
-              if (e.kind === "drone") {
+              if (e.kind === "striker") {
+                e.wobble = (e.wobble || 0) + dt * 6;
+                e.y += Math.sin(e.wobble) * 22 * dt;
+                e.y = Math.max(20, Math.min(zoneY.mid - 24, e.y));
+              } else if (e.kind === "drone") {
                 e.wobble = (e.wobble || 0) + dt * 4.5;
                 e.x += Math.sin(e.wobble) * 28 * dt;
               }
@@ -1678,7 +1833,10 @@
           }
 
           const offField =
-            e.x < -40 || e.x > W + 40 || e.y > zoneY.botEnd + 30;
+            e.x < -40 ||
+            e.x > W + 40 ||
+            e.y > zoneY.botEnd + 30 ||
+            (enemyZone(e) === "sky" && e.y > zoneY.mid + 8);
           if (offField) {
             if (e.kind !== "boss") {
               escaped += 1;
@@ -1694,14 +1852,18 @@
             e.spawnShield <= 0 &&
             e.x > 24 &&
             e.x < W - 24 &&
-            e.y > zoneY.mid + 12
+            (e.kind === "striker"
+              ? e.y < zoneY.mid - 10
+              : e.y > zoneY.mid + 12 && e.y < zoneY.bot + 8)
           ) {
             if (e.kind === "boss") {
               e.fireCd = e.hp < 60 ? 0.38 : 0.52;
               bossAttack(e);
             } else {
               e.fireCd =
-                e.kind === "fast"
+                e.kind === "striker"
+                  ? 0.28 + Math.random() * 0.22
+                  : e.kind === "fast"
                   ? 1.1 + Math.random() * 0.6
                   : e.kind === "tank"
                     ? 1.4 + Math.random() * 0.9
@@ -1920,12 +2082,18 @@
         for (const p of pendingSpawns) {
           const pulse = 0.5 + Math.sin(time * 18) * 0.35;
           ctx.strokeStyle =
-            p.route === "top" ? "#7ad4ff" : p.route === "right" ? "#ff8866" : "#ffaa55";
+            p.route === "skyTop"
+              ? "#c8a0ff"
+              : p.route === "top"
+                ? "#7ad4ff"
+                : p.route === "right"
+                  ? "#ff8866"
+                  : "#ffaa55";
           ctx.globalAlpha = pulse;
           ctx.lineWidth = 2;
           ctx.setLineDash([4, 4]);
           ctx.beginPath();
-          if (p.route === "top") {
+          if (p.route === "skyTop" || p.route === "top") {
             ctx.moveTo(p.tx - 14, p.ty);
             ctx.lineTo(p.tx + 14, p.ty);
             ctx.moveTo(p.tx, p.ty - 10);
@@ -2068,6 +2236,31 @@
         ctx.fill();
         ctx.fillStyle = "#8898a8";
         ctx.fillRect(e.w / 2 - 6, -2, 14, 5);
+        ctx.restore();
+      }
+
+      function drawStrikerEnemy(e) {
+        const faceRight = (e.vx ?? e.speed) > 0;
+        ctx.save();
+        ctx.translate(e.x, e.y);
+        ctx.scale(faceRight ? -1 : 1, 1);
+        ctx.fillStyle = "#6a5090";
+        ctx.beginPath();
+        ctx.moveTo(12, 0);
+        ctx.lineTo(-8, -7);
+        ctx.lineTo(-4, 0);
+        ctx.lineTo(-8, 7);
+        ctx.closePath();
+        ctx.fill();
+        ctx.fillStyle = "#c080ff";
+        ctx.shadowColor = "#e0a0ff";
+        ctx.shadowBlur = 10;
+        ctx.beginPath();
+        ctx.arc(-2, 0, 3, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.shadowBlur = 0;
+        ctx.fillStyle = "#ff60a0";
+        ctx.fillRect(8, -1, 5, 2);
         ctx.restore();
       }
 
@@ -2331,6 +2524,7 @@
             ctx.globalAlpha = 0.55 + Math.sin(time * 28) * 0.28;
           }
           if (e.kind === "boss") drawBoss(e);
+          else if (e.kind === "striker") drawStrikerEnemy(e);
           else if (e.kind === "fast") drawJetEnemy(e);
           else if (e.kind === "heavy") drawHeavyEnemy(e);
           else if (e.kind === "tank") drawTankEnemy(e);
