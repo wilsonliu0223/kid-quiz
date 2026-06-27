@@ -1,11 +1,12 @@
-import { shipOrDefault } from "./ships.js?v=sky-duo-v25";
-import { asList } from "./state-util.js?v=sky-duo-v25";
+import { shipOrDefault } from "./ships.js?v=sky-duo-v26";
+import { asList } from "./state-util.js?v=sky-duo-v26";
 import {
   VERSUS_TIME,
   ZONE_RATIO,
   COOP_Y_BAND,
   VERSUS_GUEST_Y_BAND,
-} from "./sim.js?v=sky-duo-v25";
+  COOP_BOSS_HP,
+} from "./sim.js?v=sky-duo-v26";
 
 const WEAPON_LABELS = { straight: "直射", spread: "擴散", laser: "雷射" };
 
@@ -312,8 +313,9 @@ function drawJetEnemy(ctx, x, y, ew) {
 
 function drawBoss(ctx, e, x, y, ew, eh, time) {
   const pulse = 0.82 + Math.sin(time * 4.5) * 0.18;
-  const hpR = Math.max(0, e.hp / 150);
-  const rage = hpR < 0.45;
+  const hpMax = e.maxHp || COOP_BOSS_HP;
+  const hpR = Math.max(0, e.hp / hpMax);
+  const rage = hpR < 0.5;
 
   ctx.save();
   ctx.translate(x, y);

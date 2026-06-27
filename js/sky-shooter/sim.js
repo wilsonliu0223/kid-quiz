@@ -1,7 +1,10 @@
-import { shipOrDefault } from "./ships.js?v=sky-duo-v25";
-import { asList } from "./state-util.js?v=sky-duo-v25";
+import { shipOrDefault } from "./ships.js?v=sky-duo-v26";
+import { asList } from "./state-util.js?v=sky-duo-v26";
 
 export const COOP_BOSS_AT = 95;
+/** 單人關卡1 同款：Boss HP、巡邏、三種彈幕 */
+export const COOP_BOSS_HP = 120;
+export const COOP_BOSS_HOMING_SEC = 3;
 export const VERSUS_TIME = 180;
 export const VERSUS_BOSS_AT = 95;
 export const BOSS_KILL_BONUS = 15;
@@ -60,6 +63,7 @@ export function createInitialState(mode, ships) {
     pickups: [],
     particles: [],
     missileTracks: [],
+    bossOrbCd: 5,
   };
   state.enemies.push(
     {
@@ -210,6 +214,7 @@ export function stepSimulation(state, dt) {
 
   updatePlayers(state, dt);
   updateMissileTracks(state, dt);
+  if (isCoop && state.bossSpawned) updateCoopBossOrbs(state, dt);
   updateSpawns(state, dt);
   updateEnemies(state, dt);
   updateBullets(state, dt);
@@ -285,46 +290,180 @@ function spawnBoss(state) {
   state.bossSpawned = true;
   state.phase = "boss";
   state.enemies = state.enemies.filter((e) => e.kind === "boss");
-  state.enemies.push({
-    id: eid(),
-    kind: "boss",
-    x: 0.5,
-    y: 0.35,
-    w: 0.12,
-    h: 0.08,
-    hp: state.mode === "coop" ? 150 : 100,
-    fireCd: 0.6,
-    shield: 0,
-  });
+  if (state.mode === "coop") {
+    state.bossOrbCd = 5;
+    const bossY = ZONE_RATIO.top + ZONE_RATIO.mid * 0.32;
+    state.enemies.push({
+      id: eid(),
+      kind: "boss",
+      x: 0.38,
+      y: bossY,
+      w: 0.17,
+      h: 0.07,
+      hp: COOP_BOSS_HP,
+      maxHp: COOP_BOSS_HP,
+      speed: 0.042,
+      fireCd: 0.5,
+      shield: 0,
+      spin: 0,
+      bossDir: 1,
+    });
+  } else {
+    state.enemies.push({
+      id: eid(),
+      kind: "boss",
+      x: 0.5,
+      y: 0.35,
+      w: 0.12,
+      h: 0.08,
+      hp: 100,
+      maxHp: 100,
+      fireCd: 0.6,
+      shield: 0,
+    });
+  }
   state.flash = 0.15;
+}
+
+/** 單人同款：依時間調整生成間隔與場上上限（雙人略多） */
+function coopSpawnGap(t) {
+  if (t < 40) return 2.2;
+  if (t < 90) return 1.5;
+  return 1.0;
+}
+
+function coopMaxGrunts(t) {
+  if (t < 40) return 6;
+  if (t < 90) return 8;
+  return 10;
+}
+
+function updateCoopBossOrbs(state, dt) {
+  if (!state.enemies.some((e) => e.kind === "boss")) return;
+  state.bossOrbCd = (state.bossOrbCd ?? 5) - dt;
+  if (state.bossOrbCd > 0 || state.pickups.length >= 2) return;
+  state.bossOrbCd = 7;
+  const boss = state.enemies.find((e) => e.kind === "boss");
+  if (!boss) return;
+  const types = ["power", "spread", "laser", "missile"];
+  const type = types[Math.floor(Math.random() * types.length)];
+  state.pickups.push({
+    id: eid(),
+    type,
+    x: boss.x + (Math.random() - 0.5) * 0.12,
+    y: boss.y + 0.025,
+    vy: 0.05,
+    life: 12,
+  });
+}
+
+function pushEnemyBullet(state, x, y, vx, vy, r, extra = {}) {
+  state.eBullets.push({
+    id: eid(),
+    x,
+    y,
+    vx,
+    vy,
+    r,
+    ...extra,
+  });
+}
+
+function bossAttackCoop(state, e) {
+  e.spin = (e.spin || 0) + 0.4;
+  const target = nearestPlayer(state, e);
+  const roll = Math.random();
+  if (roll < 0.35) {
+    for (let i = 0; i < 16; i++) {
+      const a = (Math.PI * 2 * i) / 16 + e.spin;
+      pushEnemyBullet(state, e.x, e.y, Math.cos(a) * 0.25, Math.sin(a) * 0.25, 0.012, {
+        glow: true,
+      });
+    }
+    return;
+  }
+  if (roll < 0.65) {
+    for (let i = 0; i < 8; i++) {
+      const a = -Math.PI / 2 + (i - 3.5) * 0.14;
+      pushEnemyBullet(
+        state,
+        e.x - 0.04 + i * 0.01,
+        e.y + 0.012,
+        Math.cos(a) * 0.29,
+        Math.sin(a) * 0.29,
+        0.011,
+        { glow: true },
+      );
+    }
+    return;
+  }
+  if (!target) return;
+  const ang = Math.atan2(target.y - e.y, target.x - e.x);
+  for (let k = -1; k <= 1; k++) {
+    const a = ang + k * 0.12;
+    pushEnemyBullet(state, e.x, e.y + 0.01, Math.cos(a) * 0.38, Math.sin(a) * 0.38, 0.012, {
+      glow: true,
+      homing: k === 0 ? 0.15 : 0,
+      homingT: k === 0 ? COOP_BOSS_HOMING_SEC : 0,
+    });
+  }
+}
+
+function updateCoopBoss(state, e, dt) {
+  e.x += e.speed * dt * (e.bossDir || 1);
+  if (e.x > 0.55) e.bossDir = -1;
+  else if (e.x < 0.25) e.bossDir = 1;
+  e.fireCd -= dt;
+  if (e.fireCd > 0) return;
+  e.fireCd = e.hp < COOP_BOSS_HP * 0.5 ? 0.38 : 0.52;
+  bossAttackCoop(state, e);
+}
+
+function updateVersusBoss(state, e, dt) {
+  e.x += Math.sin(state.t * 1.2) * 0.08 * dt;
+  e.fireCd -= dt;
+  if (e.fireCd <= 0) {
+    e.fireCd = 0.55;
+    for (let i = 0; i < 8; i++) {
+      const a = (Math.PI * 2 * i) / 8;
+      pushEnemyBullet(state, e.x, e.y, Math.cos(a) * 0.28, Math.sin(a) * 0.28, 0.01);
+    }
+  }
 }
 
 function updateSpawns(state, dt) {
   if (state.bossSpawned) return;
   state.spawnCd -= dt;
-  const max = state.mode === "coop" ? 7 : 5;
   const grunts = state.enemies.filter((e) => e.kind !== "boss").length;
-  if (state.spawnCd <= 0 && grunts < max) {
-    state.spawnCd = state.mode === "coop" ? 1.1 : 1.4;
-    if (state.mode === "coop") {
+  if (state.mode === "coop") {
+    const max = coopMaxGrunts(state.t);
+    if (state.spawnCd <= 0 && grunts < max) {
+      state.spawnCd = coopSpawnGap(state.t);
       state.enemies.push(spawnCoopEnemy());
-    } else {
-      const fast = Math.random() < 0.28;
-      state.enemies.push({
-        id: eid(),
-        kind: fast ? "fast" : "grunt",
-        x: -0.05,
-        y: 0.28 + Math.random() * 0.42,
-        w: fast ? 0.04 : 0.05,
-        h: fast ? 0.035 : 0.042,
-        hp: fast ? 1 : 2,
-        speed: fast ? 0.22 : 0.14,
-        vx: fast ? 0.22 : 0.14,
-        vy: 0,
-        fireCd: 1.2 + Math.random(),
-        shield: 0.8,
-      });
+      if (grunts + 1 < max && Math.random() < 0.22) {
+        state.enemies.push(spawnCoopEnemy());
+      }
     }
+    return;
+  }
+  const max = 5;
+  if (state.spawnCd <= 0 && grunts < max) {
+    state.spawnCd = 1.4;
+    const fast = Math.random() < 0.28;
+    state.enemies.push({
+      id: eid(),
+      kind: fast ? "fast" : "grunt",
+      x: -0.05,
+      y: 0.28 + Math.random() * 0.42,
+      w: fast ? 0.04 : 0.05,
+      h: fast ? 0.035 : 0.042,
+      hp: fast ? 1 : 2,
+      speed: fast ? 0.22 : 0.14,
+      vx: fast ? 0.22 : 0.14,
+      vy: 0,
+      fireCd: 1.2 + Math.random(),
+      shield: 0.8,
+    });
   }
 }
 
@@ -487,22 +626,8 @@ function updateEnemies(state, dt) {
   for (const e of state.enemies) {
     if (e.shield > 0) e.shield -= dt;
     if (e.kind === "boss") {
-      e.x += Math.sin(state.t * 1.2) * 0.08 * dt;
-      e.fireCd -= dt;
-      if (e.fireCd <= 0) {
-        e.fireCd = 0.55;
-        for (let i = 0; i < 8; i++) {
-          const a = (Math.PI * 2 * i) / 8;
-          state.eBullets.push({
-            id: eid(),
-            x: e.x,
-            y: e.y,
-            vx: Math.cos(a) * 0.28,
-            vy: Math.sin(a) * 0.28,
-            r: 0.01,
-          });
-        }
-      }
+      if (state.mode === "coop") updateCoopBoss(state, e, dt);
+      else updateVersusBoss(state, e, dt);
     } else {
       const vx = typeof e.vx === "number" ? e.vx : e.speed;
       const vy = typeof e.vy === "number" ? e.vy : 0;
@@ -602,6 +727,21 @@ function updateBullets(state, dt) {
   );
 
   for (const eb of state.eBullets) {
+    if (eb.homing > 0 && eb.homingT > 0) {
+      eb.homingT -= dt;
+      const target = nearestPlayer(state, eb);
+      if (target) {
+        const ang = Math.atan2(target.y - eb.y, target.x - eb.x);
+        const cur = Math.atan2(eb.vy, eb.vx);
+        let diff = ang - cur;
+        while (diff > Math.PI) diff -= Math.PI * 2;
+        while (diff < -Math.PI) diff += Math.PI * 2;
+        const sp = Math.hypot(eb.vx, eb.vy);
+        const na = cur + diff * eb.homing;
+        eb.vx = Math.cos(na) * sp;
+        eb.vy = Math.sin(na) * sp;
+      }
+    }
     eb.x += eb.vx * dt;
     eb.y += eb.vy * dt;
     for (const slot of ["host", "guest"]) {
