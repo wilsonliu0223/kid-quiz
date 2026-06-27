@@ -8,7 +8,7 @@ import {
   openOnlineOnlyDuo,
 } from "./online-duo.js";
 import { startGameRoom } from "./room-service.js";
-import { SHIPS, SHIP_IDS, shipLobbyCardHtml } from "./sky-shooter/ships.js?v=sky-duo-v21";
+import { SHIPS, SHIP_IDS, shipLobbyCardHtml } from "./sky-shooter/ships.js?v=sky-duo-v22";
 import {
   createInitialState,
   stepSimulation,
@@ -17,14 +17,12 @@ import {
   pointerToWorld,
   clampPlayersToZone,
   canPlayerControl,
-  SCREEN_ME_BAND,
-  bandMap,
-  versusYBand,
-} from "./sky-shooter/sim.js?v=sky-duo-v21";
-import { drawSkyFrame } from "./sky-shooter/render.js?v=sky-duo-v21";
-import { normalizeSkyState, isValidSkyState } from "./sky-shooter/state-util.js?v=sky-duo-v21";
+  VERSUS_GUEST_Y_BAND,
+} from "./sky-shooter/sim.js?v=sky-duo-v22";
+import { drawSkyFrame } from "./sky-shooter/render.js?v=sky-duo-v22";
+import { normalizeSkyState, isValidSkyState } from "./sky-shooter/state-util.js?v=sky-duo-v22";
 
-const SKY_BUILD = "v21";
+const SKY_BUILD = "v22";
 
 const $ = (sel) => document.querySelector(sel);
 
@@ -590,9 +588,13 @@ function bindCanvasInput(slot, mode) {
   };
   requestAnimationFrame(moveLoop);
 
-  if (mode === "versus" && slot) {
-    localInput.y = bandMap(0.79, SCREEN_ME_BAND, versusYBand(slot, "versus"));
-    localInput.x = slot === "host" ? 0.35 : 0.65;
+  if (mode === "versus" && slot === "guest") {
+    localInput.y =
+      VERSUS_GUEST_Y_BAND[0] + (VERSUS_GUEST_Y_BAND[1] - VERSUS_GUEST_Y_BAND[0]) * 0.5;
+    localInput.x = 0.65;
+  } else if (mode === "versus") {
+    localInput.y = 0.84;
+    localInput.x = 0.35;
   } else {
     localInput.y = 0.84;
     localInput.x = slot === "host" ? 0.35 : 0.65;

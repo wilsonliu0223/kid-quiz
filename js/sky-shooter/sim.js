@@ -1,5 +1,5 @@
-import { shipOrDefault } from "./ships.js?v=sky-duo-v21";
-import { asList } from "./state-util.js?v=sky-duo-v21";
+import { shipOrDefault } from "./ships.js?v=sky-duo-v22";
+import { asList } from "./state-util.js?v=sky-duo-v22";
 
 export const COOP_BOSS_AT = 95;
 export const VERSUS_TIME = 180;
@@ -133,12 +133,10 @@ export function versusYBand(slot, mode) {
   return slot === "guest" ? VERSUS_GUEST_Y_BAND : COOP_Y_BAND;
 }
 
-/** 螢幕觸控 → 世界座標（對戰：雙方都在螢幕下方同一帶拖曳） */
+/** 螢幕觸控 → 世界座標（對戰來賓：螢幕 y 翻轉對應翻轉視角） */
 export function pointerToWorld(slot, mode, screenX, screenY) {
   let y = Number(screenY);
-  if (mode === "versus") {
-    y = bandMap(y, SCREEN_ME_BAND, versusYBand(slot, "versus"));
-  }
+  if (mode === "versus" && slot === "guest") y = 1 - y;
   return clampPointerInput(slot, mode, screenX, y);
 }
 
