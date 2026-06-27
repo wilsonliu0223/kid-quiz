@@ -2791,185 +2791,179 @@
       }
 
       function drawBoss(e) {
-        const pulse = 0.82 + Math.sin(time * 4.5) * 0.18;
-        const spin = time * 1.6;
+        const pulse = 0.78 + Math.sin(time * 5) * 0.22;
+        const spin = time * 1.4;
         const w = e.w;
         const h = e.h;
-        const hpRatio = Math.max(0, e.hp / STAGE2_BOSS_HP);
-        const rage = hpRatio < 0.45;
+        const maxHp = e.maxHp || STAGE2_BOSS_HP;
+        const hpRatio = Math.max(0, e.hp / maxHp);
+        const phase3 = hpRatio < 0.3;
+        const phase2 = hpRatio < 0.65;
 
         ctx.save();
         ctx.translate(e.x, e.y);
 
-        // 外層能量場（雙環）
+        // 外層熱浪環
         for (let ring = 0; ring < 2; ring++) {
-          const r = w * (0.48 + ring * 0.12) * pulse;
-          ctx.strokeStyle = rage
-            ? `rgba(255, 80, 120, ${0.15 + ring * 0.1})`
-            : `rgba(255, 180, 80, ${0.12 + ring * 0.08})`;
-          ctx.lineWidth = ring === 0 ? 2 : 1;
-          ctx.setLineDash(ring === 0 ? [] : [6, 8]);
+          const r = w * (0.44 + ring * 0.1) * pulse;
+          ctx.strokeStyle = phase3
+            ? `rgba(255, 60, 30, ${0.22 + ring * 0.12})`
+            : `rgba(255, 140, 50, ${0.14 + ring * 0.08})`;
+          ctx.lineWidth = ring === 0 ? 2.5 : 1.5;
+          ctx.setLineDash(ring === 0 ? [] : [5, 6]);
           ctx.beginPath();
-          ctx.ellipse(0, 2, r, r * 0.55, ring * 0.3 + spin * 0.05, 0, Math.PI * 2);
+          ctx.ellipse(0, 4, r, r * 0.52, ring * 0.25 + spin * 0.04, 0, Math.PI * 2);
           ctx.stroke();
         }
         ctx.setLineDash([]);
 
-        // 側翼装甲
-        ctx.shadowColor = rage ? "#ff3060" : "#ff8040";
-        ctx.shadowBlur = 22 * pulse;
-        const wingGrad = ctx.createLinearGradient(-w / 2, 0, w / 2, 0);
-        wingGrad.addColorStop(0, "#2a1018");
-        wingGrad.addColorStop(0.35, "#4a2028");
-        wingGrad.addColorStop(0.5, "#5a2830");
-        wingGrad.addColorStop(0.65, "#4a2028");
-        wingGrad.addColorStop(1, "#2a1018");
-        ctx.fillStyle = wingGrad;
-        ctx.beginPath();
-        ctx.moveTo(-w / 2 - 6, 10);
-        ctx.lineTo(-w / 2 + 8, -h / 2 - 4);
-        ctx.lineTo(-w / 2 + 22, -h / 2 + 6);
-        ctx.lineTo(-w / 2 + 14, 12);
-        ctx.closePath();
-        ctx.fill();
-        ctx.beginPath();
-        ctx.moveTo(w / 2 + 6, 10);
-        ctx.lineTo(w / 2 - 8, -h / 2 - 4);
-        ctx.lineTo(w / 2 - 22, -h / 2 + 6);
-        ctx.lineTo(w / 2 - 14, 12);
-        ctx.closePath();
-        ctx.fill();
-
-        // 主艦體
-        const hullGrad = ctx.createLinearGradient(0, -h / 2, 0, h / 2);
-        hullGrad.addColorStop(0, "#6a2830");
-        hullGrad.addColorStop(0.4, "#3a1818");
-        hullGrad.addColorStop(1, "#1a0c10");
-        ctx.fillStyle = hullGrad;
-        ctx.beginPath();
-        ctx.moveTo(-w / 2 + 4, 14);
-        ctx.lineTo(-w / 2 + 16, -h / 2 + 2);
-        ctx.lineTo(0, -h / 2 - 6);
-        ctx.lineTo(w / 2 - 16, -h / 2 + 2);
-        ctx.lineTo(w / 2 - 4, 14);
-        ctx.lineTo(0, h / 2 - 2);
-        ctx.closePath();
-        ctx.fill();
-
-        // 金色裝甲帶
-        ctx.fillStyle = COLORS.gold;
-        ctx.fillRect(-w / 2 + 14, -2, w - 28, 8);
-        ctx.fillStyle = "#c9a227";
-        ctx.fillRect(-w / 2 + 18, 6, w - 36, 3);
-
-        // 艦橋
-        ctx.fillStyle = "#2a3040";
-        ctx.fillRect(-12, -h / 2 + 4, 24, 16);
-        ctx.fillStyle = "#88ccff";
-        ctx.globalAlpha = 0.5 + pulse * 0.3;
-        ctx.fillRect(-8, -h / 2 + 8, 16, 6);
-        ctx.globalAlpha = 1;
-
-        // 四門砲塔
-        const turretXs = [-30, -10, 10, 30];
-        for (let i = 0; i < turretXs.length; i++) {
-          const tx = turretXs[i];
-          const aim = Math.sin(time * 3 + i * 1.2) * 0.15;
+        // 浮動岩漿炮塔（二階起環繞）
+        const orbitR = w * 0.38;
+        for (let i = 0; i < 3; i++) {
+          const ang = spin + (Math.PI * 2 * i) / 3;
+          const ox = Math.cos(ang) * orbitR * (phase2 ? 1 : 0.55);
+          const oy = Math.sin(ang) * orbitR * 0.35 * (phase2 ? 1 : 0.55);
           ctx.save();
-          ctx.translate(tx, -h / 2 + 2);
-          ctx.rotate(aim);
-          ctx.fillStyle = "#442228";
-          ctx.fillRect(-7, -10, 14, 12);
-          ctx.fillStyle = "#221018";
-          ctx.fillRect(-3, -16, 6, 8);
-          const tg = ctx.createRadialGradient(0, -14, 0, 0, -14, 5);
-          tg.addColorStop(0, rage ? "#fff" : "#ffcc88");
-          tg.addColorStop(0.5, rage ? "#ff4060" : "#ff6040");
-          tg.addColorStop(1, "#801020");
-          ctx.fillStyle = tg;
+          ctx.translate(ox, oy);
+          ctx.shadowColor = "#ff5020";
+          ctx.shadowBlur = phase2 ? 14 : 8;
+          const rockGrad = ctx.createLinearGradient(-10, -8, 10, 10);
+          rockGrad.addColorStop(0, "#4a2820");
+          rockGrad.addColorStop(1, "#2a1410");
+          ctx.fillStyle = rockGrad;
           ctx.beginPath();
-          ctx.arc(0, -14, 4.5, 0, Math.PI * 2);
+          ctx.moveTo(0, -10);
+          ctx.lineTo(9, 4);
+          ctx.lineTo(-2, 10);
+          ctx.lineTo(-9, 2);
+          ctx.closePath();
           ctx.fill();
-          if (rage && Math.sin(time * 20 + i) > 0.6) {
-            ctx.fillStyle = "rgba(255,255,255,0.7)";
-            ctx.fillRect(-1, -22, 2, 6);
+          ctx.fillStyle = phase3 ? "#ff3040" : "#ff6020";
+          ctx.beginPath();
+          ctx.arc(0, 0, 4, 0, Math.PI * 2);
+          ctx.fill();
+          if (phase2 && Math.sin(time * 18 + i * 2) > 0.5) {
+            ctx.fillStyle = "rgba(255,220,120,0.75)";
+            ctx.fillRect(-1.5, -12, 3, 7);
           }
+          ctx.shadowBlur = 0;
           ctx.restore();
         }
 
-        // 中央能量核心
-        const coreR = 12 + pulse * 3;
-        const coreGrad = ctx.createRadialGradient(0, 4, 0, 0, 4, coreR);
-        coreGrad.addColorStop(0, "#ffffff");
-        coreGrad.addColorStop(0.25, rage ? "#ff80c0" : "#ffe080");
-        coreGrad.addColorStop(0.6, rage ? "#ff2040" : "#ff8020");
-        coreGrad.addColorStop(1, "rgba(80,0,20,0)");
-        ctx.fillStyle = coreGrad;
+        // 火山基座（黑曜石外殼）
+        ctx.shadowColor = phase3 ? "#ff2020" : "#ff6020";
+        ctx.shadowBlur = 24 * pulse;
+        const baseGrad = ctx.createLinearGradient(0, -h / 2, 0, h / 2);
+        baseGrad.addColorStop(0, "#3a1818");
+        baseGrad.addColorStop(0.45, "#2a1010");
+        baseGrad.addColorStop(1, "#140808");
+        ctx.fillStyle = baseGrad;
         ctx.beginPath();
-        ctx.arc(0, 4, coreR, 0, Math.PI * 2);
+        ctx.moveTo(-w / 2 + 6, h / 2 - 4);
+        ctx.lineTo(-w / 2 + 20, -h / 2 + 8);
+        ctx.quadraticCurveTo(0, -h / 2 - 10, w / 2 - 20, -h / 2 + 8);
+        ctx.lineTo(w / 2 - 6, h / 2 - 4);
+        ctx.quadraticCurveTo(0, h / 2 + 6, -w / 2 + 6, h / 2 - 4);
+        ctx.closePath();
         ctx.fill();
 
-        // 旋轉雷達盤
-        ctx.save();
-        ctx.rotate(spin);
-        ctx.strokeStyle = `rgba(120, 200, 255, ${0.35 + pulse * 0.2})`;
+        // 岩漿裂紋
+        ctx.strokeStyle = `rgba(255, ${phase3 ? 80 : 120}, 40, ${0.55 + pulse * 0.25})`;
         ctx.lineWidth = 2;
         ctx.beginPath();
-        ctx.ellipse(0, -6, 18, 6, 0, 0, Math.PI * 2);
+        ctx.moveTo(-w * 0.28, h * 0.15);
+        ctx.lineTo(-w * 0.08, -h * 0.05);
+        ctx.lineTo(w * 0.12, h * 0.1);
+        ctx.moveTo(w * 0.25, h * 0.12);
+        ctx.lineTo(w * 0.05, -h * 0.12);
+        ctx.lineTo(-w * 0.15, 0);
         ctx.stroke();
-        ctx.fillStyle = "rgba(80,160,220,0.25)";
-        ctx.fillRect(-2, -18, 4, 24);
-        ctx.restore();
 
-        // 尾焰／引擎
-        for (const ex of [-22, 22]) {
-          const fl = 10 + Math.sin(time * 24 + ex) * 4;
-          const fg = ctx.createLinearGradient(ex, 12, ex, 12 + fl);
-          fg.addColorStop(0, "#ffcc60");
-          fg.addColorStop(0.5, "#ff6020");
-          fg.addColorStop(1, "rgba(255,32,0,0)");
-          ctx.fillStyle = fg;
+        // 火山口邊緣
+        ctx.strokeStyle = "rgba(80, 40, 30, 0.9)";
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.ellipse(0, -h * 0.08, w * 0.28, h * 0.14, 0, 0, Math.PI * 2);
+        ctx.stroke();
+
+        // 中央岩漿爐心
+        const coreR = 16 + pulse * (phase3 ? 6 : 4);
+        const coreGrad = ctx.createRadialGradient(0, -h * 0.06, 0, 0, -h * 0.06, coreR);
+        coreGrad.addColorStop(0, "#ffffff");
+        coreGrad.addColorStop(0.2, phase3 ? "#ff8060" : "#ffe060");
+        coreGrad.addColorStop(0.55, phase3 ? "#ff2010" : "#ff5010");
+        coreGrad.addColorStop(1, "rgba(120, 20, 0, 0)");
+        ctx.fillStyle = coreGrad;
+        ctx.beginPath();
+        ctx.ellipse(0, -h * 0.06, coreR, coreR * 0.72, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 爐心脈動泡泡
+        if (phase2) {
+          for (let b = 0; b < 4; b++) {
+            const ba = spin * 1.6 + b * 1.57;
+            const br = 6 + Math.sin(time * 8 + b) * 3;
+            const bx = Math.cos(ba) * (coreR * 0.55);
+            const by = -h * 0.06 + Math.sin(ba) * (coreR * 0.35);
+            ctx.globalAlpha = 0.35 + Math.sin(time * 10 + b) * 0.2;
+            ctx.fillStyle = "#ff9040";
+            ctx.beginPath();
+            ctx.arc(bx, by, br * 0.35, 0, Math.PI * 2);
+            ctx.fill();
+          }
+          ctx.globalAlpha = 1;
+        }
+
+        // 向上噴發岩漿柱（三階更猛）
+        const plumeH = (phase3 ? 28 : phase2 ? 18 : 10) + Math.sin(time * 12) * 4;
+        const plume = ctx.createLinearGradient(0, -h * 0.2, 0, -h * 0.2 - plumeH);
+        plume.addColorStop(0, "rgba(255, 200, 80, 0.85)");
+        plume.addColorStop(0.4, "rgba(255, 100, 30, 0.5)");
+        plume.addColorStop(1, "rgba(255, 40, 10, 0)");
+        ctx.fillStyle = plume;
+        ctx.beginPath();
+        ctx.moveTo(-10, -h * 0.18);
+        ctx.quadraticCurveTo(0, -h * 0.2 - plumeH, 10, -h * 0.18);
+        ctx.lineTo(6, -h * 0.12);
+        ctx.lineTo(-6, -h * 0.12);
+        ctx.closePath();
+        ctx.fill();
+
+        // 滴落岩漿
+        for (let d = 0; d < 3; d++) {
+          const dx = -14 + d * 14;
+          const drip = (time * 3 + d * 1.3) % 1;
+          const dy = h * 0.2 + drip * 22;
+          ctx.fillStyle = `rgba(255, 120, 30, ${0.7 * (1 - drip)})`;
           ctx.beginPath();
-          ctx.moveTo(ex - 5, 12);
-          ctx.lineTo(ex + 5, 12);
-          ctx.lineTo(ex, 12 + fl);
-          ctx.closePath();
+          ctx.ellipse(dx, dy, 3, 5 + drip * 4, 0, 0, Math.PI * 2);
           ctx.fill();
         }
 
-        // 裝飾面板線
-        ctx.strokeStyle = "rgba(255, 213, 74, 0.25)";
-        ctx.lineWidth = 1;
-        ctx.beginPath();
-        ctx.moveTo(-w / 2 + 20, 0);
-        ctx.lineTo(w / 2 - 20, 0);
-        ctx.moveTo(0, -h / 2);
-        ctx.lineTo(0, h / 2 - 6);
-        ctx.stroke();
+        ctx.shadowBlur = 0;
 
         // 血條
-        ctx.shadowBlur = 0;
-        ctx.fillStyle = "rgba(0,0,0,0.45)";
-        ctx.fillRect(-w / 2 + 6, -h / 2 - 18, w - 12, 8);
+        ctx.fillStyle = "rgba(0,0,0,0.5)";
+        ctx.fillRect(-w / 2 + 6, -h / 2 - 20, w - 12, 8);
         const barGrad = ctx.createLinearGradient(-w / 2, 0, w / 2, 0);
-        barGrad.addColorStop(0, "#ff4040");
-        barGrad.addColorStop(0.5, rage ? "#ff2060" : "#ff9040");
-        barGrad.addColorStop(1, "#ff4040");
+        barGrad.addColorStop(0, "#cc3010");
+        barGrad.addColorStop(0.5, phase3 ? "#ff1020" : "#ff6020");
+        barGrad.addColorStop(1, "#cc3010");
         ctx.fillStyle = barGrad;
-        ctx.fillRect(-w / 2 + 8, -h / 2 - 16, (w - 16) * hpRatio, 4);
-        ctx.strokeStyle = COLORS.gold;
+        ctx.fillRect(-w / 2 + 8, -h / 2 - 18, (w - 16) * hpRatio, 4);
+        ctx.strokeStyle = "rgba(255, 180, 80, 0.8)";
         ctx.lineWidth = 1;
-        ctx.strokeRect(-w / 2 + 8, -h / 2 - 16, w - 16, 4);
+        ctx.strokeRect(-w / 2 + 8, -h / 2 - 18, w - 16, 4);
 
-        // 低血量火花
-        if (rage) {
-          for (let s = 0; s < 3; s++) {
-            const sx = Math.sin(time * 11 + s * 2.1) * w * 0.35;
-            const sy = Math.cos(time * 9 + s * 1.7) * h * 0.2;
-            ctx.globalAlpha = 0.35 + Math.abs(Math.sin(time * 15 + s * 2)) * 0.55;
-            ctx.fillStyle = "#ffc864";
+        // 低血量飛濺火花
+        if (phase3) {
+          for (let s = 0; s < 5; s++) {
+            const sx = Math.sin(time * 13 + s * 2.3) * w * 0.38;
+            const sy = -h * 0.1 + Math.cos(time * 10 + s * 1.9) * h * 0.25;
+            ctx.globalAlpha = 0.4 + Math.abs(Math.sin(time * 16 + s * 2)) * 0.5;
+            ctx.fillStyle = s % 2 ? "#ff6020" : "#ffd060";
             ctx.beginPath();
-            ctx.arc(sx, sy, 1.5 + Math.sin(time * 20 + s) * 0.8, 0, Math.PI * 2);
+            ctx.arc(sx, sy, 2 + Math.sin(time * 22 + s) * 1.2, 0, Math.PI * 2);
             ctx.fill();
           }
           ctx.globalAlpha = 1;
