@@ -22,7 +22,7 @@ import {
 import { drawSkyFrame } from "./sky-shooter/render.js?v=sky-duo-v27";
 import { normalizeSkyState, isValidSkyState } from "./sky-shooter/state-util.js?v=sky-duo-v27";
 
-const SKY_BUILD = "v26";
+const SKY_BUILD = "v27";
 
 const $ = (sel) => document.querySelector(sel);
 
@@ -59,7 +59,7 @@ function bindSkyOnlineOnce() {
   bindSkyOnlineOnce.done = true;
 
   $("#btn-sky-duo-solo")?.addEventListener("click", () => {
-    window.location.href = "prototypes/sky-stage1.html?v=sky-stage1-v7";
+    window.location.href = "prototypes/sky-stage1.html?v=sky-stage1-v9";
   });
   $("#btn-sky-duo-coop")?.addEventListener("click", () =>
     openSkyDuo("sky-coop", "天空射擊 · 合作"),
