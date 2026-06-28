@@ -1,6 +1,6 @@
-import { forbiddenLabel, wouldBlackForbidden } from "./gomoku-renju.js?v=gomoku-v4";
+import { forbiddenLabel, wouldBlackForbidden } from "./gomoku-renju.js?v=gomoku-v5";
 import { openDuoModePicker } from "./online-duo.js";
-import { AI_PLAYER_ID, findAiMove } from "./gomoku-ai.js?v=gomoku-v4";
+import { AI_PLAYER_ID, requestAiMove, terminateAiWorker } from "./gomoku-ai.js?v=gomoku-v5";
 import {
   resetGomokuBoardZoom,
   rebindGomokuBoardZoom,
@@ -26,6 +26,7 @@ let duoPlayerIds = [];
 let setupMode = "local";
 let aiDifficulty = 2;
 let aiMovePending = false;
+let aiMoveToken = 0;
 
 /** @type {GomokuDeps | null} */
 let deps = null;
@@ -60,6 +61,7 @@ const AI_DIFFICULTIES = [
   { level: 1, label: "入門" },
   { level: 2, label: "普通" },
   { level: 3, label: "高手" },
+  { level: 4, label: "大師" },
 ];
 
 function playerName(id) {
@@ -92,7 +94,7 @@ function setFirstScreenMode(mode) {
   if (meta) {
     meta.textContent =
       mode === "ai"
-        ? "單人對電腦 · 15×15 · 連珠規則"
+        ? "單人對電腦 · 15×15 · 連珠規則 · 大師為背景深度 AI"
         : "15×15 · 先連五子獲勝 · 連珠規則";
   }
   if (hint) hint.hidden = mode === "ai";
@@ -456,34 +458,47 @@ function maybeScheduleAiMove() {
       }
     }
   }
-  window.setTimeout(() => runAiMove(), 40);
+  window.setTimeout(() => void runAiMove(), 40);
 }
 
-function runAiMove() {
+async function runAiMove() {
   if (!game || game.mode !== "ai" || game.over || game.currentPlayerId !== game.aiPlayerId) {
     aiMovePending = false;
     return;
   }
 
+  const token = ++aiMoveToken;
   const blackId = game.blackPlayerId;
   const whiteId = otherPlayer(blackId);
-  const move = findAiMove(game.cells, {
-    aiId: game.aiPlayerId,
-    blackId,
-    whiteId,
-    difficulty: game.aiDifficulty ?? aiDifficulty,
-    wouldBlackForbidden,
-    hasFiveWin,
-  });
 
-  aiMovePending = false;
-  if (!move) {
-    renderBoard();
-    return;
-  }
+  try {
+    const move = await requestAiMove(game.cells, {
+      aiId: game.aiPlayerId,
+      blackId,
+      whiteId,
+      difficulty: game.aiDifficulty ?? aiDifficulty,
+    });
 
-  const [row, col] = move;
-  if (!placeMove(row, col)) {
+    if (token !== aiMoveToken) return;
+    if (!game || game.mode !== "ai" || game.over || game.currentPlayerId !== game.aiPlayerId) {
+      aiMovePending = false;
+      return;
+    }
+
+    aiMovePending = false;
+    if (!move) {
+      renderBoard();
+      return;
+    }
+
+    const [row, col] = move;
+    if (!placeMove(row, col)) {
+      renderBoard();
+    }
+  } catch (err) {
+    console.error("gomoku ai failed", err);
+    if (token !== aiMoveToken) return;
+    aiMovePending = false;
     renderBoard();
   }
 }
@@ -622,15 +637,19 @@ export function bindGomokuEvents() {
   });
   $("#btn-gomoku-play-back")?.addEventListener("click", () => {
     if (confirm("離開棋局？目前進度不會儲存。")) {
+      aiMoveToken += 1;
       aiMovePending = false;
       game = null;
+      terminateAiWorker();
       deps.showView("home");
     }
   });
   $("#btn-gomoku-replay")?.addEventListener("click", replayGomoku);
   $("#btn-gomoku-home")?.addEventListener("click", () => {
+    aiMoveToken += 1;
     aiMovePending = false;
     game = null;
+    terminateAiWorker();
     deps.showView("home");
   });
   $("#btn-gomoku-win-dismiss")?.addEventListener("click", () => {
@@ -642,8 +661,10 @@ export function bindGomokuEvents() {
   });
   $("#btn-gomoku-win-home")?.addEventListener("click", () => {
     clearGomokuWinCelebration($("#gomoku-board-stage"), $("#gomoku-win-overlay"));
+    aiMoveToken += 1;
     aiMovePending = false;
     game = null;
+    terminateAiWorker();
     deps.showView("home");
   });
 }
