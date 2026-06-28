@@ -7,83 +7,319 @@ const DIRS = [
   [1, -1],
 ];
 
+/** @typedef {''|string} Cell */
+
 /**
- * @param {(''|'A'|'B')[][]} cells
+ * @param {Cell[][]} cells
  * @param {number} r
  * @param {number} c
- * @param {'A'|'B'} blackId
- * @param {'A'|'B'} whiteId
+ * @param {string} blackId
+ * @param {string} whiteId
+ * @param {Set<number>} [invalid]
  */
-function lineCodes(cells, r, c, dr, dc, blackId, whiteId) {
-  const line = [];
-  for (let i = -4; i <= 4; i++) {
-    const nr = r + dr * i;
-    const nc = c + dc * i;
-    if (nr < 0 || nr >= cells.length || nc < 0 || nc >= cells[0].length) {
-      line.push(2);
-      continue;
-    }
-    const v = cells[nr][nc];
-    if (v === blackId) line.push(1);
-    else if (v === whiteId) line.push(2);
-    else line.push(0);
-  }
-  return line;
+function boardCode(cells, r, c, blackId, whiteId, invalid) {
+  const size = cells.length;
+  if (r < 0 || r >= size || c < 0 || c >= size) return 2;
+  if (invalid?.has(r * size + c)) return 3;
+  const v = cells[r][c];
+  if (v === blackId) return 1;
+  if (v === whiteId) return 2;
+  return 0;
 }
 
-function windowIncludesCenter(start, end) {
-  return start <= 4 && end >= 4;
-}
-
-/** 此方向是否形成活三（落子點須在活三內） */
-function hasOpenThreeOnLine(line) {
-  for (let start = 0; start <= 4; start++) {
-    const end = start + 4;
-    if (!windowIncludesCenter(start, end)) continue;
-    const left = start > 0 ? line[start - 1] : 2;
-    const right = end < 8 ? line[end + 1] : 2;
-    if (left !== 0 || right !== 0) continue;
-    if (line.slice(start, end + 1).join("") === "01110") return true;
-  }
-  for (let start = 0; start <= 3; start++) {
-    const end = start + 5;
-    if (!windowIncludesCenter(start, end)) continue;
-    const left = start > 0 ? line[start - 1] : 2;
-    const right = end < 8 ? line[end + 1] : 2;
-    if (left !== 0 || right !== 0) continue;
-    const str = line.slice(start, end + 1).join("");
-    if (str === "010110" || str === "011010") return true;
-  }
-  return false;
-}
-
-/** 此方向形成的「四」數量（活四、冲四） */
-function countFoursOnLine(line) {
+/**
+ * @param {Cell[][]} cells
+ * @param {number} r
+ * @param {number} c
+ * @param {number} dr
+ * @param {number} dc
+ * @param {string} blackId
+ * @param {string} whiteId
+ * @param {number[]} pattern
+ * @param {number[]} alignments
+ * @param {Set<number>} [invalid]
+ */
+function countAlignedPattern(
+  cells,
+  r,
+  c,
+  dr,
+  dc,
+  blackId,
+  whiteId,
+  pattern,
+  alignments,
+  invalid
+) {
   let count = 0;
 
-  for (let start = 0; start <= 3; start++) {
-    const end = start + 5;
-    if (!windowIncludesCenter(start, end)) continue;
-    const left = start > 0 ? line[start - 1] : 2;
-    const right = end < 8 ? line[end + 1] : 2;
-    const str = line.slice(start, end + 1).join("");
-    if (str === "011110" && left === 0 && right === 0) count++;
-    else if (str === "211110" || str === "011112") count++;
-    else if (str === "101110" || str === "011101") count++;
-    else if (str === "110110" || str === "011011") count++;
-  }
+  for (const offIdx of alignments) {
+    const rel = scaleOffsets(THREE_OFFSETS[offIdx], dr, dc);
 
-  for (let start = 0; start <= 2; start++) {
-    const end = start + 6;
-    if (!windowIncludesCenter(start, end)) continue;
-    const left = start > 0 ? line[start - 1] : 2;
-    const right = end < 8 ? line[end + 1] : 2;
-    if (left !== 0 || right !== 0) continue;
-    const str = line.slice(start, end + 1).join("");
-    if (str === "0101110" || str === "0110110") count++;
+    const [headR, headC] = [r + rel[0][0], c + rel[0][1]];
+    if (boardCode(cells, headR, headC, blackId, whiteId, invalid) !== pattern[0]) continue;
+
+    let ok = true;
+    for (let i = 1; i <= 6; i++) {
+      const code = boardCode(cells, r + rel[i][0], c + rel[i][1], blackId, whiteId, invalid);
+      if (code !== pattern[i]) {
+        ok = false;
+        break;
+      }
+    }
+    if (!ok) continue;
+
+    const [tailR, tailC] = [r + rel[7][0], c + rel[7][1]];
+    if (boardCode(cells, tailR, tailC, blackId, whiteId, invalid) !== pattern[7]) continue;
+    count++;
   }
 
   return count;
+}
+
+/**
+ * @param {Cell[][]} cells
+ * @param {number} r
+ * @param {number} c
+ * @param {number} dr
+ * @param {number} dc
+ * @param {string} blackId
+ * @param {string} whiteId
+ * @param {number[]} pattern
+ * @param {number[]} alignments
+ * @param {Set<number>} [invalid]
+ */
+function countAlignedFourPattern(
+  cells,
+  r,
+  c,
+  dr,
+  dc,
+  blackId,
+  whiteId,
+  pattern,
+  alignments,
+  invalid
+) {
+  let count = 0;
+
+  for (const offIdx of alignments) {
+    const rel = scaleOffsets(FOUR_OFFSETS[offIdx], dr, dc);
+
+    const [headR, headC] = [r + rel[0][0], c + rel[0][1]];
+    if (boardCode(cells, headR, headC, blackId, whiteId, invalid) !== pattern[0]) continue;
+
+    let ok = true;
+    for (let i = 1; i <= 5; i++) {
+      const code = boardCode(cells, r + rel[i][0], c + rel[i][1], blackId, whiteId, invalid);
+      if (code !== pattern[i]) {
+        ok = false;
+        break;
+      }
+    }
+    if (!ok) continue;
+
+    const [tailR, tailC] = [r + rel[6][0], c + rel[6][1]];
+    if (boardCode(cells, tailR, tailC, blackId, whiteId, invalid) !== pattern[6]) continue;
+    count++;
+  }
+
+  return count;
+}
+
+const THREE_OFFSETS = [
+  [
+    [0, -2],
+    [0, -1],
+    [0, 0],
+    [0, 1],
+    [0, 2],
+    [0, 3],
+    [0, 4],
+    [0, 5],
+  ],
+  [
+    [0, -3],
+    [0, -2],
+    [0, -1],
+    [0, 0],
+    [0, 1],
+    [0, 2],
+    [0, 3],
+    [0, 4],
+  ],
+  [
+    [0, -4],
+    [0, -3],
+    [0, -2],
+    [0, -1],
+    [0, 0],
+    [0, 1],
+    [0, 2],
+    [0, 3],
+  ],
+  [
+    [0, -5],
+    [0, -4],
+    [0, -3],
+    [0, -2],
+    [0, -1],
+    [0, 0],
+    [0, 1],
+    [0, 2],
+  ],
+];
+
+const THREE_PATTERNS = [
+  [0, 0, 1, 1, 1, 0, 0, 0],
+  [0, 0, 1, 1, 0, 1, 0, 0],
+  [0, 0, 1, 0, 1, 1, 0, 0],
+  [0, 0, 0, 1, 1, 1, 0, 0],
+];
+
+const THREE_CENTER_IDX = [
+  [0, 1, 2],
+  [0, 1, 3],
+  [0, 2, 3],
+  [1, 2, 3],
+];
+
+const FOUR_OFFSETS = [
+  [
+    [0, -1],
+    [0, 0],
+    [0, 1],
+    [0, 2],
+    [0, 3],
+    [0, 4],
+    [0, 5],
+  ],
+  [
+    [0, -2],
+    [0, -1],
+    [0, 0],
+    [0, 1],
+    [0, 2],
+    [0, 3],
+    [0, 4],
+  ],
+  [
+    [0, -3],
+    [0, -2],
+    [0, -1],
+    [0, 0],
+    [0, 1],
+    [0, 2],
+    [0, 3],
+  ],
+  [
+    [0, -4],
+    [0, -3],
+    [0, -2],
+    [0, -1],
+    [0, 0],
+    [0, 1],
+    [0, 2],
+  ],
+  [
+    [0, -5],
+    [0, -4],
+    [0, -3],
+    [0, -2],
+    [0, -1],
+    [0, 0],
+    [0, 1],
+  ],
+];
+
+const FOUR_PATTERNS = [
+  [0, 1, 1, 1, 1, 0, 0],
+  [0, 1, 1, 1, 0, 1, 0],
+  [0, 1, 1, 0, 1, 1, 0],
+  [0, 1, 0, 1, 1, 1, 0],
+  [0, 0, 1, 1, 1, 1, 0],
+];
+
+const FOUR_CENTER_IDX = [
+  [0, 1, 2, 3],
+  [0, 1, 2, 4],
+  [0, 1, 3, 4],
+  [0, 2, 3, 4],
+  [1, 2, 3, 4],
+];
+
+function scaleOffsets(offsets, dr, dc) {
+  return offsets.map(([, t]) => [t * dr, t * dc]);
+}
+
+/**
+ * @param {Cell[][]} cells
+ * @param {number} r
+ * @param {number} c
+ * @param {string} blackId
+ * @param {string} whiteId
+ * @param {Set<number>} [invalid]
+ */
+function countOpenThrees(cells, r, c, blackId, whiteId, invalid) {
+  let total = 0;
+
+  for (const [dr, dc] of DIRS) {
+    const val = [];
+    for (let p = 0; p < 4; p++) {
+      val.push(
+        countAlignedPattern(
+          cells,
+          r,
+          c,
+          dr,
+          dc,
+          blackId,
+          whiteId,
+          THREE_PATTERNS[p],
+          THREE_CENTER_IDX[p],
+          invalid
+        )
+      );
+    }
+    total += val[1] + val[2] + Math.floor((val[0] + val[3] + 1) / 2);
+  }
+
+  return total;
+}
+
+/**
+ * @param {Cell[][]} cells
+ * @param {number} r
+ * @param {number} c
+ * @param {string} blackId
+ * @param {string} whiteId
+ * @param {Set<number>} [invalid]
+ */
+function countFours(cells, r, c, blackId, whiteId, invalid) {
+  let total = 0;
+
+  for (const [dr, dc] of DIRS) {
+    const val = [];
+    for (let p = 0; p < 5; p++) {
+      val.push(
+        countAlignedFourPattern(
+          cells,
+          r,
+          c,
+          dr,
+          dc,
+          blackId,
+          whiteId,
+          FOUR_PATTERNS[p],
+          FOUR_CENTER_IDX[p],
+          invalid
+        )
+      );
+    }
+    total += val[1] + val[2] + val[3] + Math.floor((val[0] + val[4] + 1) / 2);
+  }
+
+  return total;
 }
 
 function hasOverline(cells, r, c, blackId) {
@@ -109,36 +345,79 @@ function hasOverline(cells, r, c, blackId) {
   return false;
 }
 
+const NEIGHBOR_OFFSETS = [
+  [0, -1], [0, -2], [0, -3], [0, -4],
+  [0, 1], [0, 2], [0, 3], [0, 4],
+  [-1, 0], [-2, 0], [-3, 0], [-4, 0],
+  [1, 0], [2, 0], [3, 0], [4, 0],
+  [-1, -1], [-2, -2], [-3, -3], [-4, -4],
+  [1, 1], [2, 2], [3, 3], [4, 4],
+  [-1, 1], [-2, 2], [-3, 3], [-4, 4],
+  [1, -1], [2, -2], [3, -3], [4, -4],
+];
+
+/**
+ * 簡化禁手檢查（用於標記活三延伸不可用的鄰點，參考 renju-ai rule.cpp）
+ * @param {Cell[][]} cells 已含落子黑子
+ */
+function isSimpleBlackForbidden(cells, r, c, blackId, whiteId) {
+  const size = cells.length;
+  if (r < 0 || r >= size || c < 0 || c >= size || cells[r][c]) return true;
+
+  cells[r][c] = blackId;
+  const three = countOpenThrees(cells, r, c, blackId, whiteId);
+  const four = countFours(cells, r, c, blackId, whiteId);
+  cells[r][c] = "";
+
+  return three >= 2 || four >= 2;
+}
+
+/**
+ * 活三／四計數時標記「補子後會成禁手」的鄰點，排除假活三（活四點不可同時成五或禁手）
+ * @param {Cell[][]} cells 已含落子黑子
+ */
+function countBlackThreeFour(cells, r, c, blackId, whiteId) {
+  const size = cells.length;
+  const invalid = new Set();
+
+  for (const [dr, dc] of NEIGHBOR_OFFSETS) {
+    const nr = r + dr;
+    const nc = c + dc;
+    if (nr < 0 || nr >= size || nc < 0 || nc >= size) continue;
+    if (cells[nr][nc]) continue;
+
+    const forbidden = isSimpleBlackForbidden(cells, nr, nc, blackId, whiteId);
+
+    if (forbidden) invalid.add(nr * size + nc);
+  }
+
+  return {
+    three: countOpenThrees(cells, r, c, blackId, whiteId, invalid),
+    four: countFours(cells, r, c, blackId, whiteId, invalid),
+  };
+}
+
 /**
  * 已落黑子的禁手類型；五連優先時回傳 null。
  * @returns {null|'33'|'44'|'overline'}
  */
 export function getBlackForbiddenType(cells, r, c, blackId, whiteId, hasFiveWin) {
   if (hasFiveWin) return null;
-
   if (hasOverline(cells, r, c, blackId)) return "overline";
 
-  let openThreeDirs = 0;
-  let fourCount = 0;
-
-  for (const [dr, dc] of DIRS) {
-    const line = lineCodes(cells, r, c, dr, dc, blackId, whiteId);
-    if (hasOpenThreeOnLine(line)) openThreeDirs++;
-    fourCount += countFoursOnLine(line);
-  }
-
-  if (openThreeDirs >= 2) return "33";
-  if (fourCount >= 2) return "44";
+  const { three, four } = countBlackThreeFour(cells, r, c, blackId, whiteId);
+  if (three >= 2) return "33";
+  if (four >= 2) return "44";
   return null;
 }
 
 /**
- * @param {(''|'A'|'B')[][]} cells
+ * @param {Cell[][]} cells
  * @param {number} r
  * @param {number} c
- * @param {'A'|'B'} blackId
- * @param {'A'|'B'} whiteId
- * @param {(cells: (''|'A'|'B')[][], r: number, c: number, player: 'A'|'B') => boolean} hasFiveWin
+ * @param {string} blackId
+ * @param {string} whiteId
+ * @param {(cells: Cell[][], r: number, c: number, player: string) => boolean} hasFiveWin
  */
 export function wouldBlackForbidden(cells, r, c, blackId, whiteId, hasFiveWin) {
   if (cells[r][c]) return null;

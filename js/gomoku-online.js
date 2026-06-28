@@ -1,4 +1,4 @@
-import { forbiddenLabel, wouldBlackForbidden } from "./gomoku-renju.js?v=gomoku-v2";
+import { forbiddenLabel, wouldBlackForbidden } from "./gomoku-renju.js?v=gomoku-v3";
 import {
   resetGomokuBoardZoom,
   rebindGomokuBoardZoom,
