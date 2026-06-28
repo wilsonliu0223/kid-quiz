@@ -1,5 +1,5 @@
-import { shipOrDefault } from "./ships.js?v=sky-duo-v40";
-import { asList } from "./state-util.js?v=sky-duo-v40";
+import { shipOrDefault } from "./ships.js?v=sky-duo-v42";
+import { asList } from "./state-util.js?v=sky-duo-v42";
 
 export const COOP_BOSS_AT = 95;
 /** 雙人合作每人命數 */
@@ -801,6 +801,36 @@ export function tickGuestLocalCombat(state, slot, dt) {
   updateSinglePlayer(state, slot, dt);
 }
 
+/** 推進來賓自機子彈（僅本地視覺，不動房主／插值子彈） */
+export function advanceGuestOwnedBullets(state, slot, dt) {
+  const cap = Math.min(0.033, Math.max(0, dt));
+  if (cap <= 0) return;
+  const keep = [];
+  for (const b of state.bullets) {
+    if (b.owner !== slot) {
+      keep.push(b);
+      continue;
+    }
+    b.x += b.vx * cap;
+    b.y += b.vy * cap;
+    if (b.x > -0.05 && b.x < 1.05 && b.y > -0.05 && b.y < 1.05) keep.push(b);
+  }
+  state.bullets = keep;
+  const mine = keep.filter((b) => b.owner === slot);
+  if (mine.length > 48) {
+    const drop = mine.length - 48;
+    let removed = 0;
+    state.bullets = state.bullets.filter((b) => {
+      if (b.owner !== slot) return true;
+      if (removed < drop) {
+        removed += 1;
+        return false;
+      }
+      return true;
+    });
+  }
+}
+
 /** 來賓本地：推進敵彈／敵機／自機子彈位置（僅補幀間隔，勿外插網路延遲） */
 export function advanceGuestVisualEntities(state, dt) {
   const cap = Math.min(HOST_VISUAL_DT, Math.max(0, dt));
@@ -897,7 +927,11 @@ export function applyGuestInterpVisual(shadow, pair, mySlot) {
   const other = mySlot === "host" ? "guest" : "host";
 
   shadow.enemies = lerpEntityList(a.enemies, b.enemies, t);
-  shadow.bullets = lerpEntityList(a.bullets, b.bullets, t);
+  const localMine = asList(shadow.bullets).filter((bullet) => bullet.owner === mySlot);
+  const remoteBullets = lerpEntityList(a.bullets, b.bullets, t).filter(
+    (bullet) => bullet.owner !== mySlot,
+  );
+  shadow.bullets = [...remoteBullets, ...localMine];
   shadow.eBullets = lerpEntityList(a.eBullets, b.eBullets, t);
   shadow.pickups = lerpEntityList(a.pickups, b.pickups, t);
   shadow.missileTracks = lerpEntityList(a.missileTracks, b.missileTracks, t);
@@ -945,7 +979,11 @@ export function reconcileGuestShadowState(shadow, auth, mySlot) {
   }
 
   shadow.enemies = copyEntityList(auth.enemies);
-  shadow.bullets = copyEntityList(auth.bullets);
+  const localMine = asList(shadow.bullets).filter((bullet) => bullet.owner === mySlot);
+  shadow.bullets = [
+    ...copyEntityList(auth.bullets).filter((bullet) => bullet.owner !== mySlot),
+    ...localMine,
+  ];
   shadow.eBullets = copyEntityList(auth.eBullets);
   shadow.pickups = copyEntityList(auth.pickups);
   shadow.particles = copyEntityList(auth.particles);

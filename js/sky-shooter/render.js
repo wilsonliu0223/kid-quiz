@@ -1,5 +1,5 @@
-import { shipOrDefault } from "./ships.js?v=sky-duo-v41";
-import { asList } from "./state-util.js?v=sky-duo-v41";
+import { shipOrDefault } from "./ships.js?v=sky-duo-v42";
+import { asList } from "./state-util.js?v=sky-duo-v42";
 import {
   VERSUS_TIME,
   ZONE_RATIO,
@@ -8,7 +8,7 @@ import {
   COOP_Y_BAND,
   VERSUS_GUEST_Y_BAND,
   COOP_BOSS_HP,
-} from "./sim.js?v=sky-duo-v41";
+} from "./sim.js?v=sky-duo-v42";
 
 /** 與單人關卡 prototypes 的 PLAYER_SCALE 一致 */
 const PLAYER_DRAW_SCALE = 0.75;
