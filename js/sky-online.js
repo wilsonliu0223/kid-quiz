@@ -8,7 +8,7 @@ import {
   openOnlineOnlyDuo,
 } from "./online-duo.js";
 import { startGameRoom } from "./room-service.js";
-import { SHIPS, SHIP_IDS, shipLobbyCardHtml } from "./sky-shooter/ships.js?v=sky-duo-v36";
+import { SHIPS, SHIP_IDS, shipLobbyCardHtml } from "./sky-shooter/ships.js?v=sky-duo-v37";
 import {
   createInitialState,
   stepSimulation,
@@ -22,18 +22,17 @@ import {
   applyCoopLagCompPositions,
   reconcileGuestShadowState,
   tickGuestLocalCombat,
-  advanceGuestVisualEntities,
   VERSUS_GUEST_Y_BAND,
-} from "./sky-shooter/sim.js?v=sky-duo-v36";
-import { drawSkyFrame } from "./sky-shooter/render.js?v=sky-duo-v36";
-import { normalizeSkyState, isValidSkyState } from "./sky-shooter/state-util.js?v=sky-duo-v36";
+} from "./sky-shooter/sim.js?v=sky-duo-v37";
+import { drawSkyFrame } from "./sky-shooter/render.js?v=sky-duo-v37";
+import { normalizeSkyState, isValidSkyState } from "./sky-shooter/state-util.js?v=sky-duo-v37";
 
 const SKY_BUILD = "v36";
 const HOST_TICK_MS = 20;
 const HOST_TICK_DT = HOST_TICK_MS / 1000;
 const INPUT_SEND_MS = 0;
 const GUEST_INPUT_LEAD_MS = 160;
-const GUEST_INTERP_MAX = 1.35;
+const GUEST_INTERP_MAX = 1;
 
 const $ = (sel) => document.querySelector(sel);
 
@@ -367,6 +366,7 @@ function onGuestAuthorityState(next, mySlot) {
   } else {
     reconcileGuestShadowState(guestShadowState, next, mySlot);
   }
+  guestShadowLastFrame = performance.now();
   clampPlayersToZone(liveState);
 }
 
@@ -390,8 +390,7 @@ function tickGuestShadowFrame(mySlot, mode) {
       me.y = ap.y;
     }
 
-    const sinceAuth = (Date.now() - guestStateRecvAt) / 1000;
-    advanceGuestVisualEntities(guestShadowState, dt, Math.min(0.22, sinceAuth * 0.75));
+    // 敵機／子彈以房主快照為準，不在本地再推進（避免加速感）
 
     const other = mySlot === "host" ? "guest" : "host";
     const t = guestInterpAlpha();

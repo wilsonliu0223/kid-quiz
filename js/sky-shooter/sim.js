@@ -1,9 +1,11 @@
-import { shipOrDefault } from "./ships.js?v=sky-duo-v36";
-import { asList } from "./state-util.js?v=sky-duo-v36";
+import { shipOrDefault } from "./ships.js?v=sky-duo-v37";
+import { asList } from "./state-util.js?v=sky-duo-v37";
 
 export const COOP_BOSS_AT = 95;
 /** 雙人合作每人命數 */
 export const COOP_PLAYER_LIVES = 10;
+/** 來賓畫面補幀步長（與房主 tick 一致，避免加速感） */
+export const HOST_VISUAL_DT = 0.02;
 /** 單人關卡1 同款：Boss HP、巡邏、三種彈幕 */
 export const COOP_BOSS_HP = 240;
 export const VERSUS_BOSS_HP = 200;
@@ -786,9 +788,10 @@ export function tickGuestLocalCombat(state, slot, dt) {
   updateSinglePlayer(state, slot, dt);
 }
 
-/** 來賓本地：推進敵彈／敵機／自機子彈位置（畫面連續） */
-export function advanceGuestVisualEntities(state, dt, leadSec = 0) {
-  const cap = Math.min(0.08, dt + Math.max(0, leadSec));
+/** 來賓本地：推進敵彈／敵機／自機子彈位置（僅補幀間隔，勿外插網路延遲） */
+export function advanceGuestVisualEntities(state, dt) {
+  const cap = Math.min(HOST_VISUAL_DT, Math.max(0, dt));
+  if (cap <= 0) return;
   for (const eb of state.eBullets) {
     eb.x += eb.vx * cap;
     eb.y += eb.vy * cap;
