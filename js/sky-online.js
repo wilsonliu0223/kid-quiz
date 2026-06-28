@@ -8,7 +8,7 @@ import {
   openOnlineOnlyDuo,
 } from "./online-duo.js";
 import { startGameRoom } from "./room-service.js";
-import { SHIPS, SHIP_IDS, shipLobbyCardHtml } from "./sky-shooter/ships.js?v=sky-duo-v37";
+import { SHIPS, SHIP_IDS, shipLobbyCardHtml } from "./sky-shooter/ships.js?v=sky-duo-v38";
 import {
   createInitialState,
   stepSimulation,
@@ -21,18 +21,21 @@ import {
   clearNetworkLagComp,
   applyCoopLagCompPositions,
   reconcileGuestShadowState,
-  tickGuestLocalCombat,
+  createGuestInterpSnap,
+  pickGuestInterpPair,
+  applyGuestInterpVisual,
   VERSUS_GUEST_Y_BAND,
-} from "./sky-shooter/sim.js?v=sky-duo-v37";
-import { drawSkyFrame } from "./sky-shooter/render.js?v=sky-duo-v37";
-import { normalizeSkyState, isValidSkyState } from "./sky-shooter/state-util.js?v=sky-duo-v37";
+} from "./sky-shooter/sim.js?v=sky-duo-v38";
+import { drawSkyFrame } from "./sky-shooter/render.js?v=sky-duo-v38";
+import { normalizeSkyState, isValidSkyState } from "./sky-shooter/state-util.js?v=sky-duo-v38";
 
-const SKY_BUILD = "v36";
-const HOST_TICK_MS = 20;
+const SKY_BUILD = "v38";
+const HOST_TICK_MS = 16;
 const HOST_TICK_DT = HOST_TICK_MS / 1000;
 const INPUT_SEND_MS = 0;
-const GUEST_INPUT_LEAD_MS = 160;
-const GUEST_INTERP_MAX = 1;
+const GUEST_INPUT_LEAD_MS = 150;
+const GUEST_RENDER_DELAY_MS = 90;
+const GUEST_INTERP_BUFFER_MAX = 16;
 
 const $ = (sel) => document.querySelector(sel);
 
@@ -57,12 +60,8 @@ let guestInputVel = { vx: 0, vy: 0 };
 let guestInputPrev = { x: 0.65, y: 0.12, t: 0 };
 let hostStateWriteBusy = false;
 let guestStateRecvAt = Date.now();
-/** @type {object | null} */
-let guestSnapA = null;
-/** @type {object | null} */
-let guestSnapB = null;
-let guestSnapAtA = 0;
-let guestSnapAtB = 0;
+/** @type {object[]} */
+let guestInterpBuffer = [];
 /** @type {object | null} */
 let pendingInputPayload = null;
 let inputSendFlight = false;
@@ -302,10 +301,7 @@ function stopSkyGameLoop() {
   guestInputVel = { vx: 0, vy: 0 };
   guestInputPrev = { x: 0.65, y: 0.12, t: 0 };
   hostStateWriteBusy = false;
-  guestSnapA = null;
-  guestSnapB = null;
-  guestSnapAtA = 0;
-  guestSnapAtB = 0;
+  guestInterpBuffer = [];
   pendingInputPayload = null;
   inputSendFlight = false;
   inputSendSeq = 0;
@@ -333,33 +329,16 @@ async function inputRef(roomId, slot) {
   return cachedInputRef;
 }
 
-function pushGuestSnapshot(next) {
-  const snap = {
-    t: next.t,
-    players: {
-      host: { x: next.players.host.x, y: next.players.host.y },
-      guest: { x: next.players.guest.x, y: next.players.guest.y },
-    },
-  };
-  guestSnapA = guestSnapB;
-  guestSnapAtA = guestSnapAtB;
-  guestSnapB = snap;
-  guestSnapAtB = Date.now();
-  guestStateRecvAt = guestSnapAtB;
-}
-
-function guestInterpAlpha() {
-  const span = guestSnapAtB - guestSnapAtA;
-  if (!guestSnapA || !guestSnapB || span < 1) return 1;
-  return Math.min(GUEST_INTERP_MAX, (Date.now() - guestSnapAtA) / span);
-}
-
-function lerpN(a, b, t) {
-  return a + (b - a) * t;
+function pushGuestInterpBuffer(state) {
+  guestInterpBuffer.push(createGuestInterpSnap(state));
+  guestStateRecvAt = Date.now();
+  while (guestInterpBuffer.length > GUEST_INTERP_BUFFER_MAX) {
+    guestInterpBuffer.shift();
+  }
 }
 
 function onGuestAuthorityState(next, mySlot) {
-  pushGuestSnapshot(next);
+  pushGuestInterpBuffer(next);
   liveState = next;
   if (!guestShadowState) {
     guestShadowState = cloneState(next);
@@ -373,34 +352,18 @@ function onGuestAuthorityState(next, mySlot) {
 function tickGuestShadowFrame(mySlot, mode) {
   if (!guestShadowState || !mySlot) return null;
   try {
-    const now = performance.now();
-    const dt = Math.min(0.033, (now - guestShadowLastFrame) / 1000 || 0.016);
-    guestShadowLastFrame = now;
+    const pair = pickGuestInterpPair(guestInterpBuffer, GUEST_RENDER_DELAY_MS);
+    applyGuestInterpVisual(guestShadowState, pair, mySlot);
 
     const me = guestShadowState.players[mySlot];
     const canMove = me && canPlayerControl(guestShadowState, mySlot);
-
     if (canMove) {
       const world = pointerToWorld(mySlot, mode, localInput.x, localInput.y);
       applyPlayerInput(guestShadowState, mySlot, world);
-      tickGuestLocalCombat(guestShadowState, mySlot, dt);
     } else if (liveState?.players?.[mySlot]) {
       const ap = liveState.players[mySlot];
       me.x = ap.x;
       me.y = ap.y;
-    }
-
-    // 敵機／子彈以房主快照為準，不在本地再推進（避免加速感）
-
-    const other = mySlot === "host" ? "guest" : "host";
-    const t = guestInterpAlpha();
-    if (guestSnapA && guestSnapB && guestShadowState.players[other]) {
-      const pa = guestSnapA.players[other];
-      const pb = guestSnapB.players[other];
-      if (pa && pb) {
-        guestShadowState.players[other].x = lerpN(pa.x, pb.x, t);
-        guestShadowState.players[other].y = lerpN(pa.y, pb.y, t);
-      }
     }
 
     clampPlayersToZone(guestShadowState);
@@ -562,6 +525,7 @@ function startSkySession(snap, ctx) {
     hostTimer = setInterval(runHostTick, HOST_TICK_MS);
   } else {
     guestShadowState = cloneState(snap.state);
+    guestInterpBuffer = [createGuestInterpSnap(snap.state)];
     guestShadowLastFrame = performance.now();
     ensureFirebase().then(({ db }) => {
       stateUnsub = onValue(ref(db, `rooms/${snap.roomId}/state`), (val) => {
@@ -622,7 +586,8 @@ function updateDebugStatus(w, h, state) {
   if (!el) return;
   const enemies = state?.enemies?.length ?? "?";
   const phase = state?.phase || "—";
-  el.textContent = `${SKY_BUILD} · ${Math.round(w)}×${Math.round(h)} · 敵${enemies} · ${phase}`;
+  const buf = guestInterpBuffer.length;
+  el.textContent = `${SKY_BUILD} · ${Math.round(w)}×${Math.round(h)} · 敵${enemies} · ${phase} · buf${buf}`;
 }
 
 const WEAPON_HUD = { straight: "直射彈", spread: "擴散彈", laser: "雷射" };

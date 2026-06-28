@@ -1,5 +1,5 @@
-import { shipOrDefault } from "./ships.js?v=sky-duo-v37";
-import { asList } from "./state-util.js?v=sky-duo-v37";
+import { shipOrDefault } from "./ships.js?v=sky-duo-v38";
+import { asList } from "./state-util.js?v=sky-duo-v38";
 
 export const COOP_BOSS_AT = 95;
 /** 雙人合作每人命數 */
@@ -816,6 +816,88 @@ export function advanceGuestVisualEntities(state, dt) {
 
 function copyEntityList(list) {
   return asList(list).map((item) => ({ ...item }));
+}
+
+function lerpEntityAxis(a, b, t) {
+  return a + (b - a) * t;
+}
+
+function lerpEntityList(listA, listB, t) {
+  const mapA = new Map();
+  for (const e of asList(listA)) mapA.set(e.id, e);
+  const out = [];
+  for (const eb of asList(listB)) {
+    const ea = mapA.get(eb.id);
+    if (ea && t > 0 && t < 1) {
+      out.push({ ...eb, x: lerpEntityAxis(ea.x, eb.x, t), y: lerpEntityAxis(ea.y, eb.y, t) });
+    } else {
+      out.push({ ...eb });
+    }
+  }
+  return out;
+}
+
+/** 來賓插值緩衝：記錄房主快照（僅畫面用） */
+export function createGuestInterpSnap(state, at = Date.now()) {
+  return {
+    at,
+    players: {
+      host: { x: state.players.host.x, y: state.players.host.y },
+      guest: { x: state.players.guest.x, y: state.players.guest.y },
+    },
+    enemies: copyEntityList(state.enemies),
+    bullets: copyEntityList(state.bullets),
+    eBullets: copyEntityList(state.eBullets),
+    particles: copyEntityList(state.particles),
+    pickups: copyEntityList(state.pickups),
+    missileTracks: copyEntityList(state.missileTracks),
+  };
+}
+
+/** 在兩張快照間取樣；renderAt 落後現在，不外插超過最新快照 */
+export function pickGuestInterpPair(buffer, renderDelayMs) {
+  if (!buffer?.length) return null;
+  const newest = buffer[buffer.length - 1].at;
+  const oldest = buffer[0].at;
+  const span = newest - oldest;
+  const delay =
+    span < renderDelayMs * 0.6 ? Math.max(32, Math.min(renderDelayMs, span * 0.45)) : renderDelayMs;
+  const renderAt = Date.now() - delay;
+  if (buffer.length === 1) return { a: buffer[0], b: buffer[0], t: 0 };
+
+  let idx = 0;
+  while (idx < buffer.length - 2 && buffer[idx + 1].at <= renderAt) idx += 1;
+
+  const a = buffer[idx];
+  const b = buffer[Math.min(idx + 1, buffer.length - 1)];
+  if (!a || !b || b.at <= a.at) return { a, b: a, t: 0 };
+  if (renderAt <= a.at) return { a, b: a, t: 0 };
+  if (renderAt >= b.at) return { a: b, b, t: 0 };
+
+  const t = (renderAt - a.at) / (b.at - a.at);
+  return { a, b, t: Math.max(0, Math.min(1, t)) };
+}
+
+/** 將插值結果寫入影子狀態（不動自己的飛機，由本地輸入覆寫） */
+export function applyGuestInterpVisual(shadow, pair, mySlot) {
+  if (!shadow || !pair) return shadow;
+  const { a, b, t } = pair;
+  const other = mySlot === "host" ? "guest" : "host";
+
+  shadow.enemies = lerpEntityList(a.enemies, b.enemies, t);
+  shadow.bullets = lerpEntityList(a.bullets, b.bullets, t);
+  shadow.eBullets = lerpEntityList(a.eBullets, b.eBullets, t);
+  shadow.particles = lerpEntityList(a.particles, b.particles, t);
+  shadow.pickups = lerpEntityList(a.pickups, b.pickups, t);
+  shadow.missileTracks = lerpEntityList(a.missileTracks, b.missileTracks, t);
+
+  const op = shadow.players?.[other];
+  if (op && a.players[other] && b.players[other]) {
+    op.x = lerpEntityAxis(a.players[other].x, b.players[other].x, t);
+    op.y = lerpEntityAxis(a.players[other].y, b.players[other].y, t);
+  }
+
+  return shadow;
 }
 
 /** 來賓影子狀態：合併房主權威資料，保留本地預測位置 */
