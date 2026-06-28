@@ -66,6 +66,10 @@ import {
   initFlipMul,
   renderMulFlipHomePlayers,
 } from "./flip-mul.js?v=mul-flip-v1";
+import {
+  initFlipMath,
+  renderMathHomePlayers,
+} from "./flip-math-deck30.js";
 import { initGomoku, renderGomokuHomePlayers } from "./gomoku.js";
 import { initOnlineDuo } from "./online-duo.js";
 import { initSkyOnline, openSkyDuoMenu } from "./sky-online.js?v=sky-duo-v30";
