@@ -3820,6 +3820,36 @@ body {
   color: #2d6b4a;
 }
 
+/* 9 組（8～9 對、16～18 張）：4×4 或 4×5 一屏 */
+#mul-flip-card-grid[data-pairs="8"],
+#mul-flip-card-grid[data-pairs="9"] {
+  gap: 4px;
+  grid-template-rows: repeat(var(--flip-rows, 4), minmax(0, 1fr));
+  overflow-y: hidden;
+  padding-bottom: 0;
+  align-content: stretch;
+}
+
+#view-mul-flip-play:has(#mul-flip-card-grid[data-pairs="8"]) .flip-scorebar,
+#view-mul-flip-play:has(#mul-flip-card-grid[data-pairs="9"]) .flip-scorebar {
+  margin-bottom: 6px;
+  gap: 6px;
+}
+
+#view-mul-flip-play:has(#mul-flip-card-grid[data-pairs="8"]) .flip-card,
+#view-mul-flip-play:has(#mul-flip-card-grid[data-pairs="9"]) .flip-card {
+  aspect-ratio: unset;
+  height: 100%;
+  min-height: 0;
+  border-radius: 8px;
+  border-width: 1px;
+}
+
+#view-mul-flip-play:has(#mul-flip-card-grid[data-pairs="8"]) .flip-card-back,
+#view-mul-flip-play:has(#mul-flip-card-grid[data-pairs="9"]) .flip-card-back {
+  font-size: min(42cqw, 42cqh);
+}
+
 /* 九九 20 組：4×10 大格一屏（算式較寬，比 5 欄字更大） */
 #mul-flip-card-grid[data-pairs="20"] {
   gap: 3px;

@@ -188,10 +188,11 @@ export function renderMulFlipHomePlayers() {
   refreshDuoBattleUI();
 }
 
-/** 50 組 10 欄；20 組 4 欄大格；其餘 5 欄 */
+/** 50 組 10 欄；20 組 4 欄；9 組 4×4（或 4×5） */
 function gridCols(cardCount) {
   if (cardCount >= 100) return 10;
   if (cardCount >= 40) return 4;
+  if (cardCount <= 18) return 4;
   return 5;
 }
 
