@@ -1,6 +1,6 @@
-import { forbiddenLabel, wouldBlackForbidden } from "./gomoku-renju.js?v=gomoku-v9";
+import { forbiddenLabel, wouldBlackForbidden } from "./gomoku-renju.js?v=gomoku-v10";
 import { openDuoModePicker } from "./online-duo.js";
-import { AI_PLAYER_ID, requestAiMove, terminateAiWorker } from "./gomoku-ai.js?v=gomoku-v9";
+import { AI_PLAYER_ID, requestAiMove, terminateAiWorker } from "./gomoku-ai.js?v=gomoku-v10";
 import {
   resetGomokuBoardZoom,
   rebindGomokuBoardZoom,
@@ -11,7 +11,7 @@ import {
   clearGomokuWinCelebration,
   renderGomokuWinLine,
 } from "./gomoku-win-ui.js";
-import { startGomokuReplay, stopGomokuReplay, isGomokuReplayRunning } from "./gomoku-replay.js?v=gomoku-v9";
+import { startGomokuReplay, stopGomokuReplay, isGomokuReplayRunning } from "./gomoku-replay.js?v=gomoku-v10";
 import { getChildName, otherDuoPlayer } from "./children.js";
 import { getSelectedChild } from "./store.js";
 import {
@@ -141,11 +141,12 @@ function renderFirstPicker() {
 function renderAiDifficultyIntro() {
   const box = $("#gomoku-ai-difficulty-intro");
   if (!box) return;
-  const item = AI_DIFFICULTIES.find((d) => d.level === aiDifficulty) || AI_DIFFICULTIES[1];
-  box.innerHTML = `
-    <p class="gomoku-ai-difficulty-tier">${item.tier}</p>
-    <p class="gomoku-ai-difficulty-desc">${item.desc}</p>
-  `;
+  box.querySelectorAll("[data-level]").forEach((el) => {
+    const level = Number(el.dataset.level);
+    const on = level === aiDifficulty;
+    el.classList.toggle("is-selected", on);
+    el.setAttribute("aria-current", on ? "true" : "false");
+  });
 }
 
 function renderAiDifficultyChips() {
