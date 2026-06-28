@@ -27,6 +27,7 @@ const ROOM_TTL_MS = 60 * 60 * 1000;
  * @property {string} name
  * @property {string} childId
  * @property {boolean} ready
+ * @property {string} [ship]
  */
 
 /**
@@ -209,6 +210,7 @@ export async function clearGuestSlot(roomId) {
   await update(r, {
     "players/guest": null,
     state: null,
+    sky: null,
     "meta/status": "lobby",
   });
 }
@@ -226,12 +228,19 @@ export async function returnRoomToLobby(roomId) {
   /** @type {Record<string, unknown>} */
   const updates = {
     state: null,
+    sky: null,
     inputs: null,
     "meta/status": "lobby",
     "meta/expiresAt": Date.now() + ROOM_TTL_MS,
   };
-  if (data.players?.host) updates["players/host/ready"] = false;
-  if (data.players?.guest) updates["players/guest/ready"] = false;
+  if (data.players?.host) {
+    updates["players/host/ready"] = false;
+    updates["players/host/ship"] = null;
+  }
+  if (data.players?.guest) {
+    updates["players/guest/ready"] = false;
+    updates["players/guest/ship"] = null;
+  }
   await update(r, updates);
 }
 

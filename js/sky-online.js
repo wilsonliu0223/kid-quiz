@@ -6,9 +6,10 @@ import {
   leaveOnlineRoom,
   rematchOnlineRoom,
   openOnlineOnlyDuo,
+  refreshOnlineLobby,
 } from "./online-duo.js";
 import { startGameRoom } from "./room-service.js";
-import { SHIPS, SHIP_IDS, shipLobbyCardHtml } from "./sky-shooter/ships.js?v=sky-duo-v38";
+import { SHIPS, SHIP_IDS, shipLobbyCardHtml } from "./sky-shooter/ships.js?v=sky-duo-v40";
 import {
   createInitialState,
   stepSimulation,
@@ -25,9 +26,9 @@ import {
   pickGuestInterpPair,
   applyGuestInterpVisual,
   VERSUS_GUEST_Y_BAND,
-} from "./sky-shooter/sim.js?v=sky-duo-v38";
-import { drawSkyFrame } from "./sky-shooter/render.js?v=sky-duo-v38";
-import { normalizeSkyState, isValidSkyState } from "./sky-shooter/state-util.js?v=sky-duo-v38";
+} from "./sky-shooter/sim.js?v=sky-duo-v40";
+import { drawSkyFrame } from "./sky-shooter/render.js?v=sky-duo-v40";
+import { normalizeSkyState, isValidSkyState } from "./sky-shooter/state-util.js?v=sky-duo-v40";
 
 const SKY_BUILD = "v38";
 const HOST_TICK_MS = 16;
@@ -119,6 +120,7 @@ function bindSkyOnlineOnce() {
   $("#btn-sky-online-rematch")?.addEventListener("click", async () => {
     resultShown = false;
     stopSkyGameLoop();
+    resetShipLobby();
     await rematchOnlineRoom();
   });
   $("#btn-sky-online-result-home")?.addEventListener("click", async () => {
@@ -166,12 +168,20 @@ function skyHandler(gameKey, title) {
     renderStartButtons: (panel, snap, onStart) => {
       const hostShip = snap.players.host?.ship;
       const guestShip = snap.players.guest?.ship;
-      const ready = hostShip && guestShip;
+      const bothShips = !!(hostShip && guestShip);
       const btn = document.createElement("button");
       btn.type = "button";
       btn.className = "btn btn-primary btn-block";
-      btn.textContent = ready ? "開始戰鬥" : "雙方需先選機體";
-      btn.disabled = !ready;
+      if (bothShips) {
+        btn.textContent = "開始戰鬥";
+      } else if (!hostShip && !guestShip) {
+        btn.textContent = "雙方需先選機體";
+      } else if (!hostShip) {
+        btn.textContent = "等待房主選機體";
+      } else {
+        btn.textContent = "等待來賓選機體";
+      }
+      btn.disabled = !bothShips;
       btn.addEventListener("click", () => onStart("host"));
       panel.innerHTML = "";
       panel.appendChild(btn);
@@ -250,8 +260,7 @@ function ensureShipLobby(title, snap) {
   if (!panel || !pick) return;
   panel.hidden = false;
   const ctx = getOnlineContext();
-  const slot = ctx.slot;
-  if (!slot) return;
+  if (!ctx.slot) return;
 
   if (pick.dataset.built !== "1") {
     pick.innerHTML = "";
@@ -269,13 +278,17 @@ function ensureShipLobby(title, snap) {
       btn.dataset.ship = id;
       btn.innerHTML = shipLobbyCardHtml(id);
       btn.addEventListener("click", () => {
-        if (!ctx.roomId || !slot) return;
+        const live = getOnlineContext();
+        if (!live.roomId || !live.slot) return;
         row.querySelectorAll(".sky-ship-card").forEach((el) => {
           el.classList.toggle("sky-ship-card-active", el.dataset.ship === id);
         });
-        void setPlayerShip(ctx.roomId, slot, id).catch((err) => {
-          console.error("setPlayerShip failed", err);
-        });
+        void setPlayerShip(live.roomId, live.slot, id)
+          .then(() => refreshOnlineLobby())
+          .catch((err) => {
+            console.error("setPlayerShip failed", err);
+            alert("選機失敗，請檢查網路後再試");
+          });
       });
       row.appendChild(btn);
     });
@@ -283,7 +296,7 @@ function ensureShipLobby(title, snap) {
     pick.dataset.built = "1";
   }
 
-  syncShipLobbyFromSnap(snap);
+  if (snap) syncShipLobbyFromSnap(snap);
 }
 
 function stopSkyGameLoop() {

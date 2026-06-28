@@ -73,6 +73,15 @@ export function getOnlineContext() {
   };
 }
 
+/** 選機等操作後強制刷新等候室（讀最新 Firebase） */
+export async function refreshOnlineLobby() {
+  if (!activeRoomId) return;
+  const snap = await getRoomSnapshot(activeRoomId);
+  if (!snap || snap.meta?.status !== "lobby") return;
+  gameHandlers.get(snap.meta?.game || "")?.onEnterLobby?.(snap);
+  renderLobby(snap);
+}
+
 /** @param {unknown} err */
 export function formatOnlineError(err) {
   const code =
@@ -256,24 +265,44 @@ function renderLobby(snapshot) {
 
   const host = snapshot.players.host;
   const guest = snapshot.players.guest;
+  const bothReady = !!(host?.ready && guest?.ready);
+  const isSky = (snapshot.meta?.game || "").startsWith("sky-");
+  const hostShip = host?.ship;
+  const guestShip = guest?.ship;
+  const bothShips = !!(hostShip && guestShip);
+
+  const shipTag = (p) => {
+    if (!p) return "";
+    if (!isSky) return p.ready ? " · 已準備" : "";
+    const shipName =
+      p.ship === "heavy" ? "赤焰" : p.ship === "swift" ? "藍鷹" : p.ship ? p.ship : "";
+    const shipLine = shipName ? ` · ${shipName}` : " · 未選機";
+    return `${shipLine}${p.ready ? " · 已準備" : ""}`;
+  };
+
   if (hostEl) {
-    hostEl.textContent = host
-      ? `${host.name}${host.ready ? " · 已準備" : ""}`
-      : "（無）";
+    hostEl.textContent = host ? `${host.name}${shipTag(host)}` : "（無）";
   }
   if (guestEl) {
     guestEl.textContent = guest
-      ? `${guest.name}${guest.ready ? " · 已準備" : ""}`
+      ? `${guest.name}${shipTag(guest)}`
       : "等待另一位加入…";
   }
 
-  const bothReady = !!(host?.ready && guest?.ready);
   if (statusEl) {
-    statusEl.textContent = bothReady
-      ? "雙方已準備，房主可開始對局"
-      : guest
-        ? "請雙方按「我準備好了」"
-        : "請把房間碼告訴對方，等候加入";
+    if (bothReady && isSky && !bothShips) {
+      if (!hostShip && !guestShip) statusEl.textContent = "請雙方各選一台機體";
+      else if (!hostShip) statusEl.textContent = "等待房主選機體";
+      else statusEl.textContent = "等待來賓選機體";
+    } else if (isSky && bothShips && !bothReady) {
+      statusEl.textContent = "已選機體，請雙方按「我準備好了」";
+    } else if (bothReady) {
+      statusEl.textContent = "雙方已準備，房主可開始對局";
+    } else if (guest) {
+      statusEl.textContent = "請雙方按「我準備好了」";
+    } else {
+      statusEl.textContent = "請把房間碼告訴對方，等候加入";
+    }
   }
 
   const me = mySlot === "host" ? host : guest;
@@ -296,12 +325,14 @@ function renderLobby(snapshot) {
   }
 }
 
-function openLobby(roomId) {
+async function openLobby(roomId) {
   stopRoomListener();
   activeRoomId = roomId;
   mySlot = getOnlineSession()?.slot || mySlot;
-  gameHandlers.get(pendingMode?.game || "")?.onEnterLobby?.();
+  const snap = await getRoomSnapshot(roomId);
+  gameHandlers.get(pendingMode?.game || snap?.meta?.game || "")?.onEnterLobby?.(snap);
   deps?.showView("onlineLobby");
+  if (snap) renderLobby(snap);
   roomUnsub = subscribeRoom(roomId, onRoomSnapshot);
 }
 

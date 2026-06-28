@@ -1,5 +1,5 @@
-import { shipOrDefault } from "./ships.js?v=sky-duo-v38";
-import { asList } from "./state-util.js?v=sky-duo-v38";
+import { shipOrDefault } from "./ships.js?v=sky-duo-v40";
+import { asList } from "./state-util.js?v=sky-duo-v40";
 
 export const COOP_BOSS_AT = 95;
 /** 雙人合作每人命數 */
