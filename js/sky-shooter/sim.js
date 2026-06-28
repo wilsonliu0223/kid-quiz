@@ -782,6 +782,19 @@ function updatePlayers(state, dt) {
   }
 }
 
+/** 來賓本地：僅推進爆炸粒子（權威快照在 reconcile 更新） */
+export function tickGuestParticles(state, dt) {
+  if (!state?.particles?.length) return;
+  const cap = Math.min(0.033, Math.max(0, dt));
+  for (const p of state.particles) {
+    p.life -= cap;
+    p.x += p.vx * cap;
+    p.y += p.vy * cap;
+  }
+  state.particles = state.particles.filter((p) => p.life > 0);
+  if (state.particles.length > 80) state.particles.length = 80;
+}
+
 /** 來賓本地：僅更新自己的射擊／導彈（視覺即時，權威仍在房主） */
 export function tickGuestLocalCombat(state, slot, dt) {
   if (!canPlayerControl(state, slot)) return;
@@ -848,7 +861,6 @@ export function createGuestInterpSnap(state, at = Date.now()) {
     enemies: copyEntityList(state.enemies),
     bullets: copyEntityList(state.bullets),
     eBullets: copyEntityList(state.eBullets),
-    particles: copyEntityList(state.particles),
     pickups: copyEntityList(state.pickups),
     missileTracks: copyEntityList(state.missileTracks),
   };
@@ -887,9 +899,9 @@ export function applyGuestInterpVisual(shadow, pair, mySlot) {
   shadow.enemies = lerpEntityList(a.enemies, b.enemies, t);
   shadow.bullets = lerpEntityList(a.bullets, b.bullets, t);
   shadow.eBullets = lerpEntityList(a.eBullets, b.eBullets, t);
-  shadow.particles = lerpEntityList(a.particles, b.particles, t);
   shadow.pickups = lerpEntityList(a.pickups, b.pickups, t);
   shadow.missileTracks = lerpEntityList(a.missileTracks, b.missileTracks, t);
+  // 爆炸粒子生命短、無穩定 id，插值會產生拖影殘留
 
   const op = shadow.players?.[other];
   if (op && a.players[other] && b.players[other]) {
@@ -1351,6 +1363,7 @@ function burst(state, x, y, color, n) {
     const a = (Math.PI * 2 * i) / n + Math.random() * 0.4;
     const sp = 0.15 + Math.random() * 0.25;
     state.particles.push({
+      id: eid(),
       x,
       y,
       vx: Math.cos(a) * sp,

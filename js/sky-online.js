@@ -9,7 +9,7 @@ import {
   refreshOnlineLobby,
 } from "./online-duo.js";
 import { startGameRoom } from "./room-service.js";
-import { SHIPS, SHIP_IDS, shipLobbyCardHtml } from "./sky-shooter/ships.js?v=sky-duo-v40";
+import { SHIPS, SHIP_IDS, shipLobbyCardHtml } from "./sky-shooter/ships.js?v=sky-duo-v41";
 import {
   createInitialState,
   stepSimulation,
@@ -25,12 +25,13 @@ import {
   createGuestInterpSnap,
   pickGuestInterpPair,
   applyGuestInterpVisual,
+  tickGuestParticles,
   VERSUS_GUEST_Y_BAND,
-} from "./sky-shooter/sim.js?v=sky-duo-v40";
-import { drawSkyFrame } from "./sky-shooter/render.js?v=sky-duo-v40";
-import { normalizeSkyState, isValidSkyState } from "./sky-shooter/state-util.js?v=sky-duo-v40";
+} from "./sky-shooter/sim.js?v=sky-duo-v41";
+import { drawSkyFrame } from "./sky-shooter/render.js?v=sky-duo-v41";
+import { normalizeSkyState, isValidSkyState } from "./sky-shooter/state-util.js?v=sky-duo-v41";
 
-const SKY_BUILD = "v38";
+const SKY_BUILD = "v40";
 const HOST_TICK_MS = 16;
 const HOST_TICK_DT = HOST_TICK_MS / 1000;
 const INPUT_SEND_MS = 0;
@@ -365,8 +366,13 @@ function onGuestAuthorityState(next, mySlot) {
 function tickGuestShadowFrame(mySlot, mode) {
   if (!guestShadowState || !mySlot) return null;
   try {
+    const now = performance.now();
+    const dt = Math.min(0.033, (now - guestShadowLastFrame) / 1000 || 0.016);
+    guestShadowLastFrame = now;
+
     const pair = pickGuestInterpPair(guestInterpBuffer, GUEST_RENDER_DELAY_MS);
     applyGuestInterpVisual(guestShadowState, pair, mySlot);
+    tickGuestParticles(guestShadowState, dt);
 
     const me = guestShadowState.players[mySlot];
     const canMove = me && canPlayerControl(guestShadowState, mySlot);
