@@ -189,8 +189,8 @@ export function renderMulFlipHomePlayers() {
 
 function gridCols(cardCount) {
   if (cardCount <= 18) return 6;
-  if (cardCount <= 40) return 5;
-  return 8;
+  if (cardCount <= 40) return 4;
+  return 5;
 }
 
 /** @param {MulFlipFact[]} facts */
@@ -294,6 +294,19 @@ function flipCardFaceHtml(card) {
   return `<span class="flip-card-inner">${escapeHtml(card.face)}</span>`;
 }
 
+function applyMulFlipGridMetrics(grid, requestedPairs) {
+  const metrics =
+    requestedPairs === 9
+      ? { eqDiv: 4.2, eqHDiv: 2.2, ansDiv: 1.5, ansHDiv: 2 }
+      : requestedPairs === 20
+        ? { eqDiv: 5, eqHDiv: 2.6, ansDiv: 1.7, ansHDiv: 2.3 }
+        : { eqDiv: 5.4, eqHDiv: 2.9, ansDiv: 1.9, ansHDiv: 2.5 };
+  grid.style.setProperty("--mul-eq-div", String(metrics.eqDiv));
+  grid.style.setProperty("--mul-eq-hdiv", String(metrics.eqHDiv));
+  grid.style.setProperty("--mul-ans-div", String(metrics.ansDiv));
+  grid.style.setProperty("--mul-ans-hdiv", String(metrics.ansHDiv));
+}
+
 function renderBoard() {
   const grid = $("#mul-flip-card-grid");
   if (!grid || !game) return;
@@ -301,6 +314,7 @@ function renderBoard() {
   grid.style.setProperty("--flip-cols", String(gridCols(game.cards.length)));
   grid.dataset.pairs = String(game.pairCount);
   grid.dataset.size = String(game.requestedPairs);
+  applyMulFlipGridMetrics(grid, game.requestedPairs);
   grid.innerHTML = "";
 
   game.cards.forEach((card, idx) => {

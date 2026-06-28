@@ -65,7 +65,7 @@ import {
 import {
   initFlipMul,
   renderMulFlipHomePlayers,
-} from "./flip-mul.js?v=mul-flip-v1";
+} from "./flip-mul.js?v=mul-flip-v3";
 import {
   initFlipMath,
   renderMathHomePlayers,
