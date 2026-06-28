@@ -1,7 +1,9 @@
-import { shipOrDefault } from "./ships.js?v=sky-duo-v31";
-import { asList } from "./state-util.js?v=sky-duo-v31";
+import { shipOrDefault } from "./ships.js?v=sky-duo-v32";
+import { asList } from "./state-util.js?v=sky-duo-v32";
 
 export const COOP_BOSS_AT = 95;
+/** 雙人合作每人命數 */
+export const COOP_PLAYER_LIVES = 10;
 /** 單人關卡1 同款：Boss HP、巡邏、三種彈幕 */
 export const COOP_BOSS_HP = 240;
 export const VERSUS_BOSS_HP = 200;
@@ -71,6 +73,8 @@ export function createInitialState(mode, ships) {
     bossOrbCd: 5,
   };
   if (isCoop) {
+    state.players.host.lives = COOP_PLAYER_LIVES;
+    state.players.guest.lives = COOP_PLAYER_LIVES;
     state.enemies.push(
       {
         id: eid(),
@@ -197,7 +201,9 @@ export function clampPlayersToZone(state) {
   }
 }
 
-const LAG_COMP_MAX_MS = 220;
+const LAG_COMP_MAX_MS = 480;
+const LAG_COMP_EXTRAP = 1.2;
+const COOP_GUEST_HIT_R = 0.031;
 
 /** 房主模擬前設定遠端玩家延遲補償（不寫入 Firebase） */
 export function setNetworkLagComp(state, lagBySlot) {
@@ -207,6 +213,17 @@ export function setNetworkLagComp(state, lagBySlot) {
 
 export function clearNetworkLagComp(state) {
   if (state?._lagComp) delete state._lagComp;
+}
+
+/** 合作模式：把來賓位置推到補償後座標再跑物理 */
+export function applyCoopLagCompPositions(state) {
+  if (state?.mode !== "coop" || !state._lagComp) return;
+  const pos = playerCombatPos(state, "guest");
+  const p = state.players.guest;
+  if (p && p.lives > 0) {
+    p.x = pos.x;
+    p.y = pos.y;
+  }
 }
 
 /** 合作模式：遠端玩家用最新 input + 外插位置做碰撞／追蹤 */
@@ -226,8 +243,14 @@ function playerCombatPos(state, slot) {
   const lagMs = Math.min(LAG_COMP_MAX_MS, Math.max(0, Date.now() - t));
   const vx = Number(lc.vx) || 0;
   const vy = Number(lc.vy) || 0;
-  const sec = lagMs / 1000;
-  return clampPointerInput(slot, "coop", ix + vx * sec * 0.9, iy + vy * sec * 0.9);
+  const extra = Number(lc.extraMs) || 0;
+  const totalSec = (lagMs + extra) / 1000;
+  return clampPointerInput(
+    slot,
+    "coop",
+    ix + vx * totalSec * LAG_COMP_EXTRAP,
+    iy + vy * totalSec * LAG_COMP_EXTRAP,
+  );
 }
 
 export function canPlayerControl(state, slot) {
@@ -988,7 +1011,8 @@ function updateBullets(state, dt) {
       const p = state.players[slot];
       if (p.invuln > 0 || p.lives <= 0) continue;
       const pos = playerCombatPos(state, slot);
-      if (hitCircle(eb.x, eb.y, eb.r, pos.x, pos.y, 0.038)) {
+      const hitR = state.mode === "coop" && slot === "guest" ? COOP_GUEST_HIT_R : 0.038;
+      if (hitCircle(eb.x, eb.y, eb.r, pos.x, pos.y, hitR)) {
         eb._gone = true;
         hurtPlayer(state, slot);
         break;

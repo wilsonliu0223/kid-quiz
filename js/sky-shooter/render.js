@@ -1,5 +1,5 @@
-import { shipOrDefault } from "./ships.js?v=sky-duo-v31";
-import { asList } from "./state-util.js?v=sky-duo-v31";
+import { shipOrDefault } from "./ships.js?v=sky-duo-v32";
+import { asList } from "./state-util.js?v=sky-duo-v32";
 import {
   VERSUS_TIME,
   ZONE_RATIO,
@@ -8,10 +8,16 @@ import {
   COOP_Y_BAND,
   VERSUS_GUEST_Y_BAND,
   COOP_BOSS_HP,
-} from "./sim.js?v=sky-duo-v31";
+} from "./sim.js?v=sky-duo-v32";
 
 /** 與單人關卡 prototypes 的 PLAYER_SCALE 一致 */
 const PLAYER_DRAW_SCALE = 0.75;
+
+function formatLives(n) {
+  if (n <= 0) return "";
+  if (n > 6) return `♥×${n}`;
+  return "♥".repeat(n);
+}
 
 function resolvePlayerPos(p, slot, overrides) {
   const o = overrides?.[slot];
@@ -54,11 +60,12 @@ function createView(mode, mySlot) {
   };
 }
 
-/** @param {CanvasRenderingContext2D} ctx @param {object} state @param {{ w: number, h: number, mySlot: string, mode?: string, names: Record<string,string>, displayOverrides?: Record<string,{x:number,y:number}> }} opts */
+/** @param {CanvasRenderingContext2D} ctx @param {object} state @param {{ w: number, h: number, mySlot: string, mode?: string, names: Record<string,string>, displayOverrides?: Record<string,{x:number,y:number}>, renderLeadSec?: number }} opts */
 export function drawSkyFrame(ctx, state, opts) {
   const { w, h, mySlot, names } = opts;
   const mode = opts.mode || state.mode || "coop";
   const displayOverrides = opts.displayOverrides || {};
+  const renderLeadSec = Math.max(0, Number(opts.renderLeadSec) || 0);
   const view = createView(mode, mySlot);
   const particles = asList(state.particles);
   const pickups = asList(state.pickups);
@@ -97,7 +104,10 @@ export function drawSkyFrame(ctx, state, opts) {
   }
 
   for (const eb of eBullets) {
-    drawEnemyBullet(ctx, eb, w, h, view, mode);
+    const lead = renderLeadSec;
+    const bx = lead > 0 ? eb.x + eb.vx * lead : eb.x;
+    const by = lead > 0 ? eb.y + eb.vy * lead : eb.y;
+    drawEnemyBullet(ctx, { ...eb, x: bx, y: by }, w, h, view, mode);
   }
 
   for (const b of bullets) {

@@ -8,7 +8,7 @@ import {
   openOnlineOnlyDuo,
 } from "./online-duo.js";
 import { startGameRoom } from "./room-service.js";
-import { SHIPS, SHIP_IDS, shipLobbyCardHtml } from "./sky-shooter/ships.js?v=sky-duo-v31";
+import { SHIPS, SHIP_IDS, shipLobbyCardHtml } from "./sky-shooter/ships.js?v=sky-duo-v32";
 import {
   createInitialState,
   stepSimulation,
@@ -19,15 +19,18 @@ import {
   canPlayerControl,
   setNetworkLagComp,
   clearNetworkLagComp,
+  applyCoopLagCompPositions,
   VERSUS_GUEST_Y_BAND,
-} from "./sky-shooter/sim.js?v=sky-duo-v31";
-import { drawSkyFrame } from "./sky-shooter/render.js?v=sky-duo-v31";
-import { normalizeSkyState, isValidSkyState } from "./sky-shooter/state-util.js?v=sky-duo-v31";
+} from "./sky-shooter/sim.js?v=sky-duo-v32";
+import { drawSkyFrame } from "./sky-shooter/render.js?v=sky-duo-v32";
+import { normalizeSkyState, isValidSkyState } from "./sky-shooter/state-util.js?v=sky-duo-v32";
 
-const SKY_BUILD = "v31";
-const HOST_TICK_MS = 40;
+const SKY_BUILD = "v32";
+const HOST_TICK_MS = 33;
 const HOST_TICK_DT = HOST_TICK_MS / 1000;
-const INPUT_SEND_MS = 20;
+const INPUT_SEND_MS = 12;
+const GUEST_INPUT_LEAD_MS = 100;
+const GUEST_RENDER_LEAD_MAX = 0.4;
 
 const $ = (sel) => document.querySelector(sel);
 
@@ -51,6 +54,7 @@ let hostInputs = { host: { x: 0.35, y: 0.84 }, guest: { x: 0.65, y: 0.12 } };
 let guestInputVel = { vx: 0, vy: 0 };
 let guestInputPrev = { x: 0.65, y: 0.12, t: 0 };
 let hostStateWriteBusy = false;
+let guestStateRecvAt = Date.now();
 let resultShown = false;
 /** @type {string | null} */
 let activeRoomId = null;
@@ -401,8 +405,10 @@ function startSkySession(snap, ctx) {
           vx: guestInputVel.vx,
           vy: guestInputVel.vy,
           t: hostInputs.guest.t || Date.now(),
+          extraMs: GUEST_INPUT_LEAD_MS,
         },
       });
+      applyCoopLagCompPositions(hostSimState);
       stepSimulation(hostSimState, HOST_TICK_DT);
       clearNetworkLagComp(hostSimState);
       liveState = hostSimState;
@@ -425,6 +431,7 @@ function startSkySession(snap, ctx) {
         if (isValidSkyState(next)) {
           liveState = normalizeSkyState(next);
           clampPlayersToZone(liveState);
+          guestStateRecvAt = Date.now();
         }
         if (liveState?.phase === "end") {
           if (!resultShown) {
@@ -540,8 +547,20 @@ function renderLoop(names) {
           const world = pointerToWorld(mySlot, mode, localInput.x, localInput.y);
           displayOverrides[mySlot] = world;
         }
+        const renderLeadSec =
+          mySlot === "guest"
+            ? Math.min(GUEST_RENDER_LEAD_MAX, (Date.now() - guestStateRecvAt) / 1000)
+            : 0;
         try {
-          drawSkyFrame(ctx2d, liveState, { w, h, mySlot, mode, names, displayOverrides });
+          drawSkyFrame(ctx2d, liveState, {
+            w,
+            h,
+            mySlot,
+            mode,
+            names,
+            displayOverrides,
+            renderLeadSec,
+          });
           updateSkyHud(mySlot);
           updateCanvasInputLock(mySlot);
         } catch (err) {
@@ -658,7 +677,7 @@ async function sendInputNow() {
   if (!ctx.roomId || !ctx.slot) return;
   if (!myPlayerCanControl()) return;
   const now = Date.now();
-  if (now - lastInputSend < INPUT_SEND_MS) return;
+  if (!pointerDown && now - lastInputSend < INPUT_SEND_MS) return;
   lastInputSend = now;
   const mode = liveState?.mode || activeSkyMode;
   const world = pointerToWorld(ctx.slot, mode, localInput.x, localInput.y);
