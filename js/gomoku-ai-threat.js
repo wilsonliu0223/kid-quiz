@@ -50,7 +50,137 @@ export function findImmediateWinMove(cells, player, ctx, blackId, whiteId) {
  * @returns {[number, number]|null}
  */
 export function findMustBlockMove(cells, attacker, defender, ctx, blackId, whiteId) {
-  return findImmediateWinMove(cells, attacker, ctx, blackId, whiteId);
+  return findBestWinBlockMove(cells, attacker, defender, ctx, blackId, whiteId);
+}
+
+/**
+ * 對手下一手能贏的點；若有多點（雙四），選最能反擊的防點
+ * @returns {[number, number]|null}
+ */
+export function findBestWinBlockMove(cells, attacker, defender, ctx, blackId, whiteId) {
+  /** @type {[number, number][]} */
+  const winPoints = [];
+  for (let r = 0; r < SIZE; r++) {
+    for (let c = 0; c < SIZE; c++) {
+      if (cells[r][c]) continue;
+      if (ctx.isForbidden(cells, r, c, attacker, blackId, whiteId)) continue;
+      cells[r][c] = attacker;
+      const win = ctx.hasFiveWin(cells, r, c, attacker);
+      cells[r][c] = "";
+      if (win) winPoints.push([r, c]);
+    }
+  }
+  if (!winPoints.length) return null;
+  if (winPoints.length === 1) return winPoints[0];
+
+  let best = winPoints[0];
+  let bestScore = -Infinity;
+  for (const [r, c] of gatherNearCells(cells, 4)) {
+    if (cells[r][c]) continue;
+    if (ctx.isForbidden(cells, r, c, defender, blackId, whiteId)) continue;
+    if (!winPoints.some(([wr, wc]) => wr === r && wc === c)) continue;
+    cells[r][c] = defender;
+    let score = createsFourOrWin(cells, r, c, defender) ? 5000 : 0;
+    if (ctx.hasFiveWin(cells, r, c, defender)) score += 1_000_000;
+    cells[r][c] = "";
+    if (score > bestScore) {
+      bestScore = score;
+      best = [r, c];
+    }
+  }
+  return best;
+}
+
+function createsOpenThree(cells, r, c, player) {
+  cells[r][c] = player;
+  let ok = false;
+  for (const [dr, dc] of DIRS) {
+    const { count, openEnds } = lineInfoAfterPlace(cells, r, c, dr, dc, player);
+    if (count === 3 && openEnds === 2) ok = true;
+  }
+  cells[r][c] = "";
+  return ok;
+}
+
+/**
+ * 防對手活三、衝四等即將成型的威脅
+ * @returns {[number, number]|null}
+ */
+export function findProactiveDefenseMove(cells, me, opp, ctx, blackId, whiteId) {
+  /** @type {[number, number][]} */
+  const oppThreats = [];
+  for (const [r, c] of gatherNearCells(cells, 4)) {
+    if (cells[r][c]) continue;
+    if (ctx.isForbidden(cells, r, c, opp, blackId, whiteId)) continue;
+    cells[r][c] = opp;
+    const win = ctx.hasFiveWin(cells, r, c, opp);
+    const four = !win && createsFourOrWin(cells, r, c, opp);
+    const openThree = !win && !four && createsOpenThree(cells, r, c, opp);
+    cells[r][c] = "";
+    if (win || four || openThree) oppThreats.push([r, c]);
+  }
+  if (!oppThreats.length) return null;
+
+  let best = null;
+  let bestScore = -Infinity;
+  for (const [mr, mc] of gatherNearCells(cells, 4)) {
+    if (cells[mr][mc]) continue;
+    if (ctx.isForbidden(cells, mr, mc, me, blackId, whiteId)) continue;
+
+    cells[mr][mc] = me;
+    let score = 0;
+    if (ctx.hasFiveWin(cells, mr, mc, me)) score += 2_000_000;
+    else if (createsFourOrWin(cells, mr, mc, me)) score += 50_000;
+    else if (createsOpenThree(cells, mr, mc, me)) score += 5_000;
+
+    for (const [or, oc] of oppThreats) {
+      if (mr === or && mc === oc) {
+        score += 80_000;
+        continue;
+      }
+      cells[or][oc] = opp;
+      if (ctx.hasFiveWin(cells, or, oc, opp)) score -= 200_000;
+      else if (createsFourOrWin(cells, or, oc, opp)) score -= 30_000;
+      else if (createsOpenThree(cells, or, oc, opp)) score -= 8_000;
+      cells[or][oc] = "";
+    }
+    cells[mr][mc] = "";
+
+    if (score > bestScore) {
+      bestScore = score;
+      best = [mr, mc];
+    }
+  }
+  return bestScore > 0 ? best : null;
+}
+
+/**
+ * @param {(''|string)[][]} cells
+ * @param {string} player
+ * @param {ReturnType<typeof createThreatContext>} ctx
+ * @param {string} blackId
+ * @param {string} whiteId
+ * @param {number} [radius]
+ * @returns {[number, number][]}
+ */
+export function getOpenThreeThreatMoves(cells, player, ctx, blackId, whiteId, radius = 4) {
+  /** @type {[number, number][]} */
+  const out = [];
+  const seen = new Set();
+  for (const [r, c] of gatherNearCells(cells, radius)) {
+    if (cells[r][c]) continue;
+    if (ctx.isForbidden(cells, r, c, player, blackId, whiteId)) continue;
+    const code = r * SIZE + c;
+    if (seen.has(code)) continue;
+    cells[r][c] = player;
+    const ok = createsOpenThree(cells, r, c, player);
+    cells[r][c] = "";
+    if (ok) {
+      seen.add(code);
+      out.push([r, c]);
+    }
+  }
+  return out;
 }
 
 /**
@@ -376,7 +506,8 @@ export function solveVct(cells, attacker, defender, ctx, blackId, whiteId, maxDe
  * @returns {[number, number]|null}
  */
 export function findThreatDefenseMove(cells, me, opp, ctx, blackId, whiteId, maxDepth, deadline) {
-  const oppVct = solveVct(cells, opp, me, ctx, blackId, whiteId, maxDepth, deadline);
+  const shallow = Math.min(12, maxDepth);
+  const oppVct = solveVct(cells, opp, me, ctx, blackId, whiteId, shallow, deadline);
   if (!oppVct) return null;
 
   const candidates = gatherNearCells(cells, 3);
@@ -427,21 +558,6 @@ export function pickOpeningMove(cells, aiId, opponent, stoneCount) {
   if (stoneCount === 1) {
     for (const [r, c] of OPENING_REPLIES) {
       if (!cells[r][c]) return [r, c];
-    }
-  }
-  if (stoneCount === 2) {
-    for (const [r, c] of OPENING_REPLIES) {
-      if (cells[r][c]) continue;
-      let near = false;
-      for (let dr = -2; dr <= 2; dr++) {
-        for (let dc = -2; dc <= 2; dc++) {
-          const nr = r + dr;
-          const nc = c + dc;
-          if (nr < 0 || nr >= SIZE || nc < 0 || nc >= SIZE) continue;
-          if (cells[nr][nc]) near = true;
-        }
-      }
-      if (near) return [r, c];
     }
   }
   return null;

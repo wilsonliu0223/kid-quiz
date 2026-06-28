@@ -1,4 +1,4 @@
-import { forbiddenLabel, wouldBlackForbidden } from "./gomoku-renju.js?v=gomoku-v7";
+import { forbiddenLabel, wouldBlackForbidden } from "./gomoku-renju.js?v=gomoku-v8";
 import {
   resetGomokuBoardZoom,
   rebindGomokuBoardZoom,
@@ -9,7 +9,7 @@ import {
   clearGomokuWinCelebration,
   renderGomokuWinLine,
 } from "./gomoku-win-ui.js";
-import { startGomokuReplay, stopGomokuReplay } from "./gomoku-replay.js?v=gomoku-v7";
+import { startGomokuReplay, stopGomokuReplay } from "./gomoku-replay.js?v=gomoku-v8";
 import {
   registerOnlineGame,
   getOnlineContext,

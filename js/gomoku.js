@@ -1,6 +1,6 @@
-import { forbiddenLabel, wouldBlackForbidden } from "./gomoku-renju.js?v=gomoku-v7";
+import { forbiddenLabel, wouldBlackForbidden } from "./gomoku-renju.js?v=gomoku-v8";
 import { openDuoModePicker } from "./online-duo.js";
-import { AI_PLAYER_ID, requestAiMove, terminateAiWorker } from "./gomoku-ai.js?v=gomoku-v7";
+import { AI_PLAYER_ID, requestAiMove, terminateAiWorker } from "./gomoku-ai.js?v=gomoku-v8";
 import {
   resetGomokuBoardZoom,
   rebindGomokuBoardZoom,
@@ -11,7 +11,7 @@ import {
   clearGomokuWinCelebration,
   renderGomokuWinLine,
 } from "./gomoku-win-ui.js";
-import { startGomokuReplay, stopGomokuReplay, isGomokuReplayRunning } from "./gomoku-replay.js?v=gomoku-v7";
+import { startGomokuReplay, stopGomokuReplay, isGomokuReplayRunning } from "./gomoku-replay.js?v=gomoku-v8";
 import { getChildName, otherDuoPlayer } from "./children.js";
 import { getSelectedChild } from "./store.js";
 import {
@@ -237,7 +237,7 @@ function renderPlayHeader() {
   if (turn) {
     if (game.mode === "ai" && aiMovePending) {
       const diff = game.aiDifficulty ?? aiDifficulty;
-      turn.textContent = diff >= 5 ? "電腦深度分析中…" : "電腦思考中…";
+      turn.textContent = diff >= 5 ? "電腦深度分析中（最長約 20 秒）…" : "電腦思考中…";
     } else {
       turn.textContent = `輪到：${playerName(game.currentPlayerId)} · ${stoneLabel(game.currentPlayerId)}`;
     }

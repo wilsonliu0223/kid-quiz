@@ -1,15 +1,17 @@
 /** 五子棋 AI 核心（主執行緒與 Worker 共用） */
-import { wouldBlackForbidden } from "./gomoku-renju.js?v=gomoku-v7";
+import { wouldBlackForbidden } from "./gomoku-renju.js?v=gomoku-v8";
 import {
   createThreatContext,
   findImmediateWinMove,
   findMustBlockMove,
   findThreatDefenseMove,
   getFourThreatMoves,
+  getOpenThreeThreatMoves,
+  findProactiveDefenseMove,
   pickOpeningMove,
   solveVcf,
   solveVct,
-} from "./gomoku-ai-threat.js?v=gomoku-v7";
+} from "./gomoku-ai-threat.js?v=gomoku-v8";
 
 const SIZE = 15;
 const CENTER = 7;
@@ -26,7 +28,7 @@ export const AI_LEVELS = {
   2: { depth: 3, timeMs: 1000, radius: 2 },
   3: { depth: 4, timeMs: 2000, radius: 2 },
   4: { depth: 5, timeMs: 3500, radius: 2 },
-  5: { depth: 8, timeMs: 12000, radius: 3, useThreats: true, vcfDepth: 28, vctDepth: 20 },
+  5: { depth: 10, timeMs: 20000, radius: 4, useThreats: true, vcfDepth: 32, vctDepth: 22 },
 };
 
 export const GRANDMASTER_LEVEL = 5;
@@ -105,7 +107,9 @@ export function computeAiMove(cells, opts) {
   const { aiId, blackId, whiteId } = opts;
   const level = AI_LEVELS[opts.difficulty] || AI_LEVELS[2];
   const opponent = aiId === blackId ? whiteId : blackId;
-  const deadline = Date.now() + level.timeMs;
+  const searchDeadline = Date.now() + level.timeMs;
+  const tacticalDeadline =
+    Date.now() + (level.useThreats ? Math.min(6000, level.timeMs * 0.3) : level.timeMs);
   const stones = countStones(cells);
 
   if (stones === 0) return [CENTER, CENTER];
@@ -114,13 +118,16 @@ export function computeAiMove(cells, opts) {
     transpositionTable = new Map();
 
     const opening = pickOpeningMove(cells, aiId, opponent, stones);
-    if (opening && stones <= 2) return opening;
+    if (opening && stones <= 1) return opening;
 
     const win = findImmediateWinMove(cells, aiId, threatCtx, blackId, whiteId);
     if (win) return win;
 
     const block = findMustBlockMove(cells, opponent, aiId, threatCtx, blackId, whiteId);
     if (block) return block;
+
+    const proactive = findProactiveDefenseMove(cells, aiId, opponent, threatCtx, blackId, whiteId);
+    if (proactive) return proactive;
 
     const vct = solveVct(
       cells,
@@ -129,8 +136,8 @@ export function computeAiMove(cells, opts) {
       threatCtx,
       blackId,
       whiteId,
-      level.vctDepth ?? 20,
-      deadline,
+      level.vctDepth ?? 22,
+      tacticalDeadline,
     );
     if (vct) return vct;
 
@@ -141,8 +148,8 @@ export function computeAiMove(cells, opts) {
       threatCtx,
       blackId,
       whiteId,
-      level.vcfDepth ?? 28,
-      deadline,
+      level.vcfDepth ?? 32,
+      tacticalDeadline,
     );
     if (vcf) return vcf;
 
@@ -153,8 +160,8 @@ export function computeAiMove(cells, opts) {
       threatCtx,
       blackId,
       whiteId,
-      level.vctDepth ?? 20,
-      deadline,
+      level.vctDepth ?? 22,
+      tacticalDeadline,
     );
     if (defense) return defense;
   }
@@ -171,17 +178,63 @@ export function computeAiMove(cells, opts) {
   }
   if (!legal.length) return null;
 
-  let bestMove = legal[0];
-  let bestScore = -Infinity;
-  let alpha = -Infinity;
-  const beta = Infinity;
-
   const sorted = legal.sort(
     (a, b) => quickMoveScore(cells, b, aiId, opponent) - quickMoveScore(cells, a, aiId, opponent),
   );
 
+  if (level.useThreats) {
+    let bestMove = sorted[0];
+    const minDepth = 5;
+    for (let depth = minDepth; depth <= level.depth; depth += 1) {
+      if (Date.now() > searchDeadline) break;
+      let bestScore = -Infinity;
+      let alpha = -Infinity;
+      const beta = Infinity;
+      let depthBest = bestMove;
+
+      for (const [r, c] of sorted) {
+        if (Date.now() > searchDeadline) break;
+        cells[r][c] = aiId;
+        const win = hasFiveWin(cells, r, c, aiId);
+        let score;
+        if (win) {
+          score = SCORE.WIN;
+        } else if (depth <= 1) {
+          score = evaluateBoard(cells, aiId, opponent);
+        } else {
+          score = -negamax(
+            cells,
+            depth - 1,
+            -beta,
+            -alpha,
+            opponent,
+            aiId,
+            blackId,
+            whiteId,
+            searchDeadline,
+            level.radius,
+            true,
+          );
+        }
+        cells[r][c] = "";
+        if (score > bestScore) {
+          bestScore = score;
+          depthBest = [r, c];
+        }
+        alpha = Math.max(alpha, score);
+      }
+      bestMove = depthBest;
+    }
+    return bestMove;
+  }
+
+  let bestMove = sorted[0];
+  let bestScore = -Infinity;
+  let alpha = -Infinity;
+  const beta = Infinity;
+
   for (const [r, c] of sorted) {
-    if (Date.now() > deadline) break;
+    if (Date.now() > searchDeadline) break;
     cells[r][c] = aiId;
     const win = hasFiveWin(cells, r, c, aiId);
     let score;
@@ -199,9 +252,9 @@ export function computeAiMove(cells, opts) {
         aiId,
         blackId,
         whiteId,
-        deadline,
+        searchDeadline,
         level.radius,
-        level.useThreats === true,
+        false,
       );
     }
     cells[r][c] = "";
@@ -252,6 +305,12 @@ function gatherCandidates(cells, radius, threatPlayer, blackId, whiteId) {
     for (const [r, c] of getFourThreatMoves(cells, opponent, threatCtx, blackId, whiteId, radius)) {
       set.add(r * SIZE + c);
     }
+    for (const [r, c] of getOpenThreeThreatMoves(cells, threatPlayer, threatCtx, blackId, whiteId, radius)) {
+      set.add(r * SIZE + c);
+    }
+    for (const [r, c] of getOpenThreeThreatMoves(cells, opponent, threatCtx, blackId, whiteId, radius)) {
+      set.add(r * SIZE + c);
+    }
   }
 
   if (!set.size) return [[CENTER, CENTER]];
@@ -265,7 +324,7 @@ function quickMoveScore(cells, [r, c], me, opp) {
   cells[r][c] = opp;
   const def = evaluateBoard(cells, opp, me);
   cells[r][c] = "";
-  return atk + def * 1.12;
+  return atk + def * 1.18;
 }
 
 function negamax(
@@ -313,8 +372,8 @@ function negamax(
   candidates.sort(
     (a, b) => quickMoveScore(cells, b, player, opponent) - quickMoveScore(cells, a, player, opponent),
   );
-  if (threatPrune && candidates.length > 14) {
-    candidates = candidates.slice(0, 14);
+  if (threatPrune && candidates.length > 24) {
+    candidates = candidates.slice(0, 24);
   }
 
   let best = -Infinity;

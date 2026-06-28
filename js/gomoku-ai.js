@@ -1,5 +1,5 @@
 /** 五子棋 AI 介面：入門～高手同步運算，大師／宗師走 Web Worker */
-import { computeAiMove, AI_LEVELS, GRANDMASTER_LEVEL } from "./gomoku-ai-core.js?v=gomoku-v7";
+import { computeAiMove, AI_LEVELS, GRANDMASTER_LEVEL } from "./gomoku-ai-core.js?v=gomoku-v8";
 
 export const AI_PLAYER_ID = "__ai__";
 export const AI_WORKER_LEVEL = 4;
