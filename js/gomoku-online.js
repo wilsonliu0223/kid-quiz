@@ -1,4 +1,4 @@
-import { forbiddenLabel, wouldBlackForbidden } from "./gomoku-renju.js?v=gomoku-v5";
+import { forbiddenLabel, wouldBlackForbidden } from "./gomoku-renju.js?v=gomoku-v7";
 import {
   resetGomokuBoardZoom,
   rebindGomokuBoardZoom,
@@ -9,6 +9,7 @@ import {
   clearGomokuWinCelebration,
   renderGomokuWinLine,
 } from "./gomoku-win-ui.js";
+import { startGomokuReplay, stopGomokuReplay } from "./gomoku-replay.js?v=gomoku-v7";
 import {
   registerOnlineGame,
   getOnlineContext,
@@ -26,6 +27,10 @@ const BOARD_SIZE = 15;
 let onlineGame = null;
 /** @type {string | null} */
 let celebratedWinKey = null;
+/** @type {{ row: number, col: number, player: string }[]} */
+let onlineMoveHistory = [];
+/** @type {string | null} */
+let lastOnlineCellsKey = null;
 
 const $ = (sel) => document.querySelector(sel);
 
@@ -125,9 +130,43 @@ function renderBlackPick(panel, snap, onPick) {
   });
 }
 
+function countEncodedStones(cellsKey) {
+  if (!cellsKey) return 0;
+  let n = 0;
+  for (const ch of cellsKey) {
+    if (ch === "h" || ch === "g") n += 1;
+  }
+  return n;
+}
+
+function syncOnlineMoveHistory(g) {
+  const cellsKey = String(g.cells || "");
+  const stoneCount = countEncodedStones(cellsKey);
+  if (stoneCount === 0) {
+    onlineMoveHistory = [];
+    lastOnlineCellsKey = cellsKey;
+    return;
+  }
+  if (
+    g.lastMove &&
+    Array.isArray(g.lastMove) &&
+    cellsKey !== lastOnlineCellsKey &&
+    stoneCount > countEncodedStones(lastOnlineCellsKey)
+  ) {
+    const [row, col] = g.lastMove;
+    const cells = decodeCells(cellsKey);
+    const who = cells[row]?.[col];
+    if (who && !onlineMoveHistory.some((m) => m.row === row && m.col === col)) {
+      onlineMoveHistory.push({ row, col, player: who });
+    }
+  }
+  lastOnlineCellsKey = cellsKey;
+}
+
 function applyRemoteGomoku(snapshot) {
   const g = snapshot.state;
   if (!g) return;
+  syncOnlineMoveHistory(g);
   onlineGame = {
     cells: decodeCells(g.cells),
     blackPlayerId: g.blackPlayerId,
@@ -136,6 +175,7 @@ function applyRemoteGomoku(snapshot) {
     winner: g.winner || null,
     lastMove: g.lastMove || null,
     winLine: g.winLine ? new Set(g.winLine.map((n) => Number(n))) : null,
+    moveHistory: onlineMoveHistory.map((m) => ({ ...m })),
     names: {
       host: snapshot.players.host?.name || "房主",
       guest: snapshot.players.guest?.name || "來賓",
@@ -156,6 +196,8 @@ function applyRemoteGomoku(snapshot) {
 function enterOnlinePlay(snapshot) {
   getOnlineContext().deps?.showView("gomokuOnlinePlay");
   celebratedWinKey = null;
+  onlineMoveHistory = [];
+  lastOnlineCellsKey = null;
   const grid = $("#gomoku-online-board");
   if (grid) delete grid.dataset.built;
   clearGomokuWinCelebration($("#gomoku-online-board-stage"), $("#gomoku-online-win-overlay"));
@@ -344,6 +386,51 @@ function showOnlineWinOnBoard() {
     title,
     detail,
   });
+  const reviewBtn = $("#btn-gomoku-online-win-moves");
+  if (reviewBtn) reviewBtn.hidden = !(onlineGame.moveHistory?.length > 0);
+}
+
+function startOnlineReplay() {
+  if (!onlineGame?.moveHistory?.length) return;
+  stopGomokuReplay();
+  clearGomokuWinCelebration($("#gomoku-online-board-stage"), $("#gomoku-online-win-overlay"));
+  const moves = onlineGame.moveHistory.map((m) => ({ ...m }));
+  const winLine = onlineGame.winLine;
+  const lastMove = onlineGame.lastMove;
+
+  startGomokuReplay({
+    moves,
+    winLine,
+    lastMove,
+    onStep: ({ cells, lastMove: lm }) => {
+      onlineGame.cells = cells;
+      onlineGame.lastMove = lm;
+      onlineGame.winLine = null;
+      renderOnlineBoard();
+    },
+    onStatus: (text) => {
+      const el = $("#gomoku-online-turn-label");
+      if (el) el.textContent = text;
+      const hint = $("#gomoku-online-renju-hint");
+      if (hint) {
+        hint.classList.remove("is-visible");
+        hint.setAttribute("aria-hidden", "true");
+      }
+    },
+    onDone: ({ cells, winLine: wl, lastMove: lm }) => {
+      onlineGame.cells = cells;
+      onlineGame.lastMove = lm;
+      onlineGame.winLine = wl;
+      renderOnlineBoard();
+      if (wl) renderGomokuWinLine($("#gomoku-online-board-stage"), wl, lm);
+      const el = $("#gomoku-online-turn-label");
+      if (el) {
+        el.textContent = onlineGame.winner
+          ? `${slotName(onlineGame.winner)} 連五獲勝！（重播完成）`
+          : "和棋！（重播完成）";
+      }
+    },
+  });
 }
 
 function bindGomokuOnlineOnly() {
@@ -351,6 +438,7 @@ function bindGomokuOnlineOnly() {
   bindGomokuOnlineOnly.done = true;
   $("#btn-gomoku-online-play-back")?.addEventListener("click", async () => {
     if (confirm("離開棋局？")) {
+      stopGomokuReplay();
       await leaveOnlineRoom();
       onlineGame = null;
       celebratedWinKey = null;
@@ -361,7 +449,11 @@ function bindGomokuOnlineOnly() {
   $("#btn-gomoku-online-win-dismiss")?.addEventListener("click", () => {
     clearGomokuWinCelebration($("#gomoku-online-board-stage"), $("#gomoku-online-win-overlay"));
   });
+  $("#btn-gomoku-online-win-moves")?.addEventListener("click", () => {
+    startOnlineReplay();
+  });
   $("#btn-gomoku-online-win-rematch")?.addEventListener("click", async () => {
+    stopGomokuReplay();
     onlineGame = null;
     celebratedWinKey = null;
     clearGomokuWinCelebration($("#gomoku-online-board-stage"), $("#gomoku-online-win-overlay"));

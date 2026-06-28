@@ -1,5 +1,5 @@
-/** 五子棋 AI 介面：入門～高手同步運算，大師走 Web Worker */
-import { computeAiMove, AI_LEVELS } from "./gomoku-ai-core.js?v=gomoku-v5";
+/** 五子棋 AI 介面：入門～高手同步運算，大師／宗師走 Web Worker */
+import { computeAiMove, AI_LEVELS, GRANDMASTER_LEVEL } from "./gomoku-ai-core.js?v=gomoku-v7";
 
 export const AI_PLAYER_ID = "__ai__";
 export const AI_WORKER_LEVEL = 4;
@@ -29,7 +29,7 @@ export function findAiMove(cells, opts) {
 }
 
 /**
- * 非同步求著；難度 4（大師）在 Worker 運算，其餘在主執行緒
+ * 非同步求著；難度 4（大師）與 5（宗師）在 Worker 運算，其餘在主執行緒
  * @param {import('./gomoku-renju.js').Cell[][]} cells
  * @param {{ aiId: string, blackId: string, whiteId: string, difficulty?: number }} opts
  * @returns {Promise<[number, number]|null>}
@@ -89,4 +89,4 @@ export function terminateAiWorker() {
   }
 }
 
-export { AI_LEVELS };
+export { AI_LEVELS, GRANDMASTER_LEVEL };

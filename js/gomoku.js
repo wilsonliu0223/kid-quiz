@@ -1,6 +1,6 @@
-import { forbiddenLabel, wouldBlackForbidden } from "./gomoku-renju.js?v=gomoku-v5";
+import { forbiddenLabel, wouldBlackForbidden } from "./gomoku-renju.js?v=gomoku-v7";
 import { openDuoModePicker } from "./online-duo.js";
-import { AI_PLAYER_ID, requestAiMove, terminateAiWorker } from "./gomoku-ai.js?v=gomoku-v5";
+import { AI_PLAYER_ID, requestAiMove, terminateAiWorker } from "./gomoku-ai.js?v=gomoku-v7";
 import {
   resetGomokuBoardZoom,
   rebindGomokuBoardZoom,
@@ -9,7 +9,9 @@ import {
 import {
   celebrateGomokuWin,
   clearGomokuWinCelebration,
+  renderGomokuWinLine,
 } from "./gomoku-win-ui.js";
+import { startGomokuReplay, stopGomokuReplay, isGomokuReplayRunning } from "./gomoku-replay.js?v=gomoku-v7";
 import { getChildName, otherDuoPlayer } from "./children.js";
 import { getSelectedChild } from "./store.js";
 import {
@@ -53,6 +55,7 @@ let game = null;
  * @property {string[]} playerIds
  * @property {[number, number]|null} lastMove
  * @property {Set<number>|null} winLine
+ * @property {{ row: number, col: number, player: string }[]} [moveHistory]
  */
 
 const $ = (sel) => document.querySelector(sel);
@@ -62,6 +65,7 @@ const AI_DIFFICULTIES = [
   { level: 2, label: "普通" },
   { level: 3, label: "高手" },
   { level: 4, label: "大師" },
+  { level: 5, label: "宗師" },
 ];
 
 function playerName(id) {
@@ -94,7 +98,7 @@ function setFirstScreenMode(mode) {
   if (meta) {
     meta.textContent =
       mode === "ai"
-        ? "單人對電腦 · 15×15 · 連珠規則 · 大師為背景深度 AI"
+        ? "單人對電腦 · 15×15 · 連珠規則 · 宗師含 VCF/VCT 深度分析"
         : "15×15 · 先連五子獲勝 · 連珠規則";
   }
   if (hint) hint.hidden = mode === "ai";
@@ -232,7 +236,8 @@ function renderPlayHeader() {
   }
   if (turn) {
     if (game.mode === "ai" && aiMovePending) {
-      turn.textContent = "電腦思考中…";
+      const diff = game.aiDifficulty ?? aiDifficulty;
+      turn.textContent = diff >= 5 ? "電腦深度分析中…" : "電腦思考中…";
     } else {
       turn.textContent = `輪到：${playerName(game.currentPlayerId)} · ${stoneLabel(game.currentPlayerId)}`;
     }
@@ -416,12 +421,15 @@ function placeMove(row, col) {
   const prevLastMove = game.lastMove;
   game.cells[row][col] = player;
   game.lastMove = [row, col];
+  if (!game.moveHistory) game.moveHistory = [];
+  game.moveHistory.push({ row, col, player });
   finishAfterMove(row, col, prevLastMove);
   return true;
 }
 
 function onCellClick(row, col) {
   if (shouldSuppressGomokuCellTap()) return;
+  if (isGomokuReplayRunning()) return;
   if (!game || game.over) return;
   if (game.cells[row][col]) return;
   if (game.mode === "ai" && !isHumanTurn()) return;
@@ -521,6 +529,51 @@ function showWinOnBoard() {
     title,
     detail,
   });
+  const reviewBtn = $("#btn-gomoku-win-moves");
+  if (reviewBtn) reviewBtn.hidden = !(game.moveHistory?.length > 0);
+}
+
+function startLocalReplay() {
+  if (!game?.moveHistory?.length) return;
+  stopGomokuReplay();
+  clearGomokuWinCelebration($("#gomoku-board-stage"), $("#gomoku-win-overlay"));
+  const moves = game.moveHistory.map((m) => ({ ...m }));
+  const winLine = game.winLine;
+  const lastMove = game.lastMove;
+
+  startGomokuReplay({
+    moves,
+    winLine,
+    lastMove,
+    onStep: ({ cells, lastMove: lm }) => {
+      game.cells = cells;
+      game.lastMove = lm;
+      game.winLine = null;
+      renderBoard();
+    },
+    onStatus: (text) => {
+      const el = $("#gomoku-turn-label");
+      if (el) el.textContent = text;
+      const hint = $("#gomoku-renju-hint");
+      if (hint) {
+        hint.classList.remove("is-visible");
+        hint.setAttribute("aria-hidden", "true");
+      }
+    },
+    onDone: ({ cells, winLine: wl, lastMove: lm }) => {
+      game.cells = cells;
+      game.lastMove = lm;
+      game.winLine = wl;
+      renderBoard();
+      if (wl) renderGomokuWinLine($("#gomoku-board-stage"), wl, lm);
+      const el = $("#gomoku-turn-label");
+      if (el) {
+        el.textContent = game.winner
+          ? `${playerName(game.winner)} 連五獲勝！（重播完成）`
+          : "和棋！（重播完成）";
+      }
+    },
+  });
 }
 
 function resetBoardDom() {
@@ -547,6 +600,7 @@ function startWithBlackPlayer(blackPlayerId) {
     winner: null,
     lastMove: null,
     winLine: null,
+    moveHistory: [],
   };
   resetBoardDom();
   renderBoard();
@@ -575,6 +629,7 @@ function startAiGame(humanIsBlack) {
     winner: null,
     lastMove: null,
     winLine: null,
+    moveHistory: [],
   };
   resetBoardDom();
   renderBoard();
@@ -637,6 +692,7 @@ export function bindGomokuEvents() {
   });
   $("#btn-gomoku-play-back")?.addEventListener("click", () => {
     if (confirm("離開棋局？目前進度不會儲存。")) {
+      stopGomokuReplay();
       aiMoveToken += 1;
       aiMovePending = false;
       game = null;
@@ -646,6 +702,7 @@ export function bindGomokuEvents() {
   });
   $("#btn-gomoku-replay")?.addEventListener("click", replayGomoku);
   $("#btn-gomoku-home")?.addEventListener("click", () => {
+    stopGomokuReplay();
     aiMoveToken += 1;
     aiMovePending = false;
     game = null;
@@ -655,12 +712,17 @@ export function bindGomokuEvents() {
   $("#btn-gomoku-win-dismiss")?.addEventListener("click", () => {
     clearGomokuWinCelebration($("#gomoku-board-stage"), $("#gomoku-win-overlay"));
   });
+  $("#btn-gomoku-win-moves")?.addEventListener("click", () => {
+    startLocalReplay();
+  });
   $("#btn-gomoku-win-replay")?.addEventListener("click", () => {
+    stopGomokuReplay();
     clearGomokuWinCelebration($("#gomoku-board-stage"), $("#gomoku-win-overlay"));
     replayGomoku();
   });
   $("#btn-gomoku-win-home")?.addEventListener("click", () => {
     clearGomokuWinCelebration($("#gomoku-board-stage"), $("#gomoku-win-overlay"));
+    stopGomokuReplay();
     aiMoveToken += 1;
     aiMovePending = false;
     game = null;

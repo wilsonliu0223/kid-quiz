@@ -16,7 +16,7 @@
       })();
     </script>
     <link rel="manifest" href="manifest.json" />
-    <link rel="stylesheet" href="css/app.css?v=app-v35.1" />
+    <link rel="stylesheet" href="css/app.css?v=app-v35.3" />
     <script type="importmap">
       {
         "imports": {
@@ -44,7 +44,7 @@
         <header class="app-header">
           <div class="app-title-row">
             <h1 class="app-title" id="home-title">家裡練習</h1>
-            <span class="app-version" id="app-version" aria-label="版本">v35.1</span>
+            <span class="app-version" id="app-version" aria-label="版本">v35.3</span>
           </div>
           <p class="app-subtitle">長按標題可進入家長區</p>
         </header>
@@ -761,7 +761,10 @@
                     <button type="button" class="btn btn-secondary btn-block" id="btn-gomoku-win-dismiss">
                       知道了（繼續看棋盤）
                     </button>
-                    <button type="button" class="btn btn-primary btn-block btn-primary-gomoku" id="btn-gomoku-win-replay">
+                    <button type="button" class="btn btn-primary btn-block btn-primary-gomoku" id="btn-gomoku-win-moves">
+                      重播棋局
+                    </button>
+                    <button type="button" class="btn btn-secondary btn-block" id="btn-gomoku-win-replay">
                       再玩一局
                     </button>
                     <button type="button" class="btn btn-secondary btn-block" id="btn-gomoku-win-home">回首頁</button>
@@ -812,7 +815,10 @@
                     <button type="button" class="btn btn-secondary btn-block" id="btn-gomoku-online-win-dismiss">
                       知道了（繼續看棋盤）
                     </button>
-                    <button type="button" class="btn btn-primary btn-block btn-primary-gomoku" id="btn-gomoku-online-win-rematch">
+                    <button type="button" class="btn btn-primary btn-block btn-primary-gomoku" id="btn-gomoku-online-win-moves">
+                      重播棋局
+                    </button>
+                    <button type="button" class="btn btn-secondary btn-block" id="btn-gomoku-online-win-rematch">
                       同房間再玩一局
                     </button>
                     <button type="button" class="btn btn-secondary btn-block" id="btn-gomoku-online-win-home">回首頁</button>
@@ -1219,7 +1225,7 @@
         el.hidden = false;
         el.textContent = msg;
       };
-      import("./js/app.js?v=app-v35.1").catch((e) => {
+      import("./js/app.js?v=app-v35.3").catch((e) => {
         console.error(e);
         showLoadError(
           `程式載入失敗：${e.message || e}。請關閉分頁重開；若仍無效請到瀏覽器設定清除此網站快取。`,

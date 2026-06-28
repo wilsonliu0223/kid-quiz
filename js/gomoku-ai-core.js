@@ -1,5 +1,15 @@
 /** 五子棋 AI 核心（主執行緒與 Worker 共用） */
-import { wouldBlackForbidden } from "./gomoku-renju.js?v=gomoku-v5";
+import { wouldBlackForbidden } from "./gomoku-renju.js?v=gomoku-v7";
+import {
+  createThreatContext,
+  findImmediateWinMove,
+  findMustBlockMove,
+  findThreatDefenseMove,
+  getFourThreatMoves,
+  pickOpeningMove,
+  solveVcf,
+  solveVct,
+} from "./gomoku-ai-threat.js?v=gomoku-v7";
 
 const SIZE = 15;
 const CENTER = 7;
@@ -10,13 +20,16 @@ const DIRS = [
   [1, -1],
 ];
 
-/** @type {Record<number, { depth: number, timeMs: number, radius: number }>} */
+/** @type {Record<number, { depth: number, timeMs: number, radius: number, useThreats?: boolean, vcfDepth?: number, vctDepth?: number }>} */
 export const AI_LEVELS = {
   1: { depth: 2, timeMs: 450, radius: 1 },
   2: { depth: 3, timeMs: 1000, radius: 2 },
   3: { depth: 4, timeMs: 2000, radius: 2 },
   4: { depth: 5, timeMs: 3500, radius: 2 },
+  5: { depth: 8, timeMs: 12000, radius: 3, useThreats: true, vcfDepth: 28, vctDepth: 20 },
 };
+
+export const GRANDMASTER_LEVEL = 5;
 
 const SCORE = {
   WIN: 2_000_000,
@@ -27,6 +40,9 @@ const SCORE = {
   OPEN_TWO: 400,
   ONE: 40,
 };
+
+/** @type {Map<string, { depth: number, score: number }>} */
+let transpositionTable = new Map();
 
 function hasFiveWin(cells, row, col, player) {
   return !!checkWin(cells, row, col, player);
@@ -55,6 +71,26 @@ function checkWin(cells, row, col, player) {
   return false;
 }
 
+function isForbidden(cells, r, c, player, blackId, whiteId) {
+  if (player !== blackId) return false;
+  return !!wouldBlackForbidden(cells, r, c, blackId, whiteId, hasFiveWin);
+}
+
+const threatCtx = createThreatContext({
+  hasFiveWin,
+  isForbidden,
+});
+
+function boardKey(cells, player) {
+  let key = player;
+  for (let r = 0; r < SIZE; r++) {
+    for (let c = 0; c < SIZE; c++) {
+      key += cells[r][c] ? `|${cells[r][c]}` : "|.";
+    }
+  }
+  return key;
+}
+
 /**
  * @param {import('./gomoku-renju.js').Cell[][]} cells
  * @param {{
@@ -70,10 +106,60 @@ export function computeAiMove(cells, opts) {
   const level = AI_LEVELS[opts.difficulty] || AI_LEVELS[2];
   const opponent = aiId === blackId ? whiteId : blackId;
   const deadline = Date.now() + level.timeMs;
+  const stones = countStones(cells);
 
-  if (countStones(cells) === 0) return [CENTER, CENTER];
+  if (stones === 0) return [CENTER, CENTER];
 
-  const candidates = gatherCandidates(cells, level.radius);
+  if (level.useThreats) {
+    transpositionTable = new Map();
+
+    const opening = pickOpeningMove(cells, aiId, opponent, stones);
+    if (opening && stones <= 2) return opening;
+
+    const win = findImmediateWinMove(cells, aiId, threatCtx, blackId, whiteId);
+    if (win) return win;
+
+    const block = findMustBlockMove(cells, opponent, aiId, threatCtx, blackId, whiteId);
+    if (block) return block;
+
+    const vct = solveVct(
+      cells,
+      aiId,
+      opponent,
+      threatCtx,
+      blackId,
+      whiteId,
+      level.vctDepth ?? 20,
+      deadline,
+    );
+    if (vct) return vct;
+
+    const vcf = solveVcf(
+      cells,
+      aiId,
+      opponent,
+      threatCtx,
+      blackId,
+      whiteId,
+      level.vcfDepth ?? 28,
+      deadline,
+    );
+    if (vcf) return vcf;
+
+    const defense = findThreatDefenseMove(
+      cells,
+      aiId,
+      opponent,
+      threatCtx,
+      blackId,
+      whiteId,
+      level.vctDepth ?? 20,
+      deadline,
+    );
+    if (defense) return defense;
+  }
+
+  const candidates = gatherCandidates(cells, level.radius, level.useThreats ? aiId : null, blackId, whiteId);
   if (!candidates.length) return [CENTER, CENTER];
 
   /** @type {[number, number][]} */
@@ -90,9 +176,11 @@ export function computeAiMove(cells, opts) {
   let alpha = -Infinity;
   const beta = Infinity;
 
-  for (const [r, c] of legal.sort(
+  const sorted = legal.sort(
     (a, b) => quickMoveScore(cells, b, aiId, opponent) - quickMoveScore(cells, a, aiId, opponent),
-  )) {
+  );
+
+  for (const [r, c] of sorted) {
     if (Date.now() > deadline) break;
     cells[r][c] = aiId;
     const win = hasFiveWin(cells, r, c, aiId);
@@ -113,6 +201,7 @@ export function computeAiMove(cells, opts) {
         whiteId,
         deadline,
         level.radius,
+        level.useThreats === true,
       );
     }
     cells[r][c] = "";
@@ -136,7 +225,7 @@ function countStones(cells) {
   return n;
 }
 
-function gatherCandidates(cells, radius) {
+function gatherCandidates(cells, radius, threatPlayer, blackId, whiteId) {
   const set = new Set();
   if (countStones(cells) === 0) return [[CENTER, CENTER]];
 
@@ -155,13 +244,18 @@ function gatherCandidates(cells, radius) {
     }
   }
 
+  if (threatPlayer && blackId && whiteId) {
+    for (const [r, c] of getFourThreatMoves(cells, threatPlayer, threatCtx, blackId, whiteId, radius)) {
+      set.add(r * SIZE + c);
+    }
+    const opponent = threatPlayer === blackId ? whiteId : blackId;
+    for (const [r, c] of getFourThreatMoves(cells, opponent, threatCtx, blackId, whiteId, radius)) {
+      set.add(r * SIZE + c);
+    }
+  }
+
   if (!set.size) return [[CENTER, CENTER]];
   return [...set].map((code) => [Math.floor(code / SIZE), code % SIZE]);
-}
-
-function isForbidden(cells, r, c, player, blackId, whiteId) {
-  if (player !== blackId) return false;
-  return !!wouldBlackForbidden(cells, r, c, blackId, whiteId, hasFiveWin);
 }
 
 function quickMoveScore(cells, [r, c], me, opp) {
@@ -171,7 +265,7 @@ function quickMoveScore(cells, [r, c], me, opp) {
   cells[r][c] = opp;
   const def = evaluateBoard(cells, opp, me);
   cells[r][c] = "";
-  return atk + def * 1.08;
+  return atk + def * 1.12;
 }
 
 function negamax(
@@ -185,12 +279,44 @@ function negamax(
   whiteId,
   deadline,
   radius,
+  threatPrune,
 ) {
-  if (Date.now() > deadline || depth <= 0) {
+  if (Date.now() > deadline) {
     return evaluateBoard(cells, player, opponent);
   }
 
-  const candidates = gatherCandidates(cells, radius);
+  const key = boardKey(cells, player);
+  const cached = transpositionTable.get(key);
+  if (cached && cached.depth >= depth) {
+    return cached.score;
+  }
+
+  if (depth <= 0) {
+    const score = evaluateBoard(cells, player, opponent);
+    transpositionTable.set(key, { depth, score });
+    return score;
+  }
+
+  let candidates = gatherCandidates(cells, radius, threatPrune ? player : null, blackId, whiteId);
+  if (threatPrune && depth <= 3) {
+    const threats = getFourThreatMoves(cells, player, threatCtx, blackId, whiteId, radius);
+    const blocks = getFourThreatMoves(cells, opponent, threatCtx, blackId, whiteId, radius);
+    const urgent = new Set([...threats, ...blocks].map(([r, c]) => r * SIZE + c));
+    if (urgent.size) {
+      candidates = candidates.filter(([r, c]) => urgent.has(r * SIZE + c));
+      if (!candidates.length) {
+        candidates = gatherCandidates(cells, radius, player, blackId, whiteId);
+      }
+    }
+  }
+
+  candidates.sort(
+    (a, b) => quickMoveScore(cells, b, player, opponent) - quickMoveScore(cells, a, player, opponent),
+  );
+  if (threatPrune && candidates.length > 14) {
+    candidates = candidates.slice(0, 14);
+  }
+
   let best = -Infinity;
 
   for (const [r, c] of candidates) {
@@ -213,6 +339,7 @@ function negamax(
         whiteId,
         deadline,
         radius,
+        threatPrune,
       );
     }
     cells[r][c] = "";
@@ -222,7 +349,9 @@ function negamax(
     if (alpha >= beta) break;
   }
 
-  return best === -Infinity ? evaluateBoard(cells, player, opponent) : best;
+  const result = best === -Infinity ? evaluateBoard(cells, player, opponent) : best;
+  transpositionTable.set(key, { depth, score: result });
+  return result;
 }
 
 function evaluateBoard(cells, me, opp) {
@@ -239,7 +368,7 @@ function evaluateBoard(cells, me, opp) {
     for (let c = 0; c < SIZE; c++) {
       if (cells[r][c] !== opp) continue;
       for (const [dr, dc] of DIRS) {
-        score -= linePatternScore(cells, r, c, dr, dc, opp) * 1.05;
+        score -= linePatternScore(cells, r, c, dr, dc, opp) * 1.08;
       }
     }
   }
