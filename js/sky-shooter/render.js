@@ -1,5 +1,5 @@
-import { shipOrDefault } from "./ships.js?v=sky-duo-v32";
-import { asList } from "./state-util.js?v=sky-duo-v32";
+import { shipOrDefault } from "./ships.js?v=sky-duo-v33";
+import { asList } from "./state-util.js?v=sky-duo-v33";
 import {
   VERSUS_TIME,
   ZONE_RATIO,
@@ -8,7 +8,7 @@ import {
   COOP_Y_BAND,
   VERSUS_GUEST_Y_BAND,
   COOP_BOSS_HP,
-} from "./sim.js?v=sky-duo-v32";
+} from "./sim.js?v=sky-duo-v33";
 
 /** 與單人關卡 prototypes 的 PLAYER_SCALE 一致 */
 const PLAYER_DRAW_SCALE = 0.75;
@@ -687,7 +687,7 @@ function drawPlayerLabels(ctx, p, w, h, isMe, name, view) {
   ctx.textBaseline = "middle";
   ctx.fillText(name, x, sy + nameOff);
 
-  const hearts = "♥".repeat(p.lives) + "♡".repeat(Math.max(0, 3 - p.lives));
+  const hearts = formatLives(p.lives);
   ctx.font = "10px sans-serif";
   ctx.fillText(`${hearts} ${WEAPON_LABELS[p.weapon] || ""}`, x, sy + statOff);
 }
@@ -788,7 +788,7 @@ function drawHud(ctx, state, w, h, mySlot, names) {
     ctx.fillStyle = "#e8f4ff";
     ctx.font = "11px sans-serif";
     ctx.fillText(
-      `${names.host || "房主"} ${"♥".repeat(hL)}  ·  ${names.guest || "來賓"} ${"♥".repeat(gL)}  ·  ${Math.floor(state.t)}s`,
+      `${names.host || "房主"} ${formatLives(hL)}  ·  ${names.guest || "來賓"} ${formatLives(gL)}  ·  ${Math.floor(state.t)}s`,
       10,
       30,
     );

@@ -8,7 +8,7 @@ import {
   openOnlineOnlyDuo,
 } from "./online-duo.js";
 import { startGameRoom } from "./room-service.js";
-import { SHIPS, SHIP_IDS, shipLobbyCardHtml } from "./sky-shooter/ships.js?v=sky-duo-v32";
+import { SHIPS, SHIP_IDS, shipLobbyCardHtml } from "./sky-shooter/ships.js?v=sky-duo-v33";
 import {
   createInitialState,
   stepSimulation,
@@ -21,16 +21,17 @@ import {
   clearNetworkLagComp,
   applyCoopLagCompPositions,
   VERSUS_GUEST_Y_BAND,
-} from "./sky-shooter/sim.js?v=sky-duo-v32";
-import { drawSkyFrame } from "./sky-shooter/render.js?v=sky-duo-v32";
-import { normalizeSkyState, isValidSkyState } from "./sky-shooter/state-util.js?v=sky-duo-v32";
+} from "./sky-shooter/sim.js?v=sky-duo-v33";
+import { drawSkyFrame } from "./sky-shooter/render.js?v=sky-duo-v33";
+import { normalizeSkyState, isValidSkyState } from "./sky-shooter/state-util.js?v=sky-duo-v33";
 
-const SKY_BUILD = "v32";
-const HOST_TICK_MS = 33;
+const SKY_BUILD = "v33";
+const HOST_TICK_MS = 25;
 const HOST_TICK_DT = HOST_TICK_MS / 1000;
-const INPUT_SEND_MS = 12;
-const GUEST_INPUT_LEAD_MS = 100;
-const GUEST_RENDER_LEAD_MAX = 0.4;
+const INPUT_SEND_MS = 8;
+const GUEST_INPUT_LEAD_MS = 130;
+const GUEST_RENDER_LEAD_MAX = 0.55;
+const GUEST_INTERP_MAX = 1.2;
 
 const $ = (sel) => document.querySelector(sel);
 
@@ -55,6 +56,22 @@ let guestInputVel = { vx: 0, vy: 0 };
 let guestInputPrev = { x: 0.65, y: 0.12, t: 0 };
 let hostStateWriteBusy = false;
 let guestStateRecvAt = Date.now();
+/** @type {object | null} */
+let guestSnapA = null;
+/** @type {object | null} */
+let guestSnapB = null;
+let guestSnapAtA = 0;
+let guestSnapAtB = 0;
+/** @type {object | null} */
+let pendingInputPayload = null;
+let inputSendFlight = false;
+let inputSendSeq = 0;
+/** @type {import('firebase/database').DatabaseReference | null} */
+let cachedInputRef = null;
+/** @type {object | null} */
+let pendingHostState = null;
+/** @type {string | null} */
+let pendingHostRoomId = null;
 let resultShown = false;
 /** @type {string | null} */
 let activeRoomId = null;
@@ -278,6 +295,17 @@ function stopSkyGameLoop() {
   guestInputVel = { vx: 0, vy: 0 };
   guestInputPrev = { x: 0.65, y: 0.12, t: 0 };
   hostStateWriteBusy = false;
+  guestSnapA = null;
+  guestSnapB = null;
+  guestSnapAtA = 0;
+  guestSnapAtB = 0;
+  pendingInputPayload = null;
+  inputSendFlight = false;
+  inputSendSeq = 0;
+  cachedInputRef = null;
+  pendingHostState = null;
+  pendingHostRoomId = null;
+  guestStateRecvAt = Date.now();
   activeRoomId = null;
   sessionRunning = false;
 }
@@ -290,8 +318,89 @@ async function teardownSession() {
 }
 
 async function inputRef(roomId, slot) {
+  if (cachedInputRef) return cachedInputRef;
   const { db } = await ensureFirebase();
-  return ref(db, `rooms/${roomId}/inputs/${slot}`);
+  cachedInputRef = ref(db, `rooms/${roomId}/inputs/${slot}`);
+  return cachedInputRef;
+}
+
+function pushGuestSnapshot(next) {
+  guestSnapA = guestSnapB;
+  guestSnapAtA = guestSnapAtB;
+  guestSnapB = next;
+  guestSnapAtB = Date.now();
+  guestStateRecvAt = guestSnapAtB;
+}
+
+function guestInterpAlpha() {
+  const span = guestSnapAtB - guestSnapAtA;
+  if (!guestSnapA || !guestSnapB || span < 1) return 1;
+  return Math.min(GUEST_INTERP_MAX, (Date.now() - guestSnapAtA) / span);
+}
+
+function lerpN(a, b, t) {
+  return a + (b - a) * t;
+}
+
+/** 來賓：本地預測 + 快照插值 + 敵彈外插，操作更跟手 */
+function buildGuestRenderState(authorityState, mySlot, mode) {
+  const render = cloneState(authorityState);
+  const lead = Math.min(
+    GUEST_RENDER_LEAD_MAX,
+    (Date.now() - guestStateRecvAt) / 1000 + 0.04,
+  );
+  const t = guestInterpAlpha();
+  const other = mySlot === "host" ? "guest" : "host";
+
+  if (guestSnapA && guestSnapB && render.players[other]) {
+    const pa = guestSnapA.players[other];
+    const pb = guestSnapB.players[other];
+    if (pa && pb) {
+      render.players[other].x = lerpN(pa.x, pb.x, t);
+      render.players[other].y = lerpN(pa.y, pb.y, t);
+    }
+  }
+
+  if (mySlot && canPlayerControl(render, mySlot)) {
+    const world = pointerToWorld(mySlot, mode, localInput.x, localInput.y);
+    render.players[mySlot].x = world.x;
+    render.players[mySlot].y = world.y;
+  }
+
+  for (const eb of render.eBullets) {
+    eb.x += eb.vx * lead;
+    eb.y += eb.vy * lead;
+  }
+
+  for (const e of render.enemies) {
+    const vx = typeof e.vx === "number" ? e.vx : -(e.speed || 0);
+    const vy = typeof e.vy === "number" ? e.vy : 0;
+    e.x += vx * lead * 0.9;
+    e.y += vy * lead * 0.9;
+  }
+
+  return render;
+}
+
+function queueHostStateWrite(roomId, state) {
+  pendingHostRoomId = roomId;
+  pendingHostState = state;
+  flushHostStateWrite();
+}
+
+function flushHostStateWrite() {
+  if (hostStateWriteBusy || !pendingHostState || !pendingHostRoomId) return;
+  const roomId = pendingHostRoomId;
+  const state = pendingHostState;
+  pendingHostState = null;
+  hostStateWriteBusy = true;
+  ensureFirebase()
+    .then(({ db }) => set(ref(db, `rooms/${roomId}/state`), state))
+    .catch((err) => console.error("sky state sync failed", err))
+    .finally(() => {
+      hostStateWriteBusy = false;
+      if (pendingHostState) flushHostStateWrite();
+    });
 }
 
 function subscribeInputs(roomId, cb) {
@@ -341,6 +450,7 @@ function startSkySession(snap, ctx) {
   liveState = snap.state;
   const playMode = liveState.mode || activeSkyMode;
   bindCanvasInput(ctx.slot, playMode);
+  void primeInputRef(snap.roomId, ctx.slot);
   renderLoop(names);
   void sendInputNow();
 
@@ -412,14 +522,7 @@ function startSkySession(snap, ctx) {
       stepSimulation(hostSimState, HOST_TICK_DT);
       clearNetworkLagComp(hostSimState);
       liveState = hostSimState;
-      if (hostStateWriteBusy) return;
-      hostStateWriteBusy = true;
-      ensureFirebase()
-        .then(({ db }) => set(ref(db, `rooms/${snap.roomId}/state`), hostSimState))
-        .catch((err) => console.error("sky state sync failed", err))
-        .finally(() => {
-          hostStateWriteBusy = false;
-        });
+      queueHostStateWrite(snap.roomId, hostSimState);
     };
 
     void runHostTick();
@@ -429,9 +532,10 @@ function startSkySession(snap, ctx) {
       stateUnsub = onValue(ref(db, `rooms/${snap.roomId}/state`), (val) => {
         const next = val.val();
         if (isValidSkyState(next)) {
-          liveState = normalizeSkyState(next);
+          const normalized = normalizeSkyState(next);
+          pushGuestSnapshot(normalized);
+          liveState = normalized;
           clampPlayersToZone(liveState);
-          guestStateRecvAt = Date.now();
         }
         if (liveState?.phase === "end") {
           if (!resultShown) {
@@ -537,29 +641,20 @@ function renderLoop(names) {
         ctx2d.setTransform(dpr, 0, 0, dpr, 0, 0);
       }
       if (liveState && isValidSkyState(liveState)) {
-        normalizeSkyState(liveState);
-        ensureStateMode(liveState, activeSkyMode);
-        clampPlayersToZone(liveState);
         const mySlot = getOnlineContext().slot;
         const mode = liveState.mode || activeSkyMode;
-        const displayOverrides = {};
-        if (mySlot && myPlayerCanControl()) {
-          const world = pointerToWorld(mySlot, mode, localInput.x, localInput.y);
-          displayOverrides[mySlot] = world;
-        }
-        const renderLeadSec =
-          mySlot === "guest"
-            ? Math.min(GUEST_RENDER_LEAD_MAX, (Date.now() - guestStateRecvAt) / 1000)
-            : 0;
+        const frameState =
+          mySlot === "guest" ? buildGuestRenderState(liveState, mySlot, mode) : liveState;
+        normalizeSkyState(frameState);
+        ensureStateMode(frameState, activeSkyMode);
+        clampPlayersToZone(frameState);
         try {
-          drawSkyFrame(ctx2d, liveState, {
+          drawSkyFrame(ctx2d, frameState, {
             w,
             h,
             mySlot,
             mode,
             names,
-            displayOverrides,
-            renderLeadSec,
           });
           updateSkyHud(mySlot);
           updateCanvasInputLock(mySlot);
@@ -651,8 +746,7 @@ function bindCanvasInput(slot, mode) {
 
   const moveLoop = () => {
     if (pointerDown && myPlayerCanControl()) {
-      applyLocalPointerInput(slot, mode);
-      void sendInputNow();
+      void sendInputNow(true);
     }
     requestAnimationFrame(moveLoop);
   };
@@ -672,30 +766,65 @@ function bindCanvasInput(slot, mode) {
   }
 }
 
-async function sendInputNow() {
+async function primeInputRef(roomId, slot) {
+  try {
+    await inputRef(roomId, slot);
+  } catch (err) {
+    console.error("primeInputRef failed", err);
+  }
+}
+
+function flushInputSend() {
+  if (inputSendFlight || !pendingInputPayload) return;
+  const ctx = getOnlineContext();
+  if (!ctx.roomId || !ctx.slot) return;
+
+  const payload = pendingInputPayload;
+  pendingInputPayload = null;
+  inputSendFlight = true;
+
+  ensureFirebase()
+    .then(({ db }) => {
+      const r = cachedInputRef || ref(db, `rooms/${ctx.roomId}/inputs/${ctx.slot}`);
+      cachedInputRef = r;
+      return set(r, payload);
+    })
+    .then(() => {
+      if (hostInputs && ctx.slot) {
+        hostInputs[ctx.slot] = {
+          ...hostInputs[ctx.slot],
+          x: payload.x,
+          y: payload.y,
+          t: payload.t,
+        };
+      }
+    })
+    .catch((err) => console.error("sky input sync failed", err))
+    .finally(() => {
+      inputSendFlight = false;
+      if (pendingInputPayload) flushInputSend();
+    });
+}
+
+function sendInputNow(force = false) {
   const ctx = getOnlineContext();
   if (!ctx.roomId || !ctx.slot) return;
   if (!myPlayerCanControl()) return;
   const now = Date.now();
-  if (!pointerDown && now - lastInputSend < INPUT_SEND_MS) return;
+  if (!force && !pointerDown && now - lastInputSend < INPUT_SEND_MS) return;
   lastInputSend = now;
   const mode = liveState?.mode || activeSkyMode;
   const world = pointerToWorld(ctx.slot, mode, localInput.x, localInput.y);
-  const payload = {
+  inputSendSeq += 1;
+  pendingInputPayload = {
     x: world.x,
     y: world.y,
     weaponTap: !!localInput.weaponTap,
     t: now,
+    seq: inputSendSeq,
   };
   localInput.weaponTap = false;
-  try {
-    await set(await inputRef(ctx.roomId, ctx.slot), payload);
-    if (hostInputs && ctx.slot) {
-      hostInputs[ctx.slot] = { ...hostInputs[ctx.slot], x: payload.x, y: payload.y };
-    }
-  } catch (err) {
-    console.error("sky input sync failed", err);
-  }
+  flushInputSend();
 }
 
 function showResult(state, ctx, names) {

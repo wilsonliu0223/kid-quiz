@@ -201,7 +201,7 @@ export function clampPlayersToZone(state) {
   }
 }
 
-const LAG_COMP_MAX_MS = 480;
+const LAG_COMP_MAX_MS = 520;
 const LAG_COMP_EXTRAP = 1.2;
 const COOP_GUEST_HIT_R = 0.031;
 
