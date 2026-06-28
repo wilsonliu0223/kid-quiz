@@ -9,7 +9,7 @@ import {
   refreshOnlineLobby,
 } from "./online-duo.js";
 import { startGameRoom } from "./room-service.js";
-import { SHIPS, SHIP_IDS, shipLobbyCardHtml } from "./sky-shooter/ships.js?v=sky-duo-v42";
+import { SHIPS, SHIP_IDS, shipLobbyCardHtml } from "./sky-shooter/ships.js?v=sky-duo-v43";
 import {
   createInitialState,
   stepSimulation,
@@ -29,15 +29,15 @@ import {
   tickGuestLocalCombat,
   advanceGuestOwnedBullets,
   VERSUS_GUEST_Y_BAND,
-} from "./sky-shooter/sim.js?v=sky-duo-v42";
-import { drawSkyFrame } from "./sky-shooter/render.js?v=sky-duo-v42";
-import { normalizeSkyState, isValidSkyState } from "./sky-shooter/state-util.js?v=sky-duo-v42";
+} from "./sky-shooter/sim.js?v=sky-duo-v43";
+import { drawSkyFrame } from "./sky-shooter/render.js?v=sky-duo-v43";
+import { normalizeSkyState, isValidSkyState } from "./sky-shooter/state-util.js?v=sky-duo-v43";
 
-const SKY_BUILD = "v42";
+const SKY_BUILD = "v43";
 const HOST_TICK_MS = 16;
 const HOST_TICK_DT = HOST_TICK_MS / 1000;
 const INPUT_SEND_MS = 0;
-const GUEST_INPUT_LEAD_MS = 150;
+const GUEST_INPUT_LEAD_MS = 70;
 const GUEST_RENDER_DELAY_MS = 90;
 const GUEST_INTERP_BUFFER_MAX = 16;
 

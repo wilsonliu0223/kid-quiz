@@ -1,5 +1,5 @@
-import { shipOrDefault } from "./ships.js?v=sky-duo-v42";
-import { asList } from "./state-util.js?v=sky-duo-v42";
+import { shipOrDefault } from "./ships.js?v=sky-duo-v43";
+import { asList } from "./state-util.js?v=sky-duo-v43";
 
 export const COOP_BOSS_AT = 95;
 /** 雙人合作每人命數 */
@@ -203,9 +203,9 @@ export function clampPlayersToZone(state) {
   }
 }
 
-const LAG_COMP_MAX_MS = 620;
-const LAG_COMP_EXTRAP = 1.35;
-const COOP_GUEST_HIT_R = 0.031;
+const LAG_COMP_MAX_MS = 420;
+const LAG_COMP_EXTRAP = 1.08;
+const COOP_GUEST_HIT_R = 0.038;
 
 /** 房主模擬前設定遠端玩家延遲補償（不寫入 Firebase） */
 export function setNetworkLagComp(state, lagBySlot) {
@@ -217,15 +217,9 @@ export function clearNetworkLagComp(state) {
   if (state?._lagComp) delete state._lagComp;
 }
 
-/** 合作模式：把來賓位置推到補償後座標再跑物理 */
-export function applyCoopLagCompPositions(state) {
-  if (state?.mode !== "coop" || !state._lagComp) return;
-  const pos = playerCombatPos(state, "guest");
-  const p = state.players.guest;
-  if (p && p.lives > 0) {
-    p.x = pos.x;
-    p.y = pos.y;
-  }
+/** 合作模式：命中判定用補償座標（勿改寫 p.x/y，避免權威狀態漂移） */
+export function applyCoopLagCompPositions(_state) {
+  /* playerCombatPos 已處理；改寫 players.guest 會污染 Firebase 並造成冤扣命 */
 }
 
 /** 合作模式：遠端玩家用最新 input + 外插位置做碰撞／追蹤 */
@@ -798,7 +792,19 @@ export function tickGuestParticles(state, dt) {
 /** 來賓本地：僅更新自己的射擊／導彈（視覺即時，權威仍在房主） */
 export function tickGuestLocalCombat(state, slot, dt) {
   if (!canPlayerControl(state, slot)) return;
+  const p = state.players[slot];
+  if (!p) return;
+  const saved = {
+    invuln: p.invuln,
+    lives: p.lives,
+    power: p.power,
+    missileT: p.missileT,
+  };
   updateSinglePlayer(state, slot, dt);
+  p.invuln = saved.invuln;
+  p.lives = saved.lives;
+  p.power = saved.power;
+  p.missileT = saved.missileT;
 }
 
 /** 推進來賓自機子彈（僅本地視覺，不動房主／插值子彈） */
@@ -1177,6 +1183,8 @@ function nearestPlayer(state, e) {
 }
 
 function updateBullets(state, dt) {
+  const hurtOnce = state.mode === "coop" ? { host: false, guest: false } : null;
+
   for (const b of state.bullets) {
     if (b.homing) {
       let best = null;
@@ -1249,7 +1257,9 @@ function updateBullets(state, dt) {
       const hitR = state.mode === "coop" && slot === "guest" ? COOP_GUEST_HIT_R : 0.038;
       if (hitCircle(eb.x, eb.y, eb.r, pos.x, pos.y, hitR)) {
         eb._gone = true;
+        if (hurtOnce?.[slot]) break;
         hurtPlayer(state, slot);
+        if (hurtOnce) hurtOnce[slot] = true;
         break;
       }
     }
