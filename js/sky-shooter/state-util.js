@@ -19,6 +19,7 @@ export function normalizeSkyState(state) {
   state.pickups = asList(state.pickups);
   state.particles = asList(state.particles);
   state.missileTracks = asList(state.missileTracks);
+  if (state._lagComp) delete state._lagComp;
   if (state.players) {
     for (const slot of ["host", "guest"]) {
       if (state.players[slot]) {

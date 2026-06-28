@@ -1,5 +1,5 @@
-import { shipOrDefault } from "./ships.js?v=sky-duo-v30";
-import { asList } from "./state-util.js?v=sky-duo-v30";
+import { shipOrDefault } from "./ships.js?v=sky-duo-v31";
+import { asList } from "./state-util.js?v=sky-duo-v31";
 
 export const COOP_BOSS_AT = 95;
 /** 單人關卡1 同款：Boss HP、巡邏、三種彈幕 */
@@ -195,6 +195,39 @@ export function clampPlayersToZone(state) {
     p.x = c.x;
     p.y = c.y;
   }
+}
+
+const LAG_COMP_MAX_MS = 220;
+
+/** 房主模擬前設定遠端玩家延遲補償（不寫入 Firebase） */
+export function setNetworkLagComp(state, lagBySlot) {
+  if (!state) return;
+  state._lagComp = lagBySlot;
+}
+
+export function clearNetworkLagComp(state) {
+  if (state?._lagComp) delete state._lagComp;
+}
+
+/** 合作模式：遠端玩家用最新 input + 外插位置做碰撞／追蹤 */
+function playerCombatPos(state, slot) {
+  const p = state.players[slot];
+  if (!p) return { x: 0.5, y: 0.5 };
+  if (state.mode !== "coop") return { x: p.x, y: p.y };
+
+  const lc = state._lagComp?.[slot];
+  if (!lc) return { x: p.x, y: p.y };
+
+  const ix = Number(lc.x);
+  const iy = Number(lc.y);
+  if (!Number.isFinite(ix) || !Number.isFinite(iy)) return { x: p.x, y: p.y };
+
+  const t = Number(lc.t) || Date.now();
+  const lagMs = Math.min(LAG_COMP_MAX_MS, Math.max(0, Date.now() - t));
+  const vx = Number(lc.vx) || 0;
+  const vy = Number(lc.vy) || 0;
+  const sec = lagMs / 1000;
+  return clampPointerInput(slot, "coop", ix + vx * sec * 0.9, iy + vy * sec * 0.9);
 }
 
 export function canPlayerControl(state, slot) {
@@ -868,17 +901,21 @@ function updateEnemies(state, dt) {
 
 function nearestPlayer(state, e) {
   let best = null;
+  let bestPos = null;
   let bestD = Infinity;
   for (const slot of ["host", "guest"]) {
     const p = state.players[slot];
     if (p.lives <= 0) continue;
-    const d = (p.x - e.x) ** 2 + (p.y - e.y) ** 2;
+    const pos = playerCombatPos(state, slot);
+    const d = (pos.x - e.x) ** 2 + (pos.y - e.y) ** 2;
     if (d < bestD) {
       bestD = d;
       best = p;
+      bestPos = pos;
     }
   }
-  return best;
+  if (!best || !bestPos) return null;
+  return { player: best, x: bestPos.x, y: bestPos.y };
 }
 
 function updateBullets(state, dt) {
@@ -950,7 +987,8 @@ function updateBullets(state, dt) {
     for (const slot of ["host", "guest"]) {
       const p = state.players[slot];
       if (p.invuln > 0 || p.lives <= 0) continue;
-      if (hitCircle(eb.x, eb.y, eb.r, p.x, p.y, 0.038)) {
+      const pos = playerCombatPos(state, slot);
+      if (hitCircle(eb.x, eb.y, eb.r, pos.x, pos.y, 0.038)) {
         eb._gone = true;
         hurtPlayer(state, slot);
         break;

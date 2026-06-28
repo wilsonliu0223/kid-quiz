@@ -1,5 +1,5 @@
-import { shipOrDefault } from "./ships.js?v=sky-duo-v30";
-import { asList } from "./state-util.js?v=sky-duo-v30";
+import { shipOrDefault } from "./ships.js?v=sky-duo-v31";
+import { asList } from "./state-util.js?v=sky-duo-v31";
 import {
   VERSUS_TIME,
   ZONE_RATIO,
@@ -8,10 +8,18 @@ import {
   COOP_Y_BAND,
   VERSUS_GUEST_Y_BAND,
   COOP_BOSS_HP,
-} from "./sim.js?v=sky-duo-v30";
+} from "./sim.js?v=sky-duo-v31";
 
 /** 與單人關卡 prototypes 的 PLAYER_SCALE 一致 */
 const PLAYER_DRAW_SCALE = 0.75;
+
+function resolvePlayerPos(p, slot, overrides) {
+  const o = overrides?.[slot];
+  if (o && Number.isFinite(o.x) && Number.isFinite(o.y)) {
+    return { ...p, x: o.x, y: o.y };
+  }
+  return p;
+}
 
 const WEAPON_LABELS = { straight: "直射", spread: "擴散", laser: "雷射" };
 
@@ -46,10 +54,11 @@ function createView(mode, mySlot) {
   };
 }
 
-/** @param {CanvasRenderingContext2D} ctx @param {object} state @param {{ w: number, h: number, mySlot: string, mode?: string, names: Record<string,string> }} opts */
+/** @param {CanvasRenderingContext2D} ctx @param {object} state @param {{ w: number, h: number, mySlot: string, mode?: string, names: Record<string,string>, displayOverrides?: Record<string,{x:number,y:number}> }} opts */
 export function drawSkyFrame(ctx, state, opts) {
   const { w, h, mySlot, names } = opts;
   const mode = opts.mode || state.mode || "coop";
+  const displayOverrides = opts.displayOverrides || {};
   const view = createView(mode, mySlot);
   const particles = asList(state.particles);
   const pickups = asList(state.pickups);
@@ -101,12 +110,13 @@ export function drawSkyFrame(ctx, state, opts) {
     drawEnemy(ctx, e, w, h, time, view, mode);
   }
 
-  drawAllPlayerLasers(ctx, state, w, h, time, view, mode);
+  drawAllPlayerLasers(ctx, state, w, h, time, view, mode, displayOverrides);
 
   for (const slot of ["host", "guest"]) {
     const p = state.players[slot];
     if (p.lives <= 0) continue;
-    drawPlayerShip(ctx, p, w, h, time, view, mode);
+    const drawP = resolvePlayerPos(p, slot, displayOverrides);
+    drawPlayerShip(ctx, drawP, w, h, time, view, mode);
   }
 
   if (view.flip) ctx.restore();
@@ -114,7 +124,8 @@ export function drawSkyFrame(ctx, state, opts) {
   for (const slot of ["host", "guest"]) {
     const p = state.players[slot];
     if (p.lives <= 0) continue;
-    drawPlayerLabels(ctx, p, w, h, slot === mySlot, names[slot] || slot, view);
+    const drawP = resolvePlayerPos(p, slot, displayOverrides);
+    drawPlayerLabels(ctx, drawP, w, h, slot === mySlot, names[slot] || slot, view);
   }
 
   drawHud(ctx, state, w, h, mySlot, names);
@@ -671,11 +682,11 @@ function drawPlayerLabels(ctx, p, w, h, isMe, name, view) {
   ctx.fillText(`${hearts} ${WEAPON_LABELS[p.weapon] || ""}`, x, sy + statOff);
 }
 
-function drawAllPlayerLasers(ctx, state, w, h, time, view, mode) {
+function drawAllPlayerLasers(ctx, state, w, h, time, view, mode, displayOverrides = {}) {
   for (const slot of ["host", "guest"]) {
     const p = state.players[slot];
     if (!p || p.lives <= 0 || p.weapon !== "laser") continue;
-    drawPlayerLaserBeam(ctx, p, w, h, time, view, mode);
+    drawPlayerLaserBeam(ctx, resolvePlayerPos(p, slot, displayOverrides), w, h, time, view, mode);
   }
 }
 
