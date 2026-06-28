@@ -1,4 +1,4 @@
-import { forbiddenLabel, wouldBlackForbidden } from "./gomoku-renju.js?v=gomoku-v8";
+import { forbiddenLabel, wouldBlackForbidden } from "./gomoku-renju.js?v=gomoku-v12";
 import {
   resetGomokuBoardZoom,
   rebindGomokuBoardZoom,
@@ -9,7 +9,7 @@ import {
   clearGomokuWinCelebration,
   renderGomokuWinLine,
 } from "./gomoku-win-ui.js";
-import { startGomokuReplay, stopGomokuReplay } from "./gomoku-replay.js?v=gomoku-v8";
+import { startGomokuReplay, stopGomokuReplay } from "./gomoku-replay.js?v=gomoku-v12";
 import {
   registerOnlineGame,
   getOnlineContext,
@@ -244,10 +244,12 @@ function applyOnlineCellState(btn, row, col) {
     btn.appendChild(stone);
   } else {
     const myTurn = ctx.slot === onlineGame.currentPlayerId && !onlineGame.over;
-    btn.disabled = !myTurn;
     const forbidden = forbiddenAt(row, col);
+    btn.disabled = !myTurn || !!forbidden;
     if (forbidden) {
       btn.classList.add("gomoku-cell-forbidden");
+      btn.setAttribute("aria-label", `禁手：${forbiddenLabel(forbidden)}`);
+      btn.title = `禁手：${forbiddenLabel(forbidden)}`;
       btn.onclick = () => alert(`不能下這裡：${forbiddenLabel(forbidden)}`);
     } else if (myTurn) {
       btn.onclick = () => onOnlineCellClick(row, col);

@@ -1,6 +1,6 @@
-import { forbiddenLabel, wouldBlackForbidden } from "./gomoku-renju.js?v=gomoku-v11";
+import { forbiddenLabel, wouldBlackForbidden } from "./gomoku-renju.js?v=gomoku-v12";
 import { openDuoModePicker } from "./online-duo.js";
-import { AI_PLAYER_ID, requestAiMove, terminateAiWorker } from "./gomoku-ai.js?v=gomoku-v11";
+import { AI_PLAYER_ID, requestAiMove, terminateAiWorker } from "./gomoku-ai.js?v=gomoku-v12";
 import {
   resetGomokuBoardZoom,
   rebindGomokuBoardZoom,
@@ -11,7 +11,7 @@ import {
   clearGomokuWinCelebration,
   renderGomokuWinLine,
 } from "./gomoku-win-ui.js";
-import { startGomokuReplay, stopGomokuReplay, isGomokuReplayRunning } from "./gomoku-replay.js?v=gomoku-v11";
+import { startGomokuReplay, stopGomokuReplay, isGomokuReplayRunning } from "./gomoku-replay.js?v=gomoku-v12";
 import { getChildName, otherDuoPlayer } from "./children.js";
 import { getSelectedChild } from "./store.js";
 import {
@@ -341,15 +341,17 @@ function applyCellState(btn, row, col) {
     btn.setAttribute("aria-label", `${playerName(cell)} ${stoneLabel(cell)}`);
   } else {
     const waitingAi = game.mode === "ai" && (aiMovePending || !isHumanTurn());
-    btn.disabled = game.over || waitingAi;
     const forbidden = forbiddenAt(row, col);
+    btn.disabled = game.over || waitingAi || !!forbidden;
     if (forbidden) {
       btn.classList.add("gomoku-cell-forbidden");
       btn.setAttribute("aria-label", `禁手：${forbiddenLabel(forbidden)}`);
+      btn.title = `禁手：${forbiddenLabel(forbidden)}`;
       if (!waitingAi && !game.over) {
         btn.onclick = () => alert(`不能下這裡：${forbiddenLabel(forbidden)}`);
       }
     } else if (!game.over && !waitingAi) {
+      btn.removeAttribute("title");
       btn.setAttribute("aria-label", `第 ${row + 1} 行第 ${col + 1} 列`);
       btn.onclick = () => onCellClick(row, col);
     }
@@ -490,7 +492,11 @@ function onCellClick(row, col) {
     }
   }
 
-  placeMove(row, col);
+  if (!placeMove(row, col)) {
+    if (player === game.blackPlayerId) {
+      alert("此著為黑棋禁手，無法落下。");
+    }
+  }
 }
 
 function maybeScheduleAiMove() {
