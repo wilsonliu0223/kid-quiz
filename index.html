@@ -16,7 +16,7 @@
       })();
     </script>
     <link rel="manifest" href="manifest.json" />
-    <link rel="stylesheet" href="css/app.css?v=mul-flip-v9" />
+    <link rel="stylesheet" href="css/app.css?v=app-v34.0" />
     <script type="importmap">
       {
         "imports": {
@@ -42,7 +42,10 @@
       <!-- 首頁 -->
       <section id="view-home" class="view view-active" aria-label="首頁">
         <header class="app-header">
-          <h1 class="app-title" id="home-title">家裡練習</h1>
+          <div class="app-title-row">
+            <h1 class="app-title" id="home-title">家裡練習</h1>
+            <span class="app-version" id="app-version" aria-label="版本">v34.0</span>
+          </div>
           <p class="app-subtitle">長按標題可進入家長區</p>
         </header>
 
@@ -1200,7 +1203,7 @@
         el.hidden = false;
         el.textContent = msg;
       };
-      import("./js/app.js?v=mul-flip-v9").catch((e) => {
+      import("./js/app.js?v=app-v34.0").catch((e) => {
         console.error(e);
         showLoadError(
           `程式載入失敗：${e.message || e}。請關閉分頁重開；若仍無效請到瀏覽器設定清除此網站快取。`,

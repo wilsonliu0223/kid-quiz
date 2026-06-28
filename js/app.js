@@ -2158,6 +2158,11 @@ async function init() {
     return;
   }
 
+  const verEl = $("#app-version");
+  if (verEl && CONFIG.APP_VERSION) {
+    verEl.textContent = `v${CONFIG.APP_VERSION}`;
+  }
+
   bindEvents();
   window.__kidQuizReady = true;
   setupQuizAutoSave();
