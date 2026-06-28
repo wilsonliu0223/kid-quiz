@@ -1,6 +1,6 @@
 /** @typedef {'swift' | 'heavy'} ShipId */
 
-/** @type {Record<ShipId, { id: ShipId, name: string, tag: string, color: string, accent: string, speed: number, dmgBonus: number, spreadExtra: number, laserWidth: number, lives: number, dodgeInvuln: number, armorChance: number }>} */
+/** @type {Record<ShipId, { id: ShipId, name: string, tag: string, color: string, accent: string, speed: number, fireMult: number, spreadExtra: number, laserWidth: number, lives: number, dodgeInvuln: number, armorChance: number }>} */
 export const SHIPS = {
   swift: {
     id: "swift",
@@ -9,7 +9,7 @@ export const SHIPS = {
     color: "#5eb8ff",
     accent: "#a8e4ff",
     speed: 1.2,
-    dmgBonus: 0,
+    fireMult: 1,
     spreadExtra: 1,
     laserWidth: 1,
     lives: 3,
@@ -23,7 +23,7 @@ export const SHIPS = {
     color: "#ff6040",
     accent: "#ffb830",
     speed: 1,
-    dmgBonus: 1,
+    fireMult: 1.2,
     spreadExtra: 0,
     laserWidth: 1.15,
     lives: 3,
@@ -64,5 +64,7 @@ export function shipLobbyCardHtml(id) {
           <path fill="#ffb830" d="M38 64 L40 74 L42 64 Z"/>
         </svg>`;
 
-  return `<strong>${s.name}</strong><span>${s.tag}</span><small>速度×${s.speed} · ${s.lives}命</small><span class="sky-ship-card-art">${art}</span>`;
+  const stat =
+    id === "heavy" ? `火力×${s.fireMult}` : `速度×${s.speed}`;
+  return `<strong>${s.name}</strong><span>${s.tag}</span><small>${stat} · ${s.lives}命</small><span class="sky-ship-card-art">${art}</span>`;
 }

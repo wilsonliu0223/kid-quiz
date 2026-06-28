@@ -1,5 +1,5 @@
-import { shipOrDefault } from "./ships.js?v=sky-duo-v34";
-import { asList } from "./state-util.js?v=sky-duo-v34";
+import { shipOrDefault } from "./ships.js?v=sky-duo-v35";
+import { asList } from "./state-util.js?v=sky-duo-v35";
 
 export const COOP_BOSS_AT = 95;
 /** 雙人合作每人命數 */
@@ -887,7 +887,7 @@ function firePlayerBullets(state, p, ship) {
         vx: ang * 0.35,
         vy: dir * 0.65,
         r: 0.012,
-        dmg: 1 + ship.dmgBonus,
+        dmg: ship.fireMult,
         pvp: state.mode === "versus",
       });
     }
@@ -904,7 +904,7 @@ function spawnHomingBullet(state, p) {
     vx: (Math.random() - 0.5) * 0.05,
     vy: dir * 0.55,
     r: 0.014,
-    dmg: 2,
+    dmg: 2 * ship.fireMult,
     homing: true,
     pvp: false,
   });
@@ -913,7 +913,7 @@ function spawnHomingBullet(state, p) {
 function fireLaser(state, p, ship, dt) {
   const down = p.slot === "guest" && state.mode === "versus";
   const half = (0.04 + p.power * 0.012) * ship.laserWidth;
-  const dps = (4 + p.power) * dt * 8;
+  const dps = (4 + p.power) * dt * 8 * ship.fireMult;
   for (const e of state.enemies) {
     if (e.shield > 0) continue;
     if (Math.abs(e.x - p.x) < half + e.w && (down ? e.y > p.y : e.y < p.y)) {
