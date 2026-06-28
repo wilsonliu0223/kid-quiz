@@ -9,6 +9,7 @@ import {
   update,
 } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
 import { ensureFirebase } from "./firebase-app.js";
+import { skyStateFromRoom } from "./sky-state-sync.js";
 
 const KEY_ONLINE_SESSION = "kid-quiz-online-session";
 const ROOM_TTL_MS = 60 * 60 * 1000;
@@ -43,7 +44,7 @@ function snapshotFromVal(roomId, val) {
     roomId,
     meta: val.meta,
     players: val.players || { host: null, guest: null },
-    state: val.state ?? val.gomoku ?? null,
+    state: skyStateFromRoom(val) ?? val.state ?? val.gomoku ?? null,
     gomoku: val.gomoku || null,
   };
 }
@@ -209,6 +210,7 @@ export async function clearGuestSlot(roomId) {
   await update(r, {
     "players/guest": null,
     state: null,
+    sky: null,
     "meta/status": "lobby",
   });
 }
@@ -226,6 +228,7 @@ export async function returnRoomToLobby(roomId) {
   /** @type {Record<string, unknown>} */
   const updates = {
     state: null,
+    sky: null,
     inputs: null,
     "meta/status": "lobby",
     "meta/expiresAt": Date.now() + ROOM_TTL_MS,
@@ -298,7 +301,7 @@ export async function leaveRoom(roomId, slot) {
   if (slot === "host") {
     await remove(r);
   } else {
-    await update(r, { "players/guest": null, state: null, "meta/status": "lobby" });
+    await update(r, { "players/guest": null, state: null, sky: null, "meta/status": "lobby" });
   }
   setOnlineSession(null);
 }
