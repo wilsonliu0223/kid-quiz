@@ -8,7 +8,7 @@ import {
   openOnlineOnlyDuo,
 } from "./online-duo.js";
 import { startGameRoom } from "./room-service.js";
-import { SHIPS, SHIP_IDS, shipLobbyCardHtml } from "./sky-shooter/ships.js?v=sky-duo-v33";
+import { SHIPS, SHIP_IDS, shipLobbyCardHtml } from "./sky-shooter/ships.js?v=sky-duo-v34";
 import {
   createInitialState,
   stepSimulation,
@@ -20,18 +20,20 @@ import {
   setNetworkLagComp,
   clearNetworkLagComp,
   applyCoopLagCompPositions,
+  reconcileGuestShadowState,
+  tickGuestLocalCombat,
+  advanceGuestVisualEntities,
   VERSUS_GUEST_Y_BAND,
-} from "./sky-shooter/sim.js?v=sky-duo-v33";
-import { drawSkyFrame } from "./sky-shooter/render.js?v=sky-duo-v33";
-import { normalizeSkyState, isValidSkyState } from "./sky-shooter/state-util.js?v=sky-duo-v33";
+} from "./sky-shooter/sim.js?v=sky-duo-v34";
+import { drawSkyFrame } from "./sky-shooter/render.js?v=sky-duo-v34";
+import { normalizeSkyState, isValidSkyState } from "./sky-shooter/state-util.js?v=sky-duo-v34";
 
-const SKY_BUILD = "v33";
-const HOST_TICK_MS = 25;
+const SKY_BUILD = "v34";
+const HOST_TICK_MS = 20;
 const HOST_TICK_DT = HOST_TICK_MS / 1000;
-const INPUT_SEND_MS = 8;
-const GUEST_INPUT_LEAD_MS = 130;
-const GUEST_RENDER_LEAD_MAX = 0.55;
-const GUEST_INTERP_MAX = 1.2;
+const INPUT_SEND_MS = 0;
+const GUEST_INPUT_LEAD_MS = 160;
+const GUEST_INTERP_MAX = 1.35;
 
 const $ = (sel) => document.querySelector(sel);
 
@@ -72,6 +74,9 @@ let cachedInputRef = null;
 let pendingHostState = null;
 /** @type {string | null} */
 let pendingHostRoomId = null;
+/** @type {object | null} */
+let guestShadowState = null;
+let guestShadowLastFrame = 0;
 let resultShown = false;
 /** @type {string | null} */
 let activeRoomId = null;
@@ -305,6 +310,8 @@ function stopSkyGameLoop() {
   cachedInputRef = null;
   pendingHostState = null;
   pendingHostRoomId = null;
+  guestShadowState = null;
+  guestShadowLastFrame = 0;
   guestStateRecvAt = Date.now();
   activeRoomId = null;
   sessionRunning = false;
@@ -342,44 +349,41 @@ function lerpN(a, b, t) {
   return a + (b - a) * t;
 }
 
-/** 來賓：本地預測 + 快照插值 + 敵彈外插，操作更跟手 */
-function buildGuestRenderState(authorityState, mySlot, mode) {
-  const render = cloneState(authorityState);
-  const lead = Math.min(
-    GUEST_RENDER_LEAD_MAX,
-    (Date.now() - guestStateRecvAt) / 1000 + 0.04,
-  );
-  const t = guestInterpAlpha();
-  const other = mySlot === "host" ? "guest" : "host";
+function onGuestAuthorityState(next, mySlot) {
+  pushGuestSnapshot(next);
+  liveState = next;
+  if (!guestShadowState) {
+    guestShadowState = cloneState(next);
+  } else {
+    reconcileGuestShadowState(guestShadowState, next, mySlot);
+  }
+  clampPlayersToZone(liveState);
+}
 
-  if (guestSnapA && guestSnapB && render.players[other]) {
+function tickGuestShadowFrame(mySlot, mode) {
+  if (!guestShadowState || !mySlot) return null;
+  const now = performance.now();
+  const dt = Math.min(0.033, (now - guestShadowLastFrame) / 1000 || 0.016);
+  guestShadowLastFrame = now;
+
+  const world = pointerToWorld(mySlot, mode, localInput.x, localInput.y);
+  applyPlayerInput(guestShadowState, mySlot, world);
+  tickGuestLocalCombat(guestShadowState, mySlot, dt);
+  advanceGuestVisualEntities(guestShadowState, dt);
+
+  const other = mySlot === "host" ? "guest" : "host";
+  const t = guestInterpAlpha();
+  if (guestSnapA && guestSnapB && guestShadowState.players[other]) {
     const pa = guestSnapA.players[other];
     const pb = guestSnapB.players[other];
     if (pa && pb) {
-      render.players[other].x = lerpN(pa.x, pb.x, t);
-      render.players[other].y = lerpN(pa.y, pb.y, t);
+      guestShadowState.players[other].x = lerpN(pa.x, pb.x, t);
+      guestShadowState.players[other].y = lerpN(pa.y, pb.y, t);
     }
   }
 
-  if (mySlot && canPlayerControl(render, mySlot)) {
-    const world = pointerToWorld(mySlot, mode, localInput.x, localInput.y);
-    render.players[mySlot].x = world.x;
-    render.players[mySlot].y = world.y;
-  }
-
-  for (const eb of render.eBullets) {
-    eb.x += eb.vx * lead;
-    eb.y += eb.vy * lead;
-  }
-
-  for (const e of render.enemies) {
-    const vx = typeof e.vx === "number" ? e.vx : -(e.speed || 0);
-    const vy = typeof e.vy === "number" ? e.vy : 0;
-    e.x += vx * lead * 0.9;
-    e.y += vy * lead * 0.9;
-  }
-
-  return render;
+  clampPlayersToZone(guestShadowState);
+  return guestShadowState;
 }
 
 function queueHostStateWrite(roomId, state) {
@@ -528,14 +532,14 @@ function startSkySession(snap, ctx) {
     void runHostTick();
     hostTimer = setInterval(runHostTick, HOST_TICK_MS);
   } else {
+    guestShadowState = cloneState(snap.state);
+    guestShadowLastFrame = performance.now();
     ensureFirebase().then(({ db }) => {
       stateUnsub = onValue(ref(db, `rooms/${snap.roomId}/state`), (val) => {
         const next = val.val();
         if (isValidSkyState(next)) {
           const normalized = normalizeSkyState(next);
-          pushGuestSnapshot(normalized);
-          liveState = normalized;
-          clampPlayersToZone(liveState);
+          onGuestAuthorityState(normalized, ctx.slot);
         }
         if (liveState?.phase === "end") {
           if (!resultShown) {
@@ -594,9 +598,9 @@ function updateDebugStatus(w, h, state) {
 
 const WEAPON_HUD = { straight: "直射彈", spread: "擴散彈", laser: "雷射" };
 
-function updateSkyHud(mySlot) {
-  const p = liveState?.players?.[mySlot];
-  const can = !!(p && canPlayerControl(liveState, mySlot));
+function updateSkyHud(mySlot, hudState = liveState) {
+  const p = hudState?.players?.[mySlot];
+  const can = !!(p && hudState && canPlayerControl(hudState, mySlot));
   const btnWeapon = $("#btn-sky-hud-weapon");
   if (!btnWeapon) return;
   if (!p || !can) {
@@ -644,10 +648,10 @@ function renderLoop(names) {
         const mySlot = getOnlineContext().slot;
         const mode = liveState.mode || activeSkyMode;
         const frameState =
-          mySlot === "guest" ? buildGuestRenderState(liveState, mySlot, mode) : liveState;
+          mySlot === "guest" ? tickGuestShadowFrame(mySlot, mode) || liveState : liveState;
         normalizeSkyState(frameState);
         ensureStateMode(frameState, activeSkyMode);
-        clampPlayersToZone(frameState);
+        if (mySlot !== "guest") clampPlayersToZone(frameState);
         try {
           drawSkyFrame(ctx2d, frameState, {
             w,
@@ -656,7 +660,7 @@ function renderLoop(names) {
             mode,
             names,
           });
-          updateSkyHud(mySlot);
+          updateSkyHud(mySlot, frameState);
           updateCanvasInputLock(mySlot);
         } catch (err) {
           console.error("drawSkyFrame failed", err);
@@ -811,7 +815,7 @@ function sendInputNow(force = false) {
   if (!ctx.roomId || !ctx.slot) return;
   if (!myPlayerCanControl()) return;
   const now = Date.now();
-  if (!force && !pointerDown && now - lastInputSend < INPUT_SEND_MS) return;
+  if (!force && !pointerDown && INPUT_SEND_MS > 0 && now - lastInputSend < INPUT_SEND_MS) return;
   lastInputSend = now;
   const mode = liveState?.mode || activeSkyMode;
   const world = pointerToWorld(ctx.slot, mode, localInput.x, localInput.y);

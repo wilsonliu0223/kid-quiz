@@ -1,5 +1,5 @@
-import { shipOrDefault } from "./ships.js?v=sky-duo-v32";
-import { asList } from "./state-util.js?v=sky-duo-v32";
+import { shipOrDefault } from "./ships.js?v=sky-duo-v34";
+import { asList } from "./state-util.js?v=sky-duo-v34";
 
 export const COOP_BOSS_AT = 95;
 /** 雙人合作每人命數 */
@@ -201,8 +201,8 @@ export function clampPlayersToZone(state) {
   }
 }
 
-const LAG_COMP_MAX_MS = 520;
-const LAG_COMP_EXTRAP = 1.2;
+const LAG_COMP_MAX_MS = 620;
+const LAG_COMP_EXTRAP = 1.35;
 const COOP_GUEST_HIT_R = 0.031;
 
 /** 房主模擬前設定遠端玩家延遲補償（不寫入 Firebase） */
@@ -747,33 +747,127 @@ function fireCoopEnemy(state, e, target) {
   e.fireCd = 1.1 + Math.random() * 0.8;
 }
 
-function updatePlayers(state, dt) {
-  for (const slot of ["host", "guest"]) {
-    const p = state.players[slot];
-    if (!p || p.lives <= 0) continue;
-    const ship = shipOrDefault(p.ship);
-    if (p.invuln > 0) p.invuln -= dt;
-    if (p.missileT > 0) {
-      p.missileT -= dt;
-      if (p.weapon !== "laser") {
-        p.missileCd -= dt;
-        if (p.missileCd <= 0) {
-          p.missileCd = 1.4;
-          spawnHomingBullet(state, p);
-        }
+function updateSinglePlayer(state, slot, dt) {
+  const p = state.players[slot];
+  if (!p || p.lives <= 0) return;
+  const ship = shipOrDefault(p.ship);
+  if (p.invuln > 0) p.invuln -= dt;
+  if (p.missileT > 0) {
+    p.missileT -= dt;
+    if (p.weapon !== "laser") {
+      p.missileCd -= dt;
+      if (p.missileCd <= 0) {
+        p.missileCd = 1.4;
+        spawnHomingBullet(state, p);
       }
     }
+  }
 
-    p.fireCd -= dt;
-    if (p.fireCd <= 0 && p.weapon !== "laser") {
-      p.fireCd = p.weapon === "spread" ? 0.16 : 0.1;
-      firePlayerBullets(state, p, ship);
-    }
+  p.fireCd -= dt;
+  if (p.fireCd <= 0 && p.weapon !== "laser") {
+    p.fireCd = p.weapon === "spread" ? 0.16 : 0.1;
+    firePlayerBullets(state, p, ship);
+  }
 
-    if (p.weapon === "laser") {
-      fireLaser(state, p, ship, dt);
+  if (p.weapon === "laser") {
+    fireLaser(state, p, ship, dt);
+  }
+}
+
+function updatePlayers(state, dt) {
+  for (const slot of ["host", "guest"]) {
+    updateSinglePlayer(state, slot, dt);
+  }
+}
+
+/** 來賓本地：僅更新自己的射擊／導彈（視覺即時，權威仍在房主） */
+export function tickGuestLocalCombat(state, slot, dt) {
+  if (!canPlayerControl(state, slot)) return;
+  updateSinglePlayer(state, slot, dt);
+}
+
+/** 來賓本地：推進敵彈／敵機／自機子彈位置（畫面連續） */
+export function advanceGuestVisualEntities(state, dt) {
+  const cap = Math.min(0.05, dt);
+  for (const eb of state.eBullets) {
+    eb.x += eb.vx * cap;
+    eb.y += eb.vy * cap;
+  }
+  for (const b of state.bullets) {
+    b.x += b.vx * cap;
+    b.y += b.vy * cap;
+  }
+  for (const e of state.enemies) {
+    const vx = typeof e.vx === "number" ? e.vx : -(e.speed || 0);
+    const vy = typeof e.vy === "number" ? e.vy : 0;
+    e.x += vx * cap;
+    e.y += vy * cap;
+  }
+  state.bullets = state.bullets.filter(
+    (b) => b.x > -0.05 && b.x < 1.05 && b.y > -0.05 && b.y < 1.05,
+  );
+  state.eBullets = state.eBullets.filter(
+    (eb) => eb.x > -0.05 && eb.x < 1.05 && eb.y > -0.05 && eb.y < 1.05,
+  );
+}
+
+function copyEntityList(list) {
+  return asList(list).map((item) => ({ ...item }));
+}
+
+/** 來賓影子狀態：合併房主權威資料，保留本地預測位置 */
+export function reconcileGuestShadowState(shadow, auth, mySlot) {
+  if (!shadow || !auth) return shadow;
+  const savedX = shadow.players[mySlot]?.x;
+  const savedY = shadow.players[mySlot]?.y;
+
+  shadow.mode = auth.mode;
+  shadow.t = auth.t;
+  shadow.phase = auth.phase;
+  shadow.teamScore = auth.teamScore;
+  shadow.bossSpawned = auth.bossSpawned;
+  shadow.flash = auth.flash;
+  shadow.endReason = auth.endReason;
+
+  for (const slot of ["host", "guest"]) {
+    const ap = auth.players[slot];
+    const sp = shadow.players[slot];
+    if (!ap || !sp) continue;
+    sp.lives = ap.lives;
+    sp.invuln = ap.invuln;
+    sp.weapon = ap.weapon;
+    sp.power = ap.power;
+    sp.missileT = ap.missileT;
+    sp.hasSpread = ap.hasSpread;
+    sp.hasLaser = ap.hasLaser;
+    sp.ship = ap.ship;
+    if (slot !== mySlot) {
+      sp.x = ap.x;
+      sp.y = ap.y;
     }
   }
+
+  shadow.enemies = copyEntityList(auth.enemies);
+  shadow.bullets = copyEntityList(auth.bullets);
+  shadow.eBullets = copyEntityList(auth.eBullets);
+  shadow.pickups = copyEntityList(auth.pickups);
+  shadow.particles = copyEntityList(auth.particles);
+  shadow.missileTracks = copyEntityList(auth.missileTracks);
+
+  const ap = auth.players[mySlot];
+  const sp = shadow.players[mySlot];
+  if (ap && sp && savedX != null && savedY != null) {
+    const dist = Math.hypot(savedX - ap.x, savedY - ap.y);
+    if (dist > 0.14) {
+      sp.x = ap.x;
+      sp.y = ap.y;
+    } else {
+      sp.x = savedX;
+      sp.y = savedY;
+    }
+  }
+
+  return shadow;
 }
 
 function firePlayerBullets(state, p, ship) {
