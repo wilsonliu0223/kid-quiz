@@ -1,6 +1,6 @@
-import { forbiddenLabel, wouldBlackForbidden } from "./gomoku-renju.js?v=gomoku-v8";
+import { forbiddenLabel, wouldBlackForbidden } from "./gomoku-renju.js?v=gomoku-v9";
 import { openDuoModePicker } from "./online-duo.js";
-import { AI_PLAYER_ID, requestAiMove, terminateAiWorker } from "./gomoku-ai.js?v=gomoku-v8";
+import { AI_PLAYER_ID, requestAiMove, terminateAiWorker } from "./gomoku-ai.js?v=gomoku-v9";
 import {
   resetGomokuBoardZoom,
   rebindGomokuBoardZoom,
@@ -11,7 +11,7 @@ import {
   clearGomokuWinCelebration,
   renderGomokuWinLine,
 } from "./gomoku-win-ui.js";
-import { startGomokuReplay, stopGomokuReplay, isGomokuReplayRunning } from "./gomoku-replay.js?v=gomoku-v8";
+import { startGomokuReplay, stopGomokuReplay, isGomokuReplayRunning } from "./gomoku-replay.js?v=gomoku-v9";
 import { getChildName, otherDuoPlayer } from "./children.js";
 import { getSelectedChild } from "./store.js";
 import {
@@ -61,11 +61,36 @@ let game = null;
 const $ = (sel) => document.querySelector(sel);
 
 const AI_DIFFICULTIES = [
-  { level: 1, label: "入門" },
-  { level: 2, label: "普通" },
-  { level: 3, label: "高手" },
-  { level: 4, label: "大師" },
-  { level: 5, label: "宗師" },
+  {
+    level: 1,
+    label: "入門",
+    tier: "入門練習",
+    desc: "剛學連五規則，電腦棋力較溫和，適合熟悉棋盤與落子。",
+  },
+  {
+    level: 2,
+    label: "普通",
+    tier: "休閒對戰",
+    desc: "會擋住下一手必殺，適合日常陪練、輕鬆下幾局。",
+  },
+  {
+    level: 3,
+    label: "高手",
+    tier: "進階挑戰",
+    desc: "能看活三、活四，中盤較難僥倖獲勝，適合有基礎者。",
+  },
+  {
+    level: 4,
+    label: "大師",
+    tier: "深度 AI",
+    desc: "較深搜尋、背景運算，整體棋力明顯提升。",
+  },
+  {
+    level: 5,
+    label: "宗師",
+    tier: "內建最強",
+    desc: "含 VCF/VCT 戰術與深度分析（每步最長約 20 秒），建議執白挑戰。",
+  },
 ];
 
 function playerName(id) {
@@ -98,7 +123,7 @@ function setFirstScreenMode(mode) {
   if (meta) {
     meta.textContent =
       mode === "ai"
-        ? "單人對電腦 · 15×15 · 連珠規則 · 宗師含 VCF/VCT 深度分析"
+        ? "單人對電腦 · 15×15 · 連珠規則"
         : "15×15 · 先連五子獲勝 · 連珠規則";
   }
   if (hint) hint.hidden = mode === "ai";
@@ -113,6 +138,16 @@ function renderFirstPicker() {
   });
 }
 
+function renderAiDifficultyIntro() {
+  const box = $("#gomoku-ai-difficulty-intro");
+  if (!box) return;
+  const item = AI_DIFFICULTIES.find((d) => d.level === aiDifficulty) || AI_DIFFICULTIES[1];
+  box.innerHTML = `
+    <p class="gomoku-ai-difficulty-tier">${item.tier}</p>
+    <p class="gomoku-ai-difficulty-desc">${item.desc}</p>
+  `;
+}
+
 function renderAiDifficultyChips() {
   const wrap = $("#gomoku-ai-difficulty-chips");
   if (!wrap) return;
@@ -123,12 +158,14 @@ function renderAiDifficultyChips() {
     btn.className = "chip";
     if (item.level === aiDifficulty) btn.classList.add("chip-active");
     btn.textContent = item.label;
+    btn.setAttribute("aria-pressed", String(item.level === aiDifficulty));
     btn.addEventListener("click", () => {
       aiDifficulty = item.level;
       renderAiDifficultyChips();
     });
     wrap.appendChild(btn);
   }
+  renderAiDifficultyIntro();
 }
 
 function renderAiStartButtons() {

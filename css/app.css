@@ -3506,6 +3506,27 @@ body {
   gap: 0.5rem;
 }
 
+.gomoku-ai-difficulty-intro {
+  padding: 0.65rem 0.75rem;
+  border-radius: 10px;
+  background: #fffaf5;
+  border: 1px solid rgba(180, 120, 60, 0.22);
+}
+
+.gomoku-ai-difficulty-tier {
+  margin: 0 0 0.25rem;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--gomoku-dark, #6b4423);
+}
+
+.gomoku-ai-difficulty-desc {
+  margin: 0;
+  font-size: 0.82rem;
+  line-height: 1.45;
+  color: var(--muted);
+}
+
 .gomoku-ai-black-label {
   margin-top: 0.25rem;
 }
