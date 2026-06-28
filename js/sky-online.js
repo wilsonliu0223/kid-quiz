@@ -7,13 +7,8 @@ import {
   rematchOnlineRoom,
   openOnlineOnlyDuo,
 } from "./online-duo.js";
-import {
-  writeFullSkyShard,
-  buildSkyShardUpdates,
-  stateToSkyTree,
-  subscribeSkyShard,
-} from "./sky-state-sync.js?v=sky-duo-v39";
-import { SHIPS, SHIP_IDS, shipLobbyCardHtml } from "./sky-shooter/ships.js?v=sky-duo-v39";
+import { startGameRoom } from "./room-service.js";
+import { SHIPS, SHIP_IDS, shipLobbyCardHtml } from "./sky-shooter/ships.js?v=sky-duo-v38";
 import {
   createInitialState,
   stepSimulation,
@@ -30,11 +25,11 @@ import {
   pickGuestInterpPair,
   applyGuestInterpVisual,
   VERSUS_GUEST_Y_BAND,
-} from "./sky-shooter/sim.js?v=sky-duo-v39";
-import { drawSkyFrame } from "./sky-shooter/render.js?v=sky-duo-v39";
-import { normalizeSkyState, isValidSkyState } from "./sky-shooter/state-util.js?v=sky-duo-v39";
+} from "./sky-shooter/sim.js?v=sky-duo-v38";
+import { drawSkyFrame } from "./sky-shooter/render.js?v=sky-duo-v38";
+import { normalizeSkyState, isValidSkyState } from "./sky-shooter/state-util.js?v=sky-duo-v38";
 
-const SKY_BUILD = "v39";
+const SKY_BUILD = "v38";
 const HOST_TICK_MS = 16;
 const HOST_TICK_DT = HOST_TICK_MS / 1000;
 const INPUT_SEND_MS = 0;
@@ -75,8 +70,6 @@ let inputSendSeq = 0;
 let cachedInputRef = null;
 /** @type {object | null} */
 let pendingHostState = null;
-/** @type {object | null} */
-let hostPublishedSkyTree = null;
 /** @type {string | null} */
 let pendingHostRoomId = null;
 /** @type {object | null} */
@@ -193,7 +186,7 @@ function skyHandler(gameKey, title) {
       const state = createInitialState(mode, ships);
       const { db } = await ensureFirebase();
       await set(ref(db, `rooms/${roomId}/inputs`), null);
-      await writeFullSkyShard(roomId, state);
+      await startGameRoom(roomId, state);
     },
     onPlaying: (snap, ctx) => {
       if (!isValidSkyState(snap.state)) return;
@@ -214,6 +207,11 @@ function skyHandler(gameKey, title) {
       resultShown = false;
 
       if (sessionRunning && activeRoomId === snap.roomId) {
+        liveState = snap.state;
+        ensureStateMode(liveState, activeSkyMode);
+        if (ctx.slot === "guest" && isValidSkyState(snap.state)) {
+          onGuestAuthorityState(normalizeSkyState(snap.state), ctx.slot);
+        }
         return;
       }
       ctx.deps.showView("skyOnlinePlay");
@@ -310,7 +308,6 @@ function stopSkyGameLoop() {
   cachedInputRef = null;
   pendingHostState = null;
   pendingHostRoomId = null;
-  hostPublishedSkyTree = null;
   guestShadowState = null;
   guestShadowLastFrame = 0;
   guestStateRecvAt = Date.now();
@@ -389,37 +386,13 @@ function flushHostStateWrite() {
   const state = pendingHostState;
   pendingHostState = null;
   hostStateWriteBusy = true;
-
-  const finish = () => {
-    hostStateWriteBusy = false;
-    if (pendingHostState) flushHostStateWrite();
-  };
-
-  if (!hostPublishedSkyTree) {
-    writeFullSkyShard(roomId, state)
-      .then((tree) => {
-        hostPublishedSkyTree = tree;
-      })
-      .catch((err) => console.error("sky shard full write failed", err))
-      .finally(finish);
-    return;
-  }
-
-  const nextTree = stateToSkyTree(state);
-  const updates = buildSkyShardUpdates(hostPublishedSkyTree, nextTree);
-  if (Object.keys(updates).length === 0) {
-    hostStateWriteBusy = false;
-    if (pendingHostState) flushHostStateWrite();
-    return;
-  }
-
   ensureFirebase()
-    .then(({ db }) => update(ref(db, `rooms/${roomId}`), updates))
-    .then(() => {
-      hostPublishedSkyTree = nextTree;
-    })
-    .catch((err) => console.error("sky shard sync failed", err))
-    .finally(finish);
+    .then(({ db }) => set(ref(db, `rooms/${roomId}/state`), state))
+    .catch((err) => console.error("sky state sync failed", err))
+    .finally(() => {
+      hostStateWriteBusy = false;
+      if (pendingHostState) flushHostStateWrite();
+    });
 }
 
 function subscribeInputs(roomId, cb) {
@@ -475,7 +448,6 @@ function startSkySession(snap, ctx) {
 
   if (ctx.slot === "host") {
     hostSimState = cloneState(snap.state);
-    hostPublishedSkyTree = stateToSkyTree(snap.state);
     hostInputs = {
       host: { x: hostSimState.players.host.x, y: hostSimState.players.host.y },
       guest: { x: hostSimState.players.guest.x, y: hostSimState.players.guest.y },
@@ -555,16 +527,21 @@ function startSkySession(snap, ctx) {
     guestShadowState = cloneState(snap.state);
     guestInterpBuffer = [createGuestInterpSnap(snap.state)];
     guestShadowLastFrame = performance.now();
-    stateUnsub = subscribeSkyShard(snap.roomId, (next) => {
-      if (isValidSkyState(next)) {
-        onGuestAuthorityState(normalizeSkyState(next), ctx.slot);
-      }
-      if (liveState?.phase === "end") {
-        if (!resultShown) {
-          resultShown = true;
-          showResult(liveState, ctx, names);
+    ensureFirebase().then(({ db }) => {
+      stateUnsub = onValue(ref(db, `rooms/${snap.roomId}/state`), (val) => {
+        const next = val.val();
+        if (isValidSkyState(next)) {
+          const normalized = normalizeSkyState(next);
+          onGuestAuthorityState(normalized, ctx.slot);
         }
-      }
+        if (liveState?.phase === "end") {
+          if (!resultShown) {
+            resultShown = true;
+            showResult(liveState, ctx, names);
+          }
+          return;
+        }
+      });
     });
   }
 }
@@ -610,7 +587,7 @@ function updateDebugStatus(w, h, state) {
   const enemies = state?.enemies?.length ?? "?";
   const phase = state?.phase || "—";
   const buf = guestInterpBuffer.length;
-  el.textContent = `${SKY_BUILD} · shard · ${Math.round(w)}×${Math.round(h)} · 敵${enemies} · ${phase} · buf${buf}`;
+  el.textContent = `${SKY_BUILD} · ${Math.round(w)}×${Math.round(h)} · 敵${enemies} · ${phase} · buf${buf}`;
 }
 
 const WEAPON_HUD = { straight: "直射彈", spread: "擴散彈", laser: "雷射" };
