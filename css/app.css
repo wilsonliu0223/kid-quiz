@@ -913,30 +913,36 @@ body {
   white-space: nowrap;
 }
 
-/* 20 組：縮小間距、壓縮計分列，把空間留給牌格 */
-#flip-card-grid[data-pairs="20"] {
+/* 20 組：縮小間距、壓縮計分列，把空間留給牌格（國字／九九共用） */
+#flip-card-grid[data-pairs="20"],
+#mul-flip-card-grid[data-pairs="20"] {
   gap: 4px;
 }
 
-#view-flip-play:has(#flip-card-grid[data-pairs="20"]) .flip-scorebar {
+#view-flip-play:has(#flip-card-grid[data-pairs="20"]) .flip-scorebar,
+#view-mul-flip-play:has(#mul-flip-card-grid[data-pairs="20"]) .flip-scorebar {
   margin-bottom: 6px;
   gap: 6px;
 }
 
-#view-flip-play:has(#flip-card-grid[data-pairs="20"]) .flip-score-block {
+#view-flip-play:has(#flip-card-grid[data-pairs="20"]) .flip-score-block,
+#view-mul-flip-play:has(#mul-flip-card-grid[data-pairs="20"]) .flip-score-block {
   padding: 5px 4px;
 }
 
-#view-flip-play:has(#flip-card-grid[data-pairs="20"]) .flip-score-num {
+#view-flip-play:has(#flip-card-grid[data-pairs="20"]) .flip-score-num,
+#view-mul-flip-play:has(#mul-flip-card-grid[data-pairs="20"]) .flip-score-num {
   font-size: 1.4rem;
 }
 
-#view-flip-play:has(#flip-card-grid[data-pairs="20"]) .flip-card {
+#view-flip-play:has(#flip-card-grid[data-pairs="20"]) .flip-card,
+#view-mul-flip-play:has(#mul-flip-card-grid[data-pairs="20"]) .flip-card {
   border-radius: 8px;
   border-width: 1px;
 }
 
-#view-flip-play:has(#flip-card-grid[data-pairs="20"]) .flip-card-back {
+#view-flip-play:has(#flip-card-grid[data-pairs="20"]) .flip-card-back,
+#view-mul-flip-play:has(#mul-flip-card-grid[data-pairs="20"]) .flip-card-back {
   font-size: min(42cqw, 42cqh);
 }
 
@@ -3815,65 +3821,38 @@ body {
   color: #2d6b4a;
 }
 
-/* 20 組：格線與國字 20 組一致，只沿用壓縮計分列 */
-#mul-flip-card-grid[data-size="20"] {
+/* 50 組：維持 5 欄同格大小，只壓縮計分列（需滑動看完整牌格） */
+#mul-flip-card-grid[data-pairs="50"] {
   gap: 4px;
 }
 
-#view-mul-flip-play:has(#mul-flip-card-grid[data-size="20"]) .flip-scorebar {
-  margin-bottom: 6px;
-  gap: 6px;
-}
-
-#view-mul-flip-play:has(#mul-flip-card-grid[data-size="20"]) .flip-score-block {
-  padding: 5px 4px;
-}
-
-#view-mul-flip-play:has(#mul-flip-card-grid[data-size="20"]) .flip-score-num {
-  font-size: 1.4rem;
-}
-
-#view-mul-flip-play:has(#mul-flip-card-grid[data-size="20"]) .flip-card {
-  border-radius: 8px;
-  border-width: 1px;
-}
-
-#view-mul-flip-play:has(#mul-flip-card-grid[data-size="20"]) .flip-card-back {
-  font-size: min(42cqw, 42cqh);
-}
-
-/* 50 組：格線維持 8 欄；字級隨格子 cqw/cqh 等比縮小（同公式） */
-#mul-flip-card-grid[data-size="50"] {
-  gap: 3px;
-}
-
-#view-mul-flip-play:has(#mul-flip-card-grid[data-size="50"]) .flip-scorebar {
+#view-mul-flip-play:has(#mul-flip-card-grid[data-pairs="50"]) .flip-scorebar {
   margin-bottom: 4px;
   gap: 4px;
 }
 
-#view-mul-flip-play:has(#mul-flip-card-grid[data-size="50"]) .flip-score-block {
+#view-mul-flip-play:has(#mul-flip-card-grid[data-pairs="50"]) .flip-score-block {
   padding: 4px 3px;
 }
 
-#view-mul-flip-play:has(#mul-flip-card-grid[data-size="50"]) .flip-score-name {
+#view-mul-flip-play:has(#mul-flip-card-grid[data-pairs="50"]) .flip-score-name {
   font-size: 0.72rem;
 }
 
-#view-mul-flip-play:has(#mul-flip-card-grid[data-size="50"]) .flip-turn-label,
-#view-mul-flip-play:has(#mul-flip-card-grid[data-size="50"]) .flip-click-label {
+#view-mul-flip-play:has(#mul-flip-card-grid[data-pairs="50"]) .flip-turn-label,
+#view-mul-flip-play:has(#mul-flip-card-grid[data-pairs="50"]) .flip-click-label {
   font-size: 0.68rem;
 }
 
-#view-mul-flip-play:has(#mul-flip-card-grid[data-size="50"]) .flip-score-num {
+#view-mul-flip-play:has(#mul-flip-card-grid[data-pairs="50"]) .flip-score-num {
   font-size: 1.2rem;
 }
 
-#view-mul-flip-play:has(#mul-flip-card-grid[data-size="50"]) .flip-card {
-  border-radius: 6px;
+#view-mul-flip-play:has(#mul-flip-card-grid[data-pairs="50"]) .flip-card {
+  border-radius: 8px;
   border-width: 1px;
 }
 
-#view-mul-flip-play:has(#mul-flip-card-grid[data-size="50"]) .flip-card-back {
+#view-mul-flip-play:has(#mul-flip-card-grid[data-pairs="50"]) .flip-card-back {
   font-size: min(42cqw, 42cqh);
 }

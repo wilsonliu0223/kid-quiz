@@ -187,10 +187,12 @@ export function renderMulFlipHomePlayers() {
   refreshDuoBattleUI();
 }
 
+/** 與 flip-zh.js 相同，確保 20 組為 5×8 格、單格大小一致 */
 function gridCols(cardCount) {
-  if (cardCount <= 18) return 6;
-  if (cardCount <= 40) return 5;
-  return 8;
+  if (cardCount <= 10) return 5;
+  if (cardCount <= 20) return 5;
+  if (cardCount <= 30) return 6;
+  return 5;
 }
 
 /** @param {MulFlipFact[]} facts */
@@ -300,7 +302,6 @@ function renderBoard() {
 
   grid.style.setProperty("--flip-cols", String(gridCols(game.cards.length)));
   grid.dataset.pairs = String(game.pairCount);
-  grid.dataset.size = String(game.requestedPairs);
   grid.innerHTML = "";
 
   game.cards.forEach((card, idx) => {
@@ -532,7 +533,6 @@ export function clearMulFlipPlayUi() {
   if (grid) {
     grid.innerHTML = "";
     grid.removeAttribute("data-pairs");
-    grid.removeAttribute("data-size");
   }
   const set = (sel, text) => {
     const el = document.querySelector(sel);
