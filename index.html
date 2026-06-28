@@ -16,7 +16,7 @@
       })();
     </script>
     <link rel="manifest" href="manifest.json" />
-    <link rel="stylesheet" href="css/app.css?v=sky-duo-v30" />
+    <link rel="stylesheet" href="css/app.css?v=mul-flip-v1" />
     <script type="importmap">
       {
         "imports": {
@@ -895,11 +895,107 @@
               <span class="mul-hard-title">2～9 進階測驗</span>
               <span class="mul-hard-meta" id="mul-hard-meta">18 題 · 生活題 · 因數分解</span>
             </button>
+
+            <div class="mul-flip-block setup-section-flip">
+              <p class="mul-flip-label">翻牌對戰</p>
+              <p class="mul-flip-sub">雙人同機 · 算式配答案 · 不含 ×1</p>
+              <div class="flip-players-vs mul-flip-players-vs" id="mul-flip-players-vs">
+                <span id="mul-flip-player-a-name">思妘</span>
+                <span class="flip-vs">vs</span>
+                <span id="mul-flip-player-b-name">思妤</span>
+              </div>
+              <div class="mul-flip-picker" role="group" aria-label="翻牌範圍">
+                <span class="label">範圍</span>
+                <div class="lesson-chips mul-flip-digit-chips" id="mul-flip-digit-chips">
+                  <button type="button" class="chip chip-active" data-mul-flip-digit="all">全表</button>
+                  <button type="button" class="chip" data-mul-flip-digit="2">2</button>
+                  <button type="button" class="chip" data-mul-flip-digit="3">3</button>
+                  <button type="button" class="chip" data-mul-flip-digit="4">4</button>
+                  <button type="button" class="chip" data-mul-flip-digit="5">5</button>
+                  <button type="button" class="chip" data-mul-flip-digit="6">6</button>
+                  <button type="button" class="chip" data-mul-flip-digit="7">7</button>
+                  <button type="button" class="chip" data-mul-flip-digit="8">8</button>
+                  <button type="button" class="chip" data-mul-flip-digit="9">9</button>
+                </div>
+                <p class="mul-flip-scope-hint" id="mul-flip-scope-hint">全表 2～9 · 不含 ×1（共 64 題可抽）</p>
+              </div>
+              <div class="mul-flip-picker" role="group" aria-label="翻牌組數">
+                <span class="label">幾組？</span>
+                <div class="lesson-chips" id="mul-flip-pair-chips">
+                  <button type="button" class="chip chip-active" data-mul-flip-pairs="9">9 組</button>
+                  <button type="button" class="chip" data-mul-flip-pairs="20">20 組</button>
+                  <button type="button" class="chip" data-mul-flip-pairs="50">50 組</button>
+                </div>
+                <p class="mul-flip-size-hint">9 組＝18 張 · 20 組＝40 張 · 50 組＝100 張（可捲動）</p>
+              </div>
+              <button type="button" class="card card-mul-flip" id="btn-start-mul-flip">
+                <span class="card-title">開始翻牌</span>
+                <span class="card-desc">輪流翻兩張 · 配對算式與積</span>
+              </button>
+            </div>
           </div>
           <button type="button" class="btn btn-secondary btn-block mul-race-duo-btn" id="btn-mul-race-duo">
             搶答對戰（兩台手機）
           </button>
         </div>
+      </section>
+
+      <!-- 九九翻牌：選先手 -->
+      <section id="view-mul-flip-first" class="view view-hidden" aria-label="九九翻牌誰先">
+        <header class="quiz-header quiz-header-mul">
+          <button type="button" class="btn-text" id="btn-mul-flip-first-back">← 返回</button>
+          <span class="quiz-subject">九九翻牌</span>
+        </header>
+        <div class="flip-first-body">
+          <h2 class="flip-first-title">誰先翻牌？</h2>
+          <p class="flip-first-meta">
+            <span id="mul-flip-first-pairs">9 組</span> · <span id="mul-flip-first-scope">2～9 全表</span>
+          </p>
+          <p class="flip-first-hint">點一下你的名字，你先翻牌</p>
+          <div class="flip-pick-btns" id="mul-flip-pick-btns"></div>
+        </div>
+      </section>
+
+      <!-- 九九翻牌：對戰 -->
+      <section id="view-mul-flip-play" class="view view-hidden" aria-label="九九翻牌對戰">
+        <header class="quiz-header quiz-header-mul">
+          <button type="button" class="btn-text" id="btn-mul-flip-play-back">← 返回</button>
+          <span class="quiz-subject">九九翻牌</span>
+          <span class="quiz-progress" id="mul-flip-progress-label">配對 0 / 9</span>
+        </header>
+        <div class="flip-play-body">
+          <div class="flip-scorebar">
+            <div class="flip-score-block" id="mul-flip-score-block-a">
+              <span class="flip-score-name" id="mul-flip-play-name-a">思妘</span>
+              <span class="flip-first-tag" id="mul-flip-first-tag-a">先開</span>
+              <span class="flip-score-num" id="mul-flip-score-a">0</span>
+            </div>
+            <div class="flip-turn-wrap">
+              <p class="flip-turn-label" id="mul-flip-turn-label">輪到：思妘</p>
+              <p class="flip-click-label" id="mul-flip-click-label">點擊 0 次</p>
+            </div>
+            <div class="flip-score-block" id="mul-flip-score-block-b">
+              <span class="flip-score-name" id="mul-flip-play-name-b">思妤</span>
+              <span class="flip-first-tag" id="mul-flip-first-tag-b" hidden>先開</span>
+              <span class="flip-score-num" id="mul-flip-score-b">0</span>
+            </div>
+          </div>
+          <div class="flip-card-grid mul-flip-card-grid" id="mul-flip-card-grid"></div>
+        </div>
+      </section>
+
+      <!-- 九九翻牌：結算 -->
+      <section id="view-mul-flip-result" class="view view-hidden" aria-label="九九翻牌結算">
+        <header class="app-header">
+          <h2 class="result-title" id="mul-flip-result-title">完成</h2>
+          <p class="flip-result-scores mul-flip-result-scores" id="mul-flip-result-scores">思妘 0 ：0 思妤</p>
+          <p class="flip-result-clicks" id="mul-flip-result-clicks"></p>
+          <p class="flip-result-detail" id="mul-flip-result-detail"></p>
+        </header>
+        <footer class="result-footer">
+          <button type="button" class="btn btn-primary btn-block btn-primary-mul" id="btn-mul-flip-replay">再玩一局</button>
+          <button type="button" class="btn btn-secondary btn-block" id="btn-mul-flip-home">回九九乘法</button>
+        </footer>
       </section>
 
       <!-- 九九乘法：背誦 -->
@@ -1104,7 +1200,7 @@
         el.hidden = false;
         el.textContent = msg;
       };
-      import("./js/app.js?v=sky-duo-v30").catch((e) => {
+      import("./js/app.js?v=mul-flip-v1").catch((e) => {
         console.error(e);
         showLoadError(
           `程式載入失敗：${e.message || e}。請關閉分頁重開；若仍無效請到瀏覽器設定清除此網站快取。`,

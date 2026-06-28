@@ -63,9 +63,9 @@ import {
   renderFlipHomePlayers,
 } from "./flip-zh.js";
 import {
-  initFlipMath,
-  renderMathHomePlayers,
-} from "./flip-math-deck30.js";
+  initFlipMul,
+  renderMulFlipHomePlayers,
+} from "./flip-mul.js?v=mul-flip-v1";
 import { initGomoku, renderGomokuHomePlayers } from "./gomoku.js";
 import { initOnlineDuo } from "./online-duo.js";
 import { initSkyOnline, openSkyDuoMenu } from "./sky-online.js?v=sky-duo-v30";
@@ -170,6 +170,9 @@ const views = {
   mulLearn: $("#view-mul-learn"),
   mulQuiz: $("#view-mul-quiz"),
   mulResult: $("#view-mul-result"),
+  mulFlipFirst: $("#view-mul-flip-first"),
+  mulFlipPlay: $("#view-mul-flip-play"),
+  mulFlipResult: $("#view-mul-flip-result"),
   duoMode: $("#view-duo-mode"),
   onlineFirebaseSetup: $("#view-online-firebase-setup"),
   onlineRoomEntry: $("#view-online-room-entry"),
@@ -212,6 +215,9 @@ function showView(name) {
   }
   if (name === "setupZh") {
     renderFlipHomePlayers();
+  }
+  if (name === "mulPick") {
+    renderMulFlipHomePlayers();
   }
   if (name === "quizEn") setupEnQuizKeyboardLift();
 }
@@ -2211,6 +2217,16 @@ async function init() {
     getEnLessonFilter: () => enLessonFilter,
     getEnMode: () => enMode,
     getQuizCountSetting,
+  });
+  initFlipMul({
+    showView,
+    getChildNames: () => {
+      const names = getChildNames();
+      return { A: names.A, B: names.B };
+    },
+    showWarn: (title, sub) => {
+      showFeedback("warn", title, [{ label: "好的", primary: true }], { sub: sub || "" });
+    },
   });
   initTimesTable({
     showView,

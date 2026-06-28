@@ -121,6 +121,7 @@ function updateDuoMatchupLabels() {
     ["#flip-duo-matchup-a", "#flip-duo-matchup-b"],
     ["#gomoku-duo-matchup-a", "#gomoku-duo-matchup-b"],
     ["#flip-player-a-name", "#flip-player-b-name"],
+    ["#mul-flip-player-a-name", "#mul-flip-player-b-name"],
   ];
   for (const [aSel, bSel] of pairs) {
     renderDuoMatchupLine(
