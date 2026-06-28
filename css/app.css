@@ -3773,13 +3773,6 @@ body {
   flex-direction: column;
   min-height: 0;
   overflow: hidden;
-  padding-left: 8px;
-  padding-right: 8px;
-}
-
-.mul-flip-card-grid .flip-card {
-  aspect-ratio: 5 / 7;
-  padding: 4px 3px;
 }
 
 .mul-flip-card-grid .flip-card .flip-card-inner {
@@ -3787,7 +3780,7 @@ body {
   width: 100%;
   max-width: 100%;
   text-align: center;
-  line-height: 1.05;
+  line-height: 1;
   overflow: hidden;
   box-sizing: border-box;
 }
@@ -3802,22 +3795,17 @@ body {
   border-color: #d4a060;
 }
 
+/* 字級對齊國字 20 組翻牌（.flip-card-char min(78cqw,82cqh)）；算式依字數等比縮放 */
 @container flip-cell (min-width: 0px) {
   .mul-flip-card-equation .flip-card-inner {
-    font-size: min(
-      calc(100cqw / var(--mul-eq-div, 4.8)),
-      calc(100cqh / var(--mul-eq-hdiv, 2.4))
-    );
+    font-size: min(calc(78cqw / 4.5), calc(82cqh / 2.05));
     font-weight: 800;
     color: #2d6b4a;
-    letter-spacing: -0.03em;
+    letter-spacing: -0.02em;
   }
 
   .mul-flip-card-answer .flip-card-inner {
-    font-size: min(
-      calc(100cqw / var(--mul-ans-div, 1.6)),
-      calc(100cqh / var(--mul-ans-hdiv, 2.2))
-    );
+    font-size: min(78cqw, 82cqh);
     font-weight: 800;
     color: #8a4a12;
   }
@@ -3827,18 +3815,9 @@ body {
   color: #2d6b4a;
 }
 
-/* 9 組：18 張，字可稍大 */
-#mul-flip-card-grid[data-size="9"] .flip-card {
-  aspect-ratio: 4 / 5;
-}
-
-/* 20 組：40 張、4 欄，略拉高格 */
+/* 20 組：格線與國字 20 組一致，只沿用壓縮計分列 */
 #mul-flip-card-grid[data-size="20"] {
-  gap: 5px;
-}
-
-#mul-flip-card-grid[data-size="20"] .flip-card {
-  aspect-ratio: 4 / 5;
+  gap: 4px;
 }
 
 #view-mul-flip-play:has(#mul-flip-card-grid[data-size="20"]) .flip-scorebar {
@@ -3859,13 +3838,13 @@ body {
   border-width: 1px;
 }
 
-/* 50 組：100 張、5 欄可捲動，字級依格寬縮放 */
-#mul-flip-card-grid[data-size="50"] {
-  gap: 4px;
+#view-mul-flip-play:has(#mul-flip-card-grid[data-size="20"]) .flip-card-back {
+  font-size: min(42cqw, 42cqh);
 }
 
-#mul-flip-card-grid[data-size="50"] .flip-card {
-  aspect-ratio: 5 / 6;
+/* 50 組：格線維持 8 欄；字級隨格子 cqw/cqh 等比縮小（同公式） */
+#mul-flip-card-grid[data-size="50"] {
+  gap: 3px;
 }
 
 #view-mul-flip-play:has(#mul-flip-card-grid[data-size="50"]) .flip-scorebar {
@@ -3893,9 +3872,8 @@ body {
 #view-mul-flip-play:has(#mul-flip-card-grid[data-size="50"]) .flip-card {
   border-radius: 6px;
   border-width: 1px;
-  padding: 1px;
 }
 
 #view-mul-flip-play:has(#mul-flip-card-grid[data-size="50"]) .flip-card-back {
-  font-size: min(38cqw, 38cqh);
+  font-size: min(42cqw, 42cqh);
 }
