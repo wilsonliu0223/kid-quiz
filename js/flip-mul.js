@@ -36,6 +36,7 @@ let game = null;
  * @property {string} id
  * @property {'equation'|'answer'} kind
  * @property {string} factKey
+ * @property {number} product
  * @property {string} face
  * @property {boolean} faceUp
  * @property {boolean} matched
@@ -203,6 +204,7 @@ function buildCards(facts) {
       id: `e-${i}`,
       kind: "equation",
       factKey: f.factKey,
+      product: f.product,
       face: equationFace(f.a, f.b),
       faceUp: false,
       matched: false,
@@ -211,6 +213,7 @@ function buildCards(facts) {
       id: `a-${i}`,
       kind: "answer",
       factKey: f.factKey,
+      product: f.product,
       face: String(f.product),
       faceUp: false,
       matched: false,
@@ -340,8 +343,9 @@ function renderBoard() {
  * @param {MulFlipCard} a
  * @param {MulFlipCard} b
  */
+/** 乘積相同即配對（24 可對 3×8、4×6、8×3 等任一正確算式／答案） */
 function cardsMatch(a, b) {
-  return a.factKey === b.factKey && a.kind !== b.kind;
+  return a.kind !== b.kind && a.product === b.product;
 }
 
 function onCardClick(idx) {
