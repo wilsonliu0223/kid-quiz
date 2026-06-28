@@ -187,12 +187,10 @@ export function renderMulFlipHomePlayers() {
   refreshDuoBattleUI();
 }
 
-/** 20 組以下對齊 flip-zh；50 組（100 張）用 10 欄一屏塞滿 */
+/** 50 組 10 欄；20 組 4 欄大格；其餘 5 欄 */
 function gridCols(cardCount) {
   if (cardCount >= 100) return 10;
-  if (cardCount <= 10) return 5;
-  if (cardCount <= 20) return 5;
-  if (cardCount <= 30) return 6;
+  if (cardCount >= 40) return 4;
   return 5;
 }
 
