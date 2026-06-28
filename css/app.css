@@ -3821,9 +3821,21 @@ body {
   color: #2d6b4a;
 }
 
-/* 50 組：維持 5 欄同格大小，只壓縮計分列（需滑動看完整牌格） */
+/* 50 組：10×10 格，依剩餘高度均分列高、不滑動 */
+#view-mul-flip-play:has(#mul-flip-card-grid[data-pairs="50"]) {
+  padding-bottom: calc(8px + var(--safe-bottom));
+}
+
+#view-mul-flip-play:has(#mul-flip-card-grid[data-pairs="50"]) .quiz-header {
+  margin-bottom: 4px;
+}
+
 #mul-flip-card-grid[data-pairs="50"] {
-  gap: 4px;
+  gap: 2px;
+  grid-template-rows: repeat(var(--flip-rows, 10), minmax(0, 1fr));
+  overflow-y: hidden;
+  padding-bottom: 0;
+  align-content: stretch;
 }
 
 #view-mul-flip-play:has(#mul-flip-card-grid[data-pairs="50"]) .flip-scorebar {
@@ -3832,25 +3844,35 @@ body {
 }
 
 #view-mul-flip-play:has(#mul-flip-card-grid[data-pairs="50"]) .flip-score-block {
-  padding: 4px 3px;
+  padding: 3px 2px;
 }
 
 #view-mul-flip-play:has(#mul-flip-card-grid[data-pairs="50"]) .flip-score-name {
-  font-size: 0.72rem;
+  font-size: 0.68rem;
+}
+
+#view-mul-flip-play:has(#mul-flip-card-grid[data-pairs="50"]) .flip-first-tag {
+  font-size: 0.58rem;
+  padding: 0 4px;
 }
 
 #view-mul-flip-play:has(#mul-flip-card-grid[data-pairs="50"]) .flip-turn-label,
 #view-mul-flip-play:has(#mul-flip-card-grid[data-pairs="50"]) .flip-click-label {
-  font-size: 0.68rem;
+  font-size: 0.62rem;
+  margin-top: 2px;
 }
 
 #view-mul-flip-play:has(#mul-flip-card-grid[data-pairs="50"]) .flip-score-num {
-  font-size: 1.2rem;
+  font-size: 1.1rem;
 }
 
 #view-mul-flip-play:has(#mul-flip-card-grid[data-pairs="50"]) .flip-card {
-  border-radius: 8px;
+  aspect-ratio: unset;
+  height: 100%;
+  min-height: 0;
+  border-radius: 5px;
   border-width: 1px;
+  padding: 1px;
 }
 
 #view-mul-flip-play:has(#mul-flip-card-grid[data-pairs="50"]) .flip-card-back {
