@@ -3497,79 +3497,190 @@ body {
 .gomoku-ai-setup {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 12px;
 }
 
-.gomoku-ai-setup .gomoku-ai-difficulty {
+.gomoku-ai-zone {
+  margin-bottom: 0;
+}
+
+.gomoku-ai-zone .home-zone-title {
+  margin-bottom: 8px;
+}
+
+.gomoku-ai-difficulty-cards {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 8px;
 }
 
-.gomoku-ai-difficulty-guide-wrap {
-  padding: 0.65rem 0.75rem;
-  border-radius: 10px;
-  background: #fffaf5;
-  border: 1px solid rgba(180, 120, 60, 0.28);
+.gomoku-ai-diff-card {
+  width: 100%;
+  min-height: 56px;
+  padding: 12px 14px;
+  margin-bottom: 0;
+  align-items: stretch;
+  justify-content: center;
+  gap: 4px;
+  text-align: left;
+  border-width: 2px;
+  border-style: solid;
+  transition: box-shadow 0.15s ease, transform 0.1s ease;
 }
 
-.gomoku-ai-difficulty-guide-title {
-  margin: 0 0 0.45rem;
-  font-size: 0.82rem;
+.gomoku-ai-diff-card:active {
+  transform: scale(0.99);
+}
+
+.gomoku-ai-diff-card-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 10px;
+  width: 100%;
+}
+
+.gomoku-ai-diff-card .card-title {
+  font-size: 1.08rem;
+  line-height: 1.2;
+}
+
+.gomoku-ai-diff-card-tier {
+  font-size: 0.74rem;
   font-weight: 700;
-  color: var(--gomoku-dark, #6b4423);
+  letter-spacing: 0.02em;
 }
 
-.gomoku-ai-difficulty-guide {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-}
-
-.gomoku-ai-difficulty-guide-item {
-  margin: 0;
-  padding: 0.35rem 0.45rem;
-  border-radius: 8px;
+.gomoku-ai-diff-card-desc {
   font-size: 0.78rem;
-  line-height: 1.4;
+  line-height: 1.42;
+  margin: 0;
+}
+
+.gomoku-ai-diff-card-active {
+  box-shadow:
+    0 0 0 3px rgba(107, 68, 35, 0.22),
+    0 4px 14px rgba(74, 47, 24, 0.12);
+}
+
+.gomoku-ai-diff-card-active::after {
+  content: "✓";
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  font-size: 0.95rem;
+  font-weight: 800;
+  line-height: 1;
+  opacity: 0.75;
+}
+
+.gomoku-ai-diff-card-1 {
+  background: linear-gradient(135deg, #eef8ee 0%, #dcefdc 100%);
+  border-color: #8fbf8f;
+}
+
+.gomoku-ai-diff-card-1 .card-title,
+.gomoku-ai-diff-card-1 .gomoku-ai-diff-card-tier {
+  color: #2d5c2d;
+}
+
+.gomoku-ai-diff-card-2 {
+  background: linear-gradient(135deg, #f0f4fc 0%, #e2ebfa 100%);
+  border-color: #a8b8d8;
+}
+
+.gomoku-ai-diff-card-2 .card-title,
+.gomoku-ai-diff-card-2 .gomoku-ai-diff-card-tier {
+  color: #3a4a6a;
+}
+
+.gomoku-ai-diff-card-3 {
+  background: linear-gradient(135deg, #f5f0fc 0%, #e8ddf5 100%);
+  border-color: #b8a0d8;
+}
+
+.gomoku-ai-diff-card-3 .card-title,
+.gomoku-ai-diff-card-3 .gomoku-ai-diff-card-tier {
+  color: #4a3a68;
+}
+
+.gomoku-ai-diff-card-4 {
+  background: linear-gradient(135deg, #faf3e8 0%, #edd9b8 100%);
+  border-color: #c9a66b;
+}
+
+.gomoku-ai-diff-card-4 .card-title,
+.gomoku-ai-diff-card-4 .gomoku-ai-diff-card-tier {
+  color: var(--gomoku-dark, #4a2f18);
+}
+
+.gomoku-ai-diff-card-5 {
+  background: linear-gradient(135deg, #f3e4d4 0%, #e0c4a0 100%);
+  border-color: #a67c52;
+}
+
+.gomoku-ai-diff-card-5 .card-title,
+.gomoku-ai-diff-card-5 .gomoku-ai-diff-card-tier {
+  color: #3d2810;
+}
+
+.gomoku-ai-start-hint {
+  margin: -4px 0 8px;
+  font-size: 0.78rem;
   color: var(--muted);
-  border: 1px solid transparent;
 }
 
-.gomoku-ai-difficulty-guide-item strong {
-  color: var(--gomoku-dark, #6b4423);
-  margin-right: 0.2rem;
+.gomoku-ai-start-cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
 }
 
-.gomoku-ai-difficulty-guide-tier {
-  font-weight: 600;
-  color: #8a5a32;
-  margin-right: 0.25rem;
+.gomoku-ai-start-card {
+  width: 100%;
+  min-height: 72px;
+  padding: 12px 14px;
+  margin-bottom: 0;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 4px;
+  text-align: left;
+  border-width: 2px;
+  border-style: solid;
 }
 
-.gomoku-ai-difficulty-guide-tier::after {
-  content: "：";
+.gomoku-ai-start-card .card-title {
+  font-size: 0.95rem;
+  line-height: 1.25;
 }
 
-.gomoku-ai-difficulty-guide-desc {
-  color: var(--muted);
+.gomoku-ai-start-card .card-desc {
+  font-size: 0.72rem;
+  line-height: 1.35;
 }
 
-.gomoku-ai-difficulty-guide-item.is-selected {
-  background: rgba(180, 100, 40, 0.1);
-  border-color: rgba(180, 100, 40, 0.35);
-  color: #4a3528;
+.gomoku-ai-start-card-human {
+  background: linear-gradient(135deg, #faf3e8 0%, #edd9b8 100%);
+  border-color: var(--gomoku, #6b4423);
 }
 
-.gomoku-ai-difficulty-guide-item.is-selected .gomoku-ai-difficulty-guide-desc {
-  color: #5c4a3a;
+.gomoku-ai-start-card-human .card-title {
+  color: var(--gomoku-dark, #4a2f18);
 }
 
-.gomoku-ai-black-label {
-  margin-top: 0.25rem;
+.gomoku-ai-start-card-ai {
+  background: linear-gradient(135deg, #f5f5f5 0%, #e8e8e8 100%);
+  border-color: #b0b0b0;
+}
+
+.gomoku-ai-start-card-ai .card-title {
+  color: #3a3a3a;
+}
+
+@media (max-width: 380px) {
+  .gomoku-ai-start-cards {
+    grid-template-columns: 1fr;
+  }
 }
 
 .gomoku-result-detail {

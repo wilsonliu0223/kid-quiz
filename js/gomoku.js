@@ -1,6 +1,6 @@
-import { forbiddenLabel, wouldBlackForbidden } from "./gomoku-renju.js?v=gomoku-v10";
+import { forbiddenLabel, wouldBlackForbidden } from "./gomoku-renju.js?v=gomoku-v11";
 import { openDuoModePicker } from "./online-duo.js";
-import { AI_PLAYER_ID, requestAiMove, terminateAiWorker } from "./gomoku-ai.js?v=gomoku-v10";
+import { AI_PLAYER_ID, requestAiMove, terminateAiWorker } from "./gomoku-ai.js?v=gomoku-v11";
 import {
   resetGomokuBoardZoom,
   rebindGomokuBoardZoom,
@@ -11,7 +11,7 @@ import {
   clearGomokuWinCelebration,
   renderGomokuWinLine,
 } from "./gomoku-win-ui.js";
-import { startGomokuReplay, stopGomokuReplay, isGomokuReplayRunning } from "./gomoku-replay.js?v=gomoku-v10";
+import { startGomokuReplay, stopGomokuReplay, isGomokuReplayRunning } from "./gomoku-replay.js?v=gomoku-v11";
 import { getChildName, otherDuoPlayer } from "./children.js";
 import { getSelectedChild } from "./store.js";
 import {
@@ -138,17 +138,6 @@ function renderFirstPicker() {
   });
 }
 
-function renderAiDifficultyIntro() {
-  const box = $("#gomoku-ai-difficulty-intro");
-  if (!box) return;
-  box.querySelectorAll("[data-level]").forEach((el) => {
-    const level = Number(el.dataset.level);
-    const on = level === aiDifficulty;
-    el.classList.toggle("is-selected", on);
-    el.setAttribute("aria-current", on ? "true" : "false");
-  });
-}
-
 function renderAiDifficultyChips() {
   const wrap = $("#gomoku-ai-difficulty-chips");
   if (!wrap) return;
@@ -156,17 +145,23 @@ function renderAiDifficultyChips() {
   for (const item of AI_DIFFICULTIES) {
     const btn = document.createElement("button");
     btn.type = "button";
-    btn.className = "chip";
-    if (item.level === aiDifficulty) btn.classList.add("chip-active");
-    btn.textContent = item.label;
+    btn.className = `card gomoku-ai-diff-card gomoku-ai-diff-card-${item.level}`;
+    if (item.level === aiDifficulty) btn.classList.add("gomoku-ai-diff-card-active");
     btn.setAttribute("aria-pressed", String(item.level === aiDifficulty));
+    btn.dataset.level = String(item.level);
+    btn.innerHTML = `
+      <span class="gomoku-ai-diff-card-head">
+        <span class="card-title">${item.label}</span>
+        <span class="gomoku-ai-diff-card-tier">${item.tier}</span>
+      </span>
+      <span class="card-desc gomoku-ai-diff-card-desc">${item.desc}</span>
+    `;
     btn.addEventListener("click", () => {
       aiDifficulty = item.level;
       renderAiDifficultyChips();
     });
     wrap.appendChild(btn);
   }
-  renderAiDifficultyIntro();
 }
 
 function renderAiStartButtons() {
@@ -181,14 +176,20 @@ function renderAiStartButtons() {
 
   const humanBlack = document.createElement("button");
   humanBlack.type = "button";
-  humanBlack.className = "btn btn-primary btn-block btn-primary-gomoku";
-  humanBlack.textContent = `${humanName} 拿黑子（先手）`;
+  humanBlack.className = "card gomoku-ai-start-card gomoku-ai-start-card-human";
+  humanBlack.innerHTML = `
+    <span class="card-title">${humanName} 拿黑子</span>
+    <span class="card-desc">你先手 · 須遵守黑棋禁手</span>
+  `;
   humanBlack.addEventListener("click", () => startAiGame(true));
 
   const aiBlack = document.createElement("button");
   aiBlack.type = "button";
-  aiBlack.className = "btn btn-secondary btn-block";
-  aiBlack.textContent = "電腦拿黑子（先手）";
+  aiBlack.className = "card gomoku-ai-start-card gomoku-ai-start-card-ai";
+  aiBlack.innerHTML = `
+    <span class="card-title">電腦拿黑子</span>
+    <span class="card-desc">電腦先手 · 適合練防守</span>
+  `;
   aiBlack.addEventListener("click", () => startAiGame(false));
 
   wrap.appendChild(humanBlack);

@@ -70,7 +70,7 @@ import {
   initFlipMath,
   renderMathHomePlayers,
 } from "./flip-math-deck30.js";
-import { initGomoku, renderGomokuHomePlayers } from "./gomoku.js?v=gomoku-v10";
+import { initGomoku, renderGomokuHomePlayers } from "./gomoku.js?v=gomoku-v11";
 import { initOnlineDuo } from "./online-duo.js";
 import { initSkyOnline, openSkyDuoMenu } from "./sky-online.js?v=sky-duo-v43";
 import "./flip-zh-online.js";

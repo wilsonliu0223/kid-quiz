@@ -16,7 +16,7 @@
       })();
     </script>
     <link rel="manifest" href="manifest.json" />
-    <link rel="stylesheet" href="css/app.css?v=app-v35.6" />
+    <link rel="stylesheet" href="css/app.css?v=app-v35.7" />
     <script type="importmap">
       {
         "imports": {
@@ -44,7 +44,7 @@
         <header class="app-header">
           <div class="app-title-row">
             <h1 class="app-title" id="home-title">家裡練習</h1>
-            <span class="app-version" id="app-version" aria-label="版本">v35.6</span>
+            <span class="app-version" id="app-version" aria-label="版本">v35.7</span>
           </div>
           <p class="app-subtitle">長按標題可進入家長區</p>
         </header>
@@ -721,42 +721,20 @@
             <p class="flip-first-meta duo-active-line">
               練習者：<strong id="gomoku-ai-active-name">思妘</strong>
             </p>
-            <div class="gomoku-ai-difficulty" role="group" aria-label="AI 難度">
-              <span class="label">電腦難度</span>
-              <div class="lesson-chips" id="gomoku-ai-difficulty-chips"></div>
-              <div class="gomoku-ai-difficulty-guide-wrap" id="gomoku-ai-difficulty-intro">
-                <p class="gomoku-ai-difficulty-guide-title">難度說明</p>
-                <ul class="gomoku-ai-difficulty-guide">
-                  <li class="gomoku-ai-difficulty-guide-item" data-level="1">
-                    <strong>入門</strong>
-                    <span class="gomoku-ai-difficulty-guide-tier">入門練習</span>
-                    <span class="gomoku-ai-difficulty-guide-desc">剛學連五規則，棋力較溫和，適合熟悉棋盤與落子。</span>
-                  </li>
-                  <li class="gomoku-ai-difficulty-guide-item is-selected" data-level="2">
-                    <strong>普通</strong>
-                    <span class="gomoku-ai-difficulty-guide-tier">休閒對戰</span>
-                    <span class="gomoku-ai-difficulty-guide-desc">會擋住下一手必殺，適合日常陪練、輕鬆下幾局。</span>
-                  </li>
-                  <li class="gomoku-ai-difficulty-guide-item" data-level="3">
-                    <strong>高手</strong>
-                    <span class="gomoku-ai-difficulty-guide-tier">進階挑戰</span>
-                    <span class="gomoku-ai-difficulty-guide-desc">能看活三、活四，中盤較難僥倖獲勝，適合有基礎者。</span>
-                  </li>
-                  <li class="gomoku-ai-difficulty-guide-item" data-level="4">
-                    <strong>大師</strong>
-                    <span class="gomoku-ai-difficulty-guide-tier">深度 AI</span>
-                    <span class="gomoku-ai-difficulty-guide-desc">較深搜尋、背景運算，整體棋力明顯提升。</span>
-                  </li>
-                  <li class="gomoku-ai-difficulty-guide-item" data-level="5">
-                    <strong>宗師</strong>
-                    <span class="gomoku-ai-difficulty-guide-tier">內建最強</span>
-                    <span class="gomoku-ai-difficulty-guide-desc">含 VCF/VCT 戰術與深度分析（每步最長約 20 秒），建議執白挑戰。</span>
-                  </li>
-                </ul>
-              </div>
+            <div class="home-zone gomoku-ai-zone">
+              <h3 class="home-zone-title">電腦難度</h3>
+              <div
+                class="gomoku-ai-difficulty-cards"
+                id="gomoku-ai-difficulty-chips"
+                role="group"
+                aria-label="AI 難度"
+              ></div>
             </div>
-            <p class="flip-first-meta gomoku-ai-black-label">誰拿黑子（先手）？</p>
-            <div class="flip-pick-btns" id="gomoku-ai-start-btns"></div>
+            <div class="home-zone gomoku-ai-zone">
+              <h3 class="home-zone-title">誰拿黑子（先手）</h3>
+              <p class="gomoku-ai-start-hint">黑棋有禁手；挑戰宗師時建議執白</p>
+              <div class="gomoku-ai-start-cards" id="gomoku-ai-start-btns"></div>
+            </div>
           </div>
         </div>
       </section>
@@ -1255,7 +1233,7 @@
         el.hidden = false;
         el.textContent = msg;
       };
-      import("./js/app.js?v=app-v35.6").catch((e) => {
+      import("./js/app.js?v=app-v35.7").catch((e) => {
         console.error(e);
         showLoadError(
           `程式載入失敗：${e.message || e}。請關閉分頁重開；若仍無效請到瀏覽器設定清除此網站快取。`,
