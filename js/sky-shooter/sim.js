@@ -1,5 +1,5 @@
-import { shipOrDefault } from "./ships.js?v=sky-duo-v28";
-import { asList } from "./state-util.js?v=sky-duo-v28";
+import { shipOrDefault } from "./ships.js?v=sky-duo-v30";
+import { asList } from "./state-util.js?v=sky-duo-v30";
 
 export const COOP_BOSS_AT = 95;
 /** 單人關卡1 同款：Boss HP、巡邏、三種彈幕 */

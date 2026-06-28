@@ -1,5 +1,5 @@
-import { shipOrDefault } from "./ships.js?v=sky-duo-v28";
-import { asList } from "./state-util.js?v=sky-duo-v28";
+import { shipOrDefault } from "./ships.js?v=sky-duo-v30";
+import { asList } from "./state-util.js?v=sky-duo-v30";
 import {
   VERSUS_TIME,
   ZONE_RATIO,
@@ -8,7 +8,10 @@ import {
   COOP_Y_BAND,
   VERSUS_GUEST_Y_BAND,
   COOP_BOSS_HP,
-} from "./sim.js?v=sky-duo-v28";
+} from "./sim.js?v=sky-duo-v30";
+
+/** 與單人關卡 prototypes 的 PLAYER_SCALE 一致 */
+const PLAYER_DRAW_SCALE = 0.75;
 
 const WEAPON_LABELS = { straight: "直射", spread: "擴散", laser: "雷射" };
 
@@ -644,6 +647,7 @@ function drawPlayerShip(ctx, p, w, h, time, view, mode) {
   ctx.save();
   ctx.translate(x, y);
   if (faceDown) ctx.rotate(Math.PI);
+  ctx.scale(PLAYER_DRAW_SCALE, PLAYER_DRAW_SCALE);
   drawRaidenFighter(ctx, 0, 0, shipPalette(ship), time);
   ctx.restore();
   ctx.globalAlpha = 1;

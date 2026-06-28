@@ -226,6 +226,7 @@ export async function returnRoomToLobby(roomId) {
   /** @type {Record<string, unknown>} */
   const updates = {
     state: null,
+    inputs: null,
     "meta/status": "lobby",
     "meta/expiresAt": Date.now() + ROOM_TTL_MS,
   };

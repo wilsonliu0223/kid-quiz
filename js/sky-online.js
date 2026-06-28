@@ -8,7 +8,7 @@ import {
   openOnlineOnlyDuo,
 } from "./online-duo.js";
 import { startGameRoom } from "./room-service.js";
-import { SHIPS, SHIP_IDS, shipLobbyCardHtml } from "./sky-shooter/ships.js?v=sky-duo-v29";
+import { SHIPS, SHIP_IDS, shipLobbyCardHtml } from "./sky-shooter/ships.js?v=sky-duo-v30";
 import {
   createInitialState,
   stepSimulation,
@@ -18,11 +18,11 @@ import {
   clampPlayersToZone,
   canPlayerControl,
   VERSUS_GUEST_Y_BAND,
-} from "./sky-shooter/sim.js?v=sky-duo-v29";
-import { drawSkyFrame } from "./sky-shooter/render.js?v=sky-duo-v29";
-import { normalizeSkyState, isValidSkyState } from "./sky-shooter/state-util.js?v=sky-duo-v29";
+} from "./sky-shooter/sim.js?v=sky-duo-v30";
+import { drawSkyFrame } from "./sky-shooter/render.js?v=sky-duo-v30";
+import { normalizeSkyState, isValidSkyState } from "./sky-shooter/state-util.js?v=sky-duo-v30";
 
-const SKY_BUILD = "v27";
+const SKY_BUILD = "v30";
 
 const $ = (sel) => document.querySelector(sel);
 
@@ -86,7 +86,7 @@ function bindSkyOnlineOnce() {
   });
   $("#btn-sky-online-rematch")?.addEventListener("click", async () => {
     resultShown = false;
-    await teardownSession();
+    stopSkyGameLoop();
     await rematchOnlineRoom();
   });
   $("#btn-sky-online-result-home")?.addEventListener("click", async () => {
@@ -126,7 +126,8 @@ function skyHandler(gameKey, title) {
   return {
     startHint: "雙方選好機體並準備後，房主按開始",
     onEnterLobby: (snap) => {
-      void teardownSession();
+      resultShown = false;
+      stopSkyGameLoop();
       ensureShipLobby(title, snap);
     },
     onLeave: () => teardownSession(),
@@ -171,7 +172,7 @@ function skyHandler(gameKey, title) {
         return;
       }
 
-      if (resultShown) return;
+      resultShown = false;
 
       if (sessionRunning && activeRoomId === snap.roomId) {
         liveState = snap.state;
@@ -250,7 +251,7 @@ function ensureShipLobby(title, snap) {
   syncShipLobbyFromSnap(snap);
 }
 
-async function teardownSession() {
+function stopSkyGameLoop() {
   if (rafId) cancelAnimationFrame(rafId);
   if (hostTimer) clearInterval(hostTimer);
   rafId = null;
@@ -264,6 +265,10 @@ async function teardownSession() {
   pointerDown = false;
   activeRoomId = null;
   sessionRunning = false;
+}
+
+async function teardownSession() {
+  stopSkyGameLoop();
   resetShipLobby();
   const panel = $("#online-lobby-sky-panel");
   if (panel) panel.hidden = true;
@@ -640,14 +645,8 @@ async function sendInputNow() {
 function showResult(state, ctx, names) {
   if (resultShown && sessionRunning === false && rafId === null) return;
   resultShown = true;
-  if (rafId) cancelAnimationFrame(rafId);
-  if (hostTimer) clearInterval(hostTimer);
-  rafId = null;
-  hostTimer = null;
-  sessionRunning = false;
+  stopSkyGameLoop();
   pointerDown = false;
-  stateUnsub?.();
-  stateUnsub = null;
 
   ctx.deps.showView("skyOnlineResult");
   const title = $("#sky-online-result-title");
