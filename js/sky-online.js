@@ -8,7 +8,7 @@ import {
   openOnlineOnlyDuo,
 } from "./online-duo.js";
 import { startGameRoom } from "./room-service.js";
-import { SHIPS, SHIP_IDS, shipLobbyCardHtml } from "./sky-shooter/ships.js?v=sky-duo-v35";
+import { SHIPS, SHIP_IDS, shipLobbyCardHtml } from "./sky-shooter/ships.js?v=sky-duo-v36";
 import {
   createInitialState,
   stepSimulation,
@@ -24,11 +24,11 @@ import {
   tickGuestLocalCombat,
   advanceGuestVisualEntities,
   VERSUS_GUEST_Y_BAND,
-} from "./sky-shooter/sim.js?v=sky-duo-v35";
-import { drawSkyFrame } from "./sky-shooter/render.js?v=sky-duo-v35";
-import { normalizeSkyState, isValidSkyState } from "./sky-shooter/state-util.js?v=sky-duo-v35";
+} from "./sky-shooter/sim.js?v=sky-duo-v36";
+import { drawSkyFrame } from "./sky-shooter/render.js?v=sky-duo-v36";
+import { normalizeSkyState, isValidSkyState } from "./sky-shooter/state-util.js?v=sky-duo-v36";
 
-const SKY_BUILD = "v35";
+const SKY_BUILD = "v36";
 const HOST_TICK_MS = 20;
 const HOST_TICK_DT = HOST_TICK_MS / 1000;
 const INPUT_SEND_MS = 0;
@@ -211,6 +211,9 @@ function skyHandler(gameKey, title) {
       if (sessionRunning && activeRoomId === snap.roomId) {
         liveState = snap.state;
         ensureStateMode(liveState, activeSkyMode);
+        if (ctx.slot === "guest" && isValidSkyState(snap.state)) {
+          onGuestAuthorityState(normalizeSkyState(snap.state), ctx.slot);
+        }
         return;
       }
       ctx.deps.showView("skyOnlinePlay");
@@ -332,9 +335,16 @@ async function inputRef(roomId, slot) {
 }
 
 function pushGuestSnapshot(next) {
+  const snap = {
+    t: next.t,
+    players: {
+      host: { x: next.players.host.x, y: next.players.host.y },
+      guest: { x: next.players.guest.x, y: next.players.guest.y },
+    },
+  };
   guestSnapA = guestSnapB;
   guestSnapAtA = guestSnapAtB;
-  guestSnapB = next;
+  guestSnapB = snap;
   guestSnapAtB = Date.now();
   guestStateRecvAt = guestSnapAtB;
 }
@@ -362,28 +372,44 @@ function onGuestAuthorityState(next, mySlot) {
 
 function tickGuestShadowFrame(mySlot, mode) {
   if (!guestShadowState || !mySlot) return null;
-  const now = performance.now();
-  const dt = Math.min(0.033, (now - guestShadowLastFrame) / 1000 || 0.016);
-  guestShadowLastFrame = now;
+  try {
+    const now = performance.now();
+    const dt = Math.min(0.033, (now - guestShadowLastFrame) / 1000 || 0.016);
+    guestShadowLastFrame = now;
 
-  const world = pointerToWorld(mySlot, mode, localInput.x, localInput.y);
-  applyPlayerInput(guestShadowState, mySlot, world);
-  tickGuestLocalCombat(guestShadowState, mySlot, dt);
-  advanceGuestVisualEntities(guestShadowState, dt);
+    const me = guestShadowState.players[mySlot];
+    const canMove = me && canPlayerControl(guestShadowState, mySlot);
 
-  const other = mySlot === "host" ? "guest" : "host";
-  const t = guestInterpAlpha();
-  if (guestSnapA && guestSnapB && guestShadowState.players[other]) {
-    const pa = guestSnapA.players[other];
-    const pb = guestSnapB.players[other];
-    if (pa && pb) {
-      guestShadowState.players[other].x = lerpN(pa.x, pb.x, t);
-      guestShadowState.players[other].y = lerpN(pa.y, pb.y, t);
+    if (canMove) {
+      const world = pointerToWorld(mySlot, mode, localInput.x, localInput.y);
+      applyPlayerInput(guestShadowState, mySlot, world);
+      tickGuestLocalCombat(guestShadowState, mySlot, dt);
+    } else if (liveState?.players?.[mySlot]) {
+      const ap = liveState.players[mySlot];
+      me.x = ap.x;
+      me.y = ap.y;
     }
-  }
 
-  clampPlayersToZone(guestShadowState);
-  return guestShadowState;
+    const sinceAuth = (Date.now() - guestStateRecvAt) / 1000;
+    advanceGuestVisualEntities(guestShadowState, dt, Math.min(0.22, sinceAuth * 0.75));
+
+    const other = mySlot === "host" ? "guest" : "host";
+    const t = guestInterpAlpha();
+    if (guestSnapA && guestSnapB && guestShadowState.players[other]) {
+      const pa = guestSnapA.players[other];
+      const pb = guestSnapB.players[other];
+      if (pa && pb) {
+        guestShadowState.players[other].x = lerpN(pa.x, pb.x, t);
+        guestShadowState.players[other].y = lerpN(pa.y, pb.y, t);
+      }
+    }
+
+    clampPlayersToZone(guestShadowState);
+    return guestShadowState;
+  } catch (err) {
+    console.error("guest shadow tick failed", err);
+    return liveState;
+  }
 }
 
 function queueHostStateWrite(roomId, state) {
@@ -497,36 +523,40 @@ function startSkySession(snap, ctx) {
 
     const runHostTick = () => {
       if (!hostSimState) return;
-      if (hostSimState.phase === "end") {
-        if (!resultShown) {
-          resultShown = true;
-          showResult(hostSimState, ctx, names);
+      try {
+        if (hostSimState.phase === "end") {
+          if (!resultShown) {
+            resultShown = true;
+            showResult(hostSimState, ctx, names);
+          }
+          return;
         }
-        return;
+        if (canPlayerControl(hostSimState, "host")) {
+          applyPlayerInput(hostSimState, "host", hostInputs.host);
+          hostInputs.host.weaponTap = false;
+        }
+        if (canPlayerControl(hostSimState, "guest")) {
+          applyPlayerInput(hostSimState, "guest", hostInputs.guest);
+          hostInputs.guest.weaponTap = false;
+        }
+        setNetworkLagComp(hostSimState, {
+          guest: {
+            x: hostInputs.guest.x,
+            y: hostInputs.guest.y,
+            vx: guestInputVel.vx,
+            vy: guestInputVel.vy,
+            t: hostInputs.guest.t || Date.now(),
+            extraMs: GUEST_INPUT_LEAD_MS,
+          },
+        });
+        applyCoopLagCompPositions(hostSimState);
+        stepSimulation(hostSimState, HOST_TICK_DT);
+        clearNetworkLagComp(hostSimState);
+        liveState = hostSimState;
+        queueHostStateWrite(snap.roomId, hostSimState);
+      } catch (err) {
+        console.error("host tick failed", err);
       }
-      if (canPlayerControl(hostSimState, "host")) {
-        applyPlayerInput(hostSimState, "host", hostInputs.host);
-        hostInputs.host.weaponTap = false;
-      }
-      if (canPlayerControl(hostSimState, "guest")) {
-        applyPlayerInput(hostSimState, "guest", hostInputs.guest);
-        hostInputs.guest.weaponTap = false;
-      }
-      setNetworkLagComp(hostSimState, {
-        guest: {
-          x: hostInputs.guest.x,
-          y: hostInputs.guest.y,
-          vx: guestInputVel.vx,
-          vy: guestInputVel.vy,
-          t: hostInputs.guest.t || Date.now(),
-          extraMs: GUEST_INPUT_LEAD_MS,
-        },
-      });
-      applyCoopLagCompPositions(hostSimState);
-      stepSimulation(hostSimState, HOST_TICK_DT);
-      clearNetworkLagComp(hostSimState);
-      liveState = hostSimState;
-      queueHostStateWrite(snap.roomId, hostSimState);
     };
 
     void runHostTick();
@@ -635,44 +665,49 @@ function renderLoop(names) {
   const wrap = canvas.parentElement;
 
   const frame = () => {
-    if (!ctx2d) return;
-    const { w, h } = getCanvasDims(canvas, wrap);
-    if (w > 0 && h > 0) {
-      const dpr = Math.min(window.devicePixelRatio || 1, 2);
-      if (canvas.width !== Math.floor(w * dpr) || canvas.height !== Math.floor(h * dpr)) {
-        canvas.width = Math.floor(w * dpr);
-        canvas.height = Math.floor(h * dpr);
-        ctx2d.setTransform(dpr, 0, 0, dpr, 0, 0);
-      }
-      if (liveState && isValidSkyState(liveState)) {
-        const mySlot = getOnlineContext().slot;
-        const mode = liveState.mode || activeSkyMode;
-        const frameState =
-          mySlot === "guest" ? tickGuestShadowFrame(mySlot, mode) || liveState : liveState;
-        normalizeSkyState(frameState);
-        ensureStateMode(frameState, activeSkyMode);
-        if (mySlot !== "guest") clampPlayersToZone(frameState);
-        try {
-          drawSkyFrame(ctx2d, frameState, {
-            w,
-            h,
-            mySlot,
-            mode,
-            names,
-          });
-          updateSkyHud(mySlot, frameState);
-          updateCanvasInputLock(mySlot);
-        } catch (err) {
-          console.error("drawSkyFrame failed", err);
-          drawSkyPlaceholder(ctx2d, w, h, `繪圖錯誤 ${SKY_BUILD}`);
+    try {
+      if (!ctx2d) return;
+      const { w, h } = getCanvasDims(canvas, wrap);
+      if (w > 0 && h > 0) {
+        const dpr = Math.min(window.devicePixelRatio || 1, 2);
+        if (canvas.width !== Math.floor(w * dpr) || canvas.height !== Math.floor(h * dpr)) {
+          canvas.width = Math.floor(w * dpr);
+          canvas.height = Math.floor(h * dpr);
+          ctx2d.setTransform(dpr, 0, 0, dpr, 0, 0);
+        }
+        if (liveState && isValidSkyState(liveState)) {
+          const mySlot = getOnlineContext().slot;
+          const mode = liveState.mode || activeSkyMode;
+          const frameState =
+            mySlot === "guest" ? tickGuestShadowFrame(mySlot, mode) || liveState : liveState;
+          normalizeSkyState(frameState);
+          ensureStateMode(frameState, activeSkyMode);
+          if (mySlot !== "guest") clampPlayersToZone(frameState);
+          try {
+            drawSkyFrame(ctx2d, frameState, {
+              w,
+              h,
+              mySlot,
+              mode,
+              names,
+            });
+            updateSkyHud(mySlot, frameState);
+            updateCanvasInputLock(mySlot);
+          } catch (err) {
+            console.error("drawSkyFrame failed", err);
+            drawSkyPlaceholder(ctx2d, w, h, `繪圖錯誤 ${SKY_BUILD}`);
+            updateDebugStatus(w, h, null);
+          }
+        } else {
+          drawSkyPlaceholder(ctx2d, w, h, "連線同步中…");
           updateDebugStatus(w, h, null);
         }
-      } else {
-        drawSkyPlaceholder(ctx2d, w, h, "連線同步中…");
-        updateDebugStatus(w, h, null);
       }
+    } catch (err) {
+      console.error("sky render frame failed", err);
+    } finally {
+      rafId = requestAnimationFrame(frame);
     }
-    rafId = requestAnimationFrame(frame);
   };
   rafId = requestAnimationFrame(frame);
 }

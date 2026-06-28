@@ -1,5 +1,5 @@
-import { shipOrDefault } from "./ships.js?v=sky-duo-v35";
-import { asList } from "./state-util.js?v=sky-duo-v35";
+import { shipOrDefault } from "./ships.js?v=sky-duo-v36";
+import { asList } from "./state-util.js?v=sky-duo-v36";
 
 export const COOP_BOSS_AT = 95;
 /** 雙人合作每人命數 */
@@ -787,8 +787,8 @@ export function tickGuestLocalCombat(state, slot, dt) {
 }
 
 /** 來賓本地：推進敵彈／敵機／自機子彈位置（畫面連續） */
-export function advanceGuestVisualEntities(state, dt) {
-  const cap = Math.min(0.05, dt);
+export function advanceGuestVisualEntities(state, dt, leadSec = 0) {
+  const cap = Math.min(0.08, dt + Math.max(0, leadSec));
   for (const eb of state.eBullets) {
     eb.x += eb.vx * cap;
     eb.y += eb.vy * cap;
@@ -856,14 +856,19 @@ export function reconcileGuestShadowState(shadow, auth, mySlot) {
 
   const ap = auth.players[mySlot];
   const sp = shadow.players[mySlot];
-  if (ap && sp && savedX != null && savedY != null) {
-    const dist = Math.hypot(savedX - ap.x, savedY - ap.y);
-    if (dist > 0.14) {
+  if (ap && sp) {
+    if (ap.lives <= 0 || auth.phase === "end") {
       sp.x = ap.x;
       sp.y = ap.y;
-    } else {
-      sp.x = savedX;
-      sp.y = savedY;
+    } else if (savedX != null && savedY != null) {
+      const dist = Math.hypot(savedX - ap.x, savedY - ap.y);
+      if (dist > 0.14) {
+        sp.x = ap.x;
+        sp.y = ap.y;
+      } else {
+        sp.x = savedX;
+        sp.y = savedY;
+      }
     }
   }
 
@@ -895,6 +900,7 @@ function firePlayerBullets(state, p, ship) {
 }
 
 function spawnHomingBullet(state, p) {
+  const ship = shipOrDefault(p.ship);
   const dir = p.slot === "guest" && state.mode === "versus" ? 1 : -1;
   state.bullets.push({
     id: eid(),
