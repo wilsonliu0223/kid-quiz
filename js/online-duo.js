@@ -166,9 +166,15 @@ export function openDuoModePicker(req) {
   const titleEl = $("#duo-mode-title");
   const subEl = $("#duo-mode-sub");
   const headerEl = $("#duo-mode-header");
+  const aiBtn = $("#btn-duo-mode-ai");
   if (titleEl) titleEl.textContent = req.title;
   if (headerEl) headerEl.textContent = req.title;
-  if (subEl) subEl.textContent = "同一台裝置，或兩台手機用房間碼連線";
+  if (subEl) {
+    subEl.textContent = req.aiStart
+      ? "同一台對戰、線上連線，或單人挑戰電腦"
+      : "同一台裝置，或兩台手機用房間碼連線";
+  }
+  if (aiBtn) aiBtn.hidden = !req.aiStart;
   deps?.showView("duoMode");
 }
 
@@ -415,6 +421,9 @@ async function onKickGuest() {
 function bindOnlineDuoEvents() {
   $("#btn-duo-mode-local")?.addEventListener("click", () => {
     pendingMode?.localStart?.();
+  });
+  $("#btn-duo-mode-ai")?.addEventListener("click", () => {
+    pendingMode?.aiStart?.();
   });
   $("#btn-duo-mode-online")?.addEventListener("click", () => enterOnlineFlow());
 

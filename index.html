@@ -16,7 +16,7 @@
       })();
     </script>
     <link rel="manifest" href="manifest.json" />
-    <link rel="stylesheet" href="css/app.css?v=app-v34.9" />
+    <link rel="stylesheet" href="css/app.css?v=app-v35.0" />
     <script type="importmap">
       {
         "imports": {
@@ -44,7 +44,7 @@
         <header class="app-header">
           <div class="app-title-row">
             <h1 class="app-title" id="home-title">家裡練習</h1>
-            <span class="app-version" id="app-version" aria-label="版本">v34.9</span>
+            <span class="app-version" id="app-version" aria-label="版本">v35.0</span>
           </div>
           <p class="app-subtitle">長按標題可進入家長區</p>
         </header>
@@ -601,11 +601,14 @@
             <button type="button" class="btn btn-primary btn-block btn-primary-gomoku" id="btn-duo-mode-local">
               同一台裝置（面對面）
             </button>
+            <button type="button" class="btn btn-secondary btn-block btn-primary-gomoku-outline" id="btn-duo-mode-ai" hidden>
+              挑戰 AI（單人練習）
+            </button>
             <button type="button" class="btn btn-secondary btn-block" id="btn-duo-mode-online">
               兩台手機（房間碼連線）
             </button>
           </div>
-          <p class="gomoku-mode-note">兩台手機需先完成 Firebase 設定（見 docs/firebase-setup.md）</p>
+          <p class="gomoku-mode-note" id="duo-mode-online-note">兩台手機需先完成 Firebase 設定（見 docs/firebase-setup.md）</p>
         </div>
       </section>
 
@@ -696,22 +699,35 @@
           <span class="quiz-subject">五子棋</span>
         </header>
         <div class="flip-first-body">
-          <h2 class="flip-first-title">誰拿黑子？</h2>
-          <p class="flip-first-meta">15×15 · 先連五子獲勝 · 連珠規則</p>
-          <p class="flip-first-hint">黑子先手須遵守禁手（三三、四四、長連）；白棋無禁手</p>
-          <p class="flip-first-meta duo-active-line">
-            誰在練習：<strong id="gomoku-duo-active-name">思妘</strong>
-          </p>
-          <div class="duo-opponent-picker" role="group" aria-label="對戰對象">
-            <span class="label">對戰對象</span>
-            <div class="lesson-chips" id="gomoku-duo-opponent-chips"></div>
+          <h2 class="flip-first-title" id="gomoku-first-title">誰拿黑子？</h2>
+          <p class="flip-first-meta" id="gomoku-first-meta">15×15 · 先連五子獲勝 · 連珠規則</p>
+          <p class="flip-first-hint" id="gomoku-first-hint">黑子先手須遵守禁手（三三、四四、長連）；白棋無禁手</p>
+          <div id="gomoku-local-setup">
+            <p class="flip-first-meta duo-active-line">
+              誰在練習：<strong id="gomoku-duo-active-name">思妘</strong>
+            </p>
+            <div class="duo-opponent-picker" role="group" aria-label="對戰對象">
+              <span class="label">對戰對象</span>
+              <div class="lesson-chips" id="gomoku-duo-opponent-chips"></div>
+            </div>
+            <div class="flip-players-vs gomoku-players-vs" id="gomoku-duo-matchup">
+              <span id="gomoku-duo-matchup-a">思妘</span>
+              <span class="flip-vs">vs</span>
+              <span id="gomoku-duo-matchup-b">思妤</span>
+            </div>
+            <div class="flip-pick-btns" id="gomoku-pick-btns"></div>
           </div>
-          <div class="flip-players-vs gomoku-players-vs" id="gomoku-duo-matchup">
-            <span id="gomoku-duo-matchup-a">思妘</span>
-            <span class="flip-vs">vs</span>
-            <span id="gomoku-duo-matchup-b">思妤</span>
+          <div id="gomoku-ai-setup" class="gomoku-ai-setup" hidden>
+            <p class="flip-first-meta duo-active-line">
+              練習者：<strong id="gomoku-ai-active-name">思妘</strong>
+            </p>
+            <div class="gomoku-ai-difficulty" role="group" aria-label="AI 難度">
+              <span class="label">電腦難度</span>
+              <div class="lesson-chips" id="gomoku-ai-difficulty-chips"></div>
+            </div>
+            <p class="flip-first-meta gomoku-ai-black-label">誰拿黑子（先手）？</p>
+            <div class="flip-pick-btns" id="gomoku-ai-start-btns"></div>
           </div>
-          <div class="flip-pick-btns" id="gomoku-pick-btns"></div>
         </div>
       </section>
 
@@ -1203,7 +1219,7 @@
         el.hidden = false;
         el.textContent = msg;
       };
-      import("./js/app.js?v=app-v34.9").catch((e) => {
+      import("./js/app.js?v=app-v35.0").catch((e) => {
         console.error(e);
         showLoadError(
           `程式載入失敗：${e.message || e}。請關閉分頁重開；若仍無效請到瀏覽器設定清除此網站快取。`,
