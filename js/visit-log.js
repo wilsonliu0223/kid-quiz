@@ -98,7 +98,7 @@ async function postToScript(payload) {
 async function fetchPublicIp() {
   try {
     const ctrl = new AbortController();
-    const timer = setTimeout(() => ctrl.abort(), 4500);
+    const timer = setTimeout(() => ctrl.abort(), 2000);
     const res = await fetch("https://api.ipify.org?format=json", {
       signal: ctrl.signal,
     });
@@ -117,7 +117,11 @@ export async function logSiteVisit() {
   if (location.protocol === "file:") return;
   if (alreadyLoggedToday()) return;
 
-  const ip = await fetchPublicIp();
+  const ip = await Promise.race([
+    fetchPublicIp(),
+    new Promise((resolve) => setTimeout(() => resolve(""), 1500)),
+  ]);
+
   const payload = {
     action: "logVisit",
     ip,
@@ -128,6 +132,10 @@ export async function logSiteVisit() {
     at: new Date().toISOString(),
   };
 
-  const result = await postToScript(payload);
+  let result = await postToScript(payload);
+  if (!result.ok) {
+    await new Promise((r) => setTimeout(r, 800));
+    result = await postToScript(payload);
+  }
   if (result.ok) markLoggedToday();
 }

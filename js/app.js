@@ -644,7 +644,7 @@ function deleteParentChild(index) {
 function addParentChildRow() {
   const children = getChildren();
   const ids = new Set(children.map((c) => c.id));
-  children.push({ id: nextChildId(ids), name: `小孩 ${children.length + 1}` });
+  children.push({ id: nextChildId(ids), name: `使用者 ${children.length + 1}` });
   setChildren(children);
   renderParentNameList();
   const inputs = $("#parent-name-list")?.querySelectorAll(".parent-name-input");
@@ -1223,8 +1223,6 @@ function closeFeedbackOverlay() {
   overlay.hidden = true;
   overlay.classList.remove("is-open");
   overlay.setAttribute("aria-hidden", "true");
-  $("#feedback-pin").value = "";
-  $("#feedback-pin-error").hidden = true;
   const homophoneBlock = $("#feedback-homophone");
   if (homophoneBlock) homophoneBlock.hidden = true;
   const choicesEl = $("#homophone-choices");
@@ -1274,10 +1272,9 @@ function showParentConfirmWrittenCorrect(q, recognized, imageDataUrl) {
     ],
     {
       parentReview: true,
-      sub: "輸入 PIN 後按「算對」；會取消本題錯題紀錄。",
+      sub: "按「算對」會取消本題錯題紀錄。",
     }
   );
-  setTimeout(() => $("#feedback-pin").focus(), 100);
 }
 
 /** 記本輪錯題並立刻寫入錯題本（同題只記一次，國語／英語） */
@@ -1460,11 +1457,9 @@ function showParentReviewOverlay(recognized, imageDataUrl = null) {
     ],
     {
       parentReview: true,
-      sub: "孩子不能自行給分；請輸入 PIN 後按算對或算錯。",
+      sub: "孩子不能自行給分；請按算對或算錯。",
     }
   );
-
-  setTimeout(() => $("#feedback-pin").focus(), 100);
 }
 
 function pushWrongSkipped(q, recognized) {
@@ -1487,22 +1482,8 @@ function pushWrongSkipped(q, recognized) {
   }
 }
 
-function checkParentPin(inputEl, errorEl) {
-  const pin = inputEl.value.trim();
-  if (pin !== String(CONFIG.PARENT_PIN)) {
-    errorEl.hidden = false;
-    return false;
-  }
-  errorEl.hidden = true;
-  return true;
-}
-
 function resolveParentReview(isCorrect) {
   if (!quiz || !pendingReview) return;
-
-  const pinEl = $("#feedback-pin");
-  const errEl = $("#feedback-pin-error");
-  if (!checkParentPin(pinEl, errEl)) return;
 
   const q = quiz.questions[quiz.index];
   const { recognized, imageDataUrl } = pendingReview;
@@ -1769,7 +1750,7 @@ function showResult() {
   const pendingEl = $("#score-pending");
   if (quiz.pending > 0) {
     pendingEl.hidden = false;
-    pendingEl.textContent = `另有 ${quiz.pending} 題待家長確認（長按首頁標題進入）`;
+    pendingEl.textContent = `另有 ${quiz.pending} 題待確認（長按首頁標題可處理）`;
   } else {
     pendingEl.hidden = true;
   }
@@ -1808,24 +1789,8 @@ function showResult() {
   renderMistakeBookHome();
 }
 
-function openParentGate() {
+function openUserSettings() {
   showView("parent");
-  $("#pin-gate").hidden = false;
-  $("#parent-panel").hidden = true;
-  $("#parent-names").hidden = true;
-  $("#pin-input").value = "";
-  $("#pin-error").hidden = true;
-}
-
-function unlockParent() {
-  const pin = $("#pin-input").value.trim();
-  if (pin !== String(CONFIG.PARENT_PIN)) {
-    $("#pin-error").hidden = false;
-    return;
-  }
-  $("#pin-gate").hidden = true;
-  $("#parent-panel").hidden = false;
-  $("#parent-names").hidden = false;
   fillParentNameInputs();
   renderPendingList();
   renderScoreHistory();
@@ -2123,7 +2088,6 @@ function bindEvents() {
     renderHomeScoreHistory();
   });
   $("#btn-parent-back").addEventListener("click", () => showView("home"));
-  $("#btn-pin-submit").addEventListener("click", unlockParent);
   $("#btn-reload-sheet").addEventListener("click", async () => {
     await refreshBank();
     renderPendingList();
@@ -2133,21 +2097,18 @@ function bindEvents() {
 
   $("#feedback-mark-correct").addEventListener("click", () => resolveParentReview(true));
   $("#feedback-mark-wrong").addEventListener("click", () => resolveParentReview(false));
-  $("#feedback-pin").addEventListener("keydown", (e) => {
-    if (e.key === "Enter") resolveParentReview(true);
-  });
 
   const title = $("#home-title");
   title?.addEventListener("touchstart", (e) => {
     homeTitlePressTimer = setTimeout(() => {
       e.preventDefault();
-      openParentGate();
+      openUserSettings();
     }, 800);
   });
   title?.addEventListener("touchend", () => clearTimeout(homeTitlePressTimer));
   title?.addEventListener("touchmove", () => clearTimeout(homeTitlePressTimer));
   title?.addEventListener("mousedown", () => {
-    homeTitlePressTimer = setTimeout(openParentGate, 800);
+    homeTitlePressTimer = setTimeout(openUserSettings, 800);
   });
   title?.addEventListener("mouseup", () => clearTimeout(homeTitlePressTimer));
   title?.addEventListener("mouseleave", () => clearTimeout(homeTitlePressTimer));
@@ -2165,6 +2126,7 @@ async function init() {
   }
 
   bindEvents();
+  void logSiteVisit();
   window.__kidQuizReady = true;
   setupQuizAutoSave();
   initChildPicker();
@@ -2274,7 +2236,6 @@ async function init() {
   renderHomeScoreHistory();
   renderResumeBanner();
   renderMistakeBookHome();
-  void logSiteVisit();
 }
 
 window.startZhQuiz = startZhQuiz;

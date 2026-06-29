@@ -54,7 +54,7 @@ export function renderDuoOpponentPicker(container, opts = {}) {
     p.className = "duo-pick-need-two";
     p.textContent =
       opts.needOpponentMessage ||
-      "至少需要另一位才能對戰（請在家長區新增，或換一位「誰在練習」）";
+      "至少需要另一位才能對戰（請長按首頁標題新增使用者，或換一位「誰在練習」）";
     el.appendChild(p);
     return false;
   }
