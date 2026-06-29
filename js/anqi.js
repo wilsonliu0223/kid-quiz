@@ -544,6 +544,8 @@ function renderStatusBar() {
     extraEl: $("#anqi-play-meta"),
     extraText: aiOpponentLabel(),
     extraVisible: game.mode === "ai",
+  });
+}
 
 function syncWinOverlay() {
   const overlay = $("#anqi-win-overlay");

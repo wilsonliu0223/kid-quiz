@@ -294,7 +294,9 @@ export function detectTaiwanMaterialOutcome(state) {
  */
 function mergeTaiwanOutcome(state, result) {
   const material = detectTaiwanMaterialOutcome(state);
-  if (!material) return result;
+  if (!material) {
+    return { ...result, done: false };
+  }
   return {
     ...result,
     done: true,
