@@ -58,7 +58,7 @@ import {
   formatScoreSummary,
   scoresForChild,
 } from "./score-log.js";
-import { logSiteVisit } from "./visit-log.js";
+import { logSiteVisit } from "./visit-log.js?v=visit-v4";
 import {
   initFlipZh,
   renderFlipHomePlayers,

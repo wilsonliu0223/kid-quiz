@@ -16,7 +16,7 @@
       })();
     </script>
     <link rel="manifest" href="manifest.json" />
-    <link rel="stylesheet" href="css/app.css?v=app-v36.2" />
+    <link rel="stylesheet" href="css/app.css?v=app-v36.3" />
     <script type="importmap">
       {
         "imports": {
@@ -44,7 +44,7 @@
         <header class="app-header">
           <div class="app-title-row">
             <h1 class="app-title" id="home-title">家裡練習</h1>
-            <span class="app-version" id="app-version" aria-label="版本">v36.2</span>
+            <span class="app-version" id="app-version" aria-label="版本">v36.3</span>
           </div>
           <p class="app-subtitle">長按標題可新增／管理使用者</p>
         </header>
@@ -1220,13 +1220,17 @@
     </div>
 
     <script type="module">
+      import { logSiteVisit } from "./js/visit-log.js?v=visit-v4";
+      logSiteVisit();
+    </script>
+    <script type="module">
       const showLoadError = (msg) => {
         const el = document.getElementById("boot-error");
         if (!el) return;
         el.hidden = false;
         el.textContent = msg;
       };
-      import("./js/app.js?v=app-v36.2").catch((e) => {
+      import("./js/app.js?v=app-v36.3").catch((e) => {
         console.error(e);
         showLoadError(
           `程式載入失敗：${e.message || e}。請關閉分頁重開；若仍無效請到瀏覽器設定清除此網站快取。`,
