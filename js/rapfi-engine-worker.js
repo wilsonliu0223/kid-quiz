@@ -1,17 +1,20 @@
-/** Rapfi WASM 引擎 Worker（Yixin 協定）；優先載入 Gomocalc 完整 NNUE，失敗則用本地精簡版 */
-const FULL_ENGINE_CDN = "https://gomocalc.com/build/";
+/** Rapfi WASM 引擎 Worker（Yixin 協定） */
+const FULL_DATA_URL = "https://gomocalc.com/build/rapfi.data";
 const TURN_TIMEOUT_MS = 60000;
 const MAX_DEPTH = 64;
 const SAFETY_TIMEOUT_MS = TURN_TIMEOUT_MS + 5000;
 
 let engine = null;
 let engineDir = "";
+let useFullData = false;
 let engineMode = "lite";
 /** @type {((move: [number, number] | null) => void) | null} */
 let pendingResolve = null;
 
 function locateFile(url) {
-  if (/^rapfi.*\.data$/.test(url)) url = "rapfi.data";
+  if (/^rapfi.*\.data$/.test(url)) {
+    return useFullData ? FULL_DATA_URL : engineDir + "rapfi.data";
+  }
   return engineDir + url;
 }
 
@@ -52,8 +55,10 @@ function postProgress(status) {
   }
 }
 
-async function bootEngine(baseUrl, scriptName, mode) {
+async function bootEngine(baseUrl, scriptName, mode, fullData) {
   engineDir = baseUrl;
+  useFullData = fullData;
+  engineMode = mode;
   importScripts(baseUrl + scriptName);
   engine = await Rapfi({
     locateFile,
@@ -63,39 +68,23 @@ async function bootEngine(baseUrl, scriptName, mode) {
     setStatus: postProgress,
   });
   engine.sendCommand("START 15");
-  engineMode = mode;
-}
-
-async function initEngine(localFallbackUrl) {
-  const attempts = [];
-  if (simd128Supported()) {
-    attempts.push({ base: FULL_ENGINE_CDN, script: "rapfi-single-simd128.js", mode: "full" });
-  }
-  attempts.push({ base: FULL_ENGINE_CDN, script: "rapfi-single.js", mode: "full" });
-  if (localFallbackUrl) {
-    attempts.push({ base: localFallbackUrl, script: "rapfi-single.js", mode: "lite" });
-  }
-
-  let lastError = null;
-  for (const item of attempts) {
-    try {
-      await bootEngine(item.base, item.script, item.mode);
-      return item.mode;
-    } catch (err) {
-      lastError = err;
-      engine = null;
-      engineDir = "";
-    }
-  }
-  throw lastError || new Error("Rapfi init failed");
 }
 
 self.onmessage = async (event) => {
   const msg = event.data || {};
   try {
     if (msg.type === "init") {
-      const mode = await initEngine(msg.localFallbackUrl || "");
-      self.postMessage({ type: "ready", mode });
+      const wantFull = msg.mode === "full";
+      if (wantFull) {
+        if (!msg.fullEngineUrl || !simd128Supported()) {
+          throw new Error("full engine unavailable");
+        }
+        await bootEngine(msg.fullEngineUrl, "rapfi-single-simd128.js", "full", true);
+      } else {
+        if (!msg.localFallbackUrl) throw new Error("no fallback engine");
+        await bootEngine(msg.localFallbackUrl, "rapfi-single.js", "lite", false);
+      }
+      self.postMessage({ type: "ready", mode: engineMode });
       return;
     }
 
@@ -132,11 +121,16 @@ self.onmessage = async (event) => {
       self.postMessage({ type: "result", requestId: msg.requestId, move, mode: engineMode });
     }
   } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    if (msg.type === "init") {
+      self.postMessage({ type: "initFailed", error: message });
+      return;
+    }
     self.postMessage({
       type: "result",
       requestId: msg.requestId,
       move: null,
-      error: err instanceof Error ? err.message : String(err),
+      error: message,
     });
   }
 };

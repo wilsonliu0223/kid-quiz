@@ -1,6 +1,6 @@
 import { forbiddenLabel, wouldBlackForbidden } from "./gomoku-renju.js?v=gomoku-v12";
 import { openDuoModePicker } from "./online-duo.js";
-import { AI_PLAYER_ID, requestAiMove, terminateAiWorker, rapfiLoadState, NIRVANA_LEVEL } from "./gomoku-ai.js?v=gomoku-v16";
+import { AI_PLAYER_ID, requestAiMove, terminateAiWorker, rapfiLoadState, NIRVANA_LEVEL } from "./gomoku-ai.js?v=gomoku-v17";
 import {
   resetGomokuBoardZoom,
   rebindGomokuBoardZoom,
