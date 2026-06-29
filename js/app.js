@@ -71,12 +71,14 @@ import {
   initFlipMath,
   renderMathHomePlayers,
 } from "./flip-math-deck30.js";
-import { initGomoku, renderGomokuHomePlayers } from "./gomoku.js?v=gomoku-v13";
+import { initGomoku, renderGomokuHomePlayers } from "./gomoku.js?v=gomoku-v14";
+import { initXiangqi, renderXiangqiHomePlayers } from "./xiangqi.js?v=xiangqi-v2";
 import { initOnlineDuo } from "./online-duo.js";
 import { initSkyOnline, openSkyDuoMenu } from "./sky-online.js?v=sky-duo-v43";
 import "./flip-zh-online.js";
 import "./flip-math-online.js";
-import "./gomoku-online.js";
+import "./gomoku-online.js?v=gomoku-v14";
+import "./xiangqi-online.js?v=xiangqi-v2";
 import {
   initRaceDuo,
   openZhRaceDuoMode,
@@ -187,6 +189,9 @@ const views = {
   gomokuResult: $("#view-gomoku-result"),
   gomokuOnlinePlay: $("#view-gomoku-online-play"),
   gomokuOnlineResult: $("#view-gomoku-online-result"),
+  xiangqiFirst: $("#view-xiangqi-first"),
+  xiangqiPlay: $("#view-xiangqi-play"),
+  xiangqiOnlinePlay: $("#view-xiangqi-online-play"),
   skyDuoMenu: $("#view-sky-duo-menu"),
   skyOnlinePlay: $("#view-sky-online-play"),
   skyOnlineResult: $("#view-sky-online-result"),
@@ -217,6 +222,7 @@ function showView(name) {
     renderMistakeBookHome();
     renderMathHomePlayers();
     renderGomokuHomePlayers();
+    renderXiangqiHomePlayers();
   }
   if (name === "setupZh") {
     renderFlipHomePlayers();
@@ -2164,6 +2170,10 @@ async function init() {
     },
   });
   initGomoku({
+    showView,
+    getChildNames,
+  });
+  initXiangqi({
     showView,
     getChildNames,
   });

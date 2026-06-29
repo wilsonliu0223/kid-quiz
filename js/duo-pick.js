@@ -120,6 +120,7 @@ function updateDuoMatchupLabels() {
     ["#math-setup-player-a-name", "#math-setup-player-b-name"],
     ["#flip-duo-matchup-a", "#flip-duo-matchup-b"],
     ["#gomoku-duo-matchup-a", "#gomoku-duo-matchup-b"],
+    ["#xiangqi-duo-matchup-a", "#xiangqi-duo-matchup-b"],
     ["#flip-player-a-name", "#flip-player-b-name"],
     ["#mul-flip-player-a-name", "#mul-flip-player-b-name"],
   ];
@@ -134,7 +135,7 @@ function updateDuoMatchupLabels() {
 /** 依首頁「誰在練習」更新對戰名稱與對手選單 */
 export function refreshDuoBattleUI() {
   const activeName = getChildName(getSelectedChild());
-  for (const id of ["math-duo-active-name", "flip-duo-active-name", "gomoku-duo-active-name"]) {
+  for (const id of ["math-duo-active-name", "flip-duo-active-name", "gomoku-duo-active-name", "xiangqi-duo-active-name"]) {
     const el = document.getElementById(id);
     if (el) el.textContent = activeName;
   }
@@ -144,6 +145,7 @@ export function refreshDuoBattleUI() {
     "#math-duo-opponent-chips",
     "#flip-duo-opponent-chips",
     "#gomoku-duo-opponent-chips",
+    "#xiangqi-duo-opponent-chips",
   ]) {
     if (document.querySelector(sel)) {
       renderDuoOpponentPicker(sel, { onChange });

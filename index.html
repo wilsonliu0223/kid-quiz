@@ -759,8 +759,21 @@
         </header>
         <div class="gomoku-play-body">
           <div class="gomoku-status-bar">
-            <p class="gomoku-meta" id="gomoku-black-tag">黑子：思妘</p>
-            <p class="gomoku-turn-label" id="gomoku-turn-label">輪到：思妘 · 黑子</p>
+            <div class="gomoku-turn-board">
+              <div class="gomoku-side-card gomoku-side-black" id="gomoku-side-black">
+                <span class="gomoku-side-card-label">黑方</span>
+                <strong class="gomoku-side-card-name">—</strong>
+              </div>
+              <div class="gomoku-turn-banner gomoku-turn-banner-black" id="gomoku-turn-banner" role="status" aria-live="polite">
+                <span class="gomoku-turn-banner-kicker">現在輪到</span>
+                <span class="gomoku-turn-banner-main" id="gomoku-turn-main">黑方下棋</span>
+                <span class="gomoku-turn-banner-sub" id="gomoku-turn-sub">—</span>
+              </div>
+              <div class="gomoku-side-card gomoku-side-white" id="gomoku-side-white">
+                <span class="gomoku-side-card-label">白方</span>
+                <strong class="gomoku-side-card-name">—</strong>
+              </div>
+            </div>
             <p
               class="gomoku-renju-hint"
               id="gomoku-renju-hint"
@@ -822,9 +835,22 @@
         </header>
         <div class="gomoku-play-body">
           <div class="gomoku-status-bar">
-            <p class="gomoku-meta" id="gomoku-online-room-tag">房間</p>
-            <p class="gomoku-meta" id="gomoku-online-black-tag">黑子</p>
-            <p class="gomoku-turn-label" id="gomoku-online-turn-label">輪到</p>
+            <p class="gomoku-room-tag" id="gomoku-online-room-tag">房間</p>
+            <div class="gomoku-turn-board">
+              <div class="gomoku-side-card gomoku-side-black" id="gomoku-online-side-black">
+                <span class="gomoku-side-card-label">黑方</span>
+                <strong class="gomoku-side-card-name">—</strong>
+              </div>
+              <div class="gomoku-turn-banner gomoku-turn-banner-black" id="gomoku-online-turn-banner" role="status" aria-live="polite">
+                <span class="gomoku-turn-banner-kicker">現在輪到</span>
+                <span class="gomoku-turn-banner-main" id="gomoku-online-turn-main">黑方下棋</span>
+                <span class="gomoku-turn-banner-sub" id="gomoku-online-turn-sub">—</span>
+              </div>
+              <div class="gomoku-side-card gomoku-side-white" id="gomoku-online-side-white">
+                <span class="gomoku-side-card-label">白方</span>
+                <strong class="gomoku-side-card-name">—</strong>
+              </div>
+            </div>
             <p class="gomoku-renju-hint" id="gomoku-online-renju-hint" aria-hidden="true">
               黑棋禁手格會標示 ✕（三三、四四、長連；須為連珠「活三」，非任意三子連線）
             </p>
@@ -928,19 +954,45 @@
         </header>
         <div class="xiangqi-play-body">
           <div class="xiangqi-status-bar">
-            <p class="xiangqi-meta" id="xiangqi-red-tag">紅方</p>
-            <p class="xiangqi-turn-label" id="xiangqi-turn-label">輪到</p>
-            <p class="xiangqi-check-hint" id="xiangqi-check-hint" hidden>將軍！</p>
+            <div class="xiangqi-turn-board">
+              <div class="xiangqi-side-card xiangqi-side-red" id="xiangqi-side-red">
+                <span class="xiangqi-side-card-label">紅方</span>
+                <strong class="xiangqi-side-card-name">—</strong>
+              </div>
+              <div class="xiangqi-turn-banner xiangqi-turn-banner-red" id="xiangqi-turn-banner" role="status" aria-live="polite">
+                <span class="xiangqi-turn-banner-kicker">現在輪到</span>
+                <span class="xiangqi-turn-banner-main" id="xiangqi-turn-main">紅方走棋</span>
+                <span class="xiangqi-turn-banner-sub" id="xiangqi-turn-sub">—</span>
+              </div>
+              <div class="xiangqi-side-card xiangqi-side-black" id="xiangqi-side-black">
+                <span class="xiangqi-side-card-label">黑方</span>
+                <strong class="xiangqi-side-card-name">—</strong>
+              </div>
+            </div>
+            <div class="xiangqi-check-alert" id="xiangqi-check-hint" hidden role="alert" aria-live="assertive">
+              <span class="xiangqi-check-alert-x" aria-hidden="true">✕</span>
+              <div class="xiangqi-check-alert-copy">
+                <strong class="xiangqi-check-alert-title" id="xiangqi-check-title">你被將軍了！</strong>
+                <p class="xiangqi-check-alert-detail" id="xiangqi-check-detail">帥有危險，快解將！</p>
+              </div>
+            </div>
           </div>
           <div class="xiangqi-board-wrap">
             <svg class="xiangqi-svg" id="xiangqi-board" role="img" aria-label="象棋棋盤"></svg>
+            <div class="xiangqi-replay-dock" id="xiangqi-replay-dock" hidden>
+              <button type="button" class="btn btn-primary btn-sm xiangqi-replay-dock-primary" id="btn-xiangqi-replay-moves">
+                重播棋局
+              </button>
+              <button type="button" class="btn btn-secondary btn-sm" id="btn-xiangqi-replay-options">勝利選項</button>
+            </div>
             <div class="xiangqi-win-overlay" id="xiangqi-win-overlay" hidden>
               <div class="xiangqi-win-card">
                 <h2 class="xiangqi-win-title" id="xiangqi-win-title">獲勝</h2>
                 <p class="xiangqi-win-detail" id="xiangqi-win-detail"></p>
                 <div class="xiangqi-win-actions">
                   <button type="button" class="btn btn-secondary btn-block" id="btn-xiangqi-win-dismiss">繼續觀察棋局</button>
-                  <button type="button" class="btn btn-primary btn-block btn-primary-xiangqi" id="btn-xiangqi-win-replay">再玩一局</button>
+                  <button type="button" class="btn btn-primary btn-block btn-primary-xiangqi" id="btn-xiangqi-win-moves">重播棋局</button>
+                  <button type="button" class="btn btn-secondary btn-block" id="btn-xiangqi-win-replay">再玩一局</button>
                   <button type="button" class="btn btn-secondary btn-block" id="btn-xiangqi-win-home">回首頁</button>
                 </div>
               </div>
@@ -957,10 +1009,29 @@
         </header>
         <div class="xiangqi-play-body">
           <div class="xiangqi-status-bar">
-            <p class="xiangqi-meta" id="xiangqi-online-room-tag">房間</p>
-            <p class="xiangqi-meta" id="xiangqi-online-red-tag">紅方</p>
-            <p class="xiangqi-turn-label" id="xiangqi-online-turn-label">輪到</p>
-            <p class="xiangqi-check-hint" id="xiangqi-online-check-hint" hidden>將軍！</p>
+            <p class="xiangqi-room-tag" id="xiangqi-online-room-tag">房間</p>
+            <div class="xiangqi-turn-board">
+              <div class="xiangqi-side-card xiangqi-side-red" id="xiangqi-online-side-red">
+                <span class="xiangqi-side-card-label">紅方</span>
+                <strong class="xiangqi-side-card-name">—</strong>
+              </div>
+              <div class="xiangqi-turn-banner xiangqi-turn-banner-red" id="xiangqi-online-turn-banner" role="status" aria-live="polite">
+                <span class="xiangqi-turn-banner-kicker">現在輪到</span>
+                <span class="xiangqi-turn-banner-main" id="xiangqi-online-turn-main">紅方走棋</span>
+                <span class="xiangqi-turn-banner-sub" id="xiangqi-online-turn-sub">—</span>
+              </div>
+              <div class="xiangqi-side-card xiangqi-side-black" id="xiangqi-online-side-black">
+                <span class="xiangqi-side-card-label">黑方</span>
+                <strong class="xiangqi-side-card-name">—</strong>
+              </div>
+            </div>
+            <div class="xiangqi-check-alert" id="xiangqi-online-check-hint" hidden role="alert" aria-live="assertive">
+              <span class="xiangqi-check-alert-x" aria-hidden="true">✕</span>
+              <div class="xiangqi-check-alert-copy">
+                <strong class="xiangqi-check-alert-title" id="xiangqi-online-check-title">你被將軍了！</strong>
+                <p class="xiangqi-check-alert-detail" id="xiangqi-online-check-detail">帥有危險，快解將！</p>
+              </div>
+            </div>
           </div>
           <div class="xiangqi-board-wrap">
             <svg class="xiangqi-svg" id="xiangqi-online-board" role="img" aria-label="象棋棋盤"></svg>
@@ -1341,7 +1412,7 @@
         el.hidden = false;
         el.textContent = msg;
       };
-      import("./js/app.js?v=app-v36.6").catch((e) => {
+      import("./js/app.js?v=app-v36.8").catch((e) => {
         console.error(e);
         showLoadError(
           `程式載入失敗：${e.message || e}。請關閉分頁重開；若仍無效請到瀏覽器設定清除此網站快取。`,

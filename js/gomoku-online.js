@@ -13,6 +13,7 @@ import {
   showGomokuWinOverlayImmediate,
 } from "./gomoku-win-ui.js";
 import { startGomokuReplay, stopGomokuReplay, isGomokuReplayRunning } from "./gomoku-replay.js?v=gomoku-v13";
+import { renderDuoTurnStatusBar } from "./game-turn-status.js?v=gomoku-v14";
 import {
   registerOnlineGame,
   getOnlineContext,
@@ -287,6 +288,56 @@ function ensureOnlineBoardGrid() {
   return grid;
 }
 
+function renderOnlinePlayHeader(statusText = "") {
+  if (!onlineGame) return;
+  const ctx = getOnlineContext();
+  const whiteId = otherSlot(onlineGame.blackPlayerId);
+  let overTitle = "";
+  if (onlineGame.over && !statusText) {
+    if (onlineGame.winner) {
+      const meWon = onlineGame.winner === ctx.slot;
+      overTitle = meWon ? "你連五獲勝！" : `${slotName(onlineGame.winner)} 連五獲勝`;
+    } else {
+      overTitle = "和棋！";
+    }
+  }
+  const myTurn = !onlineGame.over && ctx.slot === onlineGame.currentPlayerId;
+
+  renderDuoTurnStatusBar({
+    theme: "gomoku",
+    leftCard: $("#gomoku-online-side-black"),
+    rightCard: $("#gomoku-online-side-white"),
+    banner: $("#gomoku-online-turn-banner"),
+    turnMain: $("#gomoku-online-turn-main"),
+    turnSub: $("#gomoku-online-turn-sub"),
+    leftName: slotName(onlineGame.blackPlayerId),
+    rightName: slotName(whiteId),
+    turn:
+      onlineGame.over || statusText
+        ? null
+        : onlineGame.currentPlayerId === onlineGame.blackPlayerId
+          ? "black"
+          : "white",
+    turnPlayerName: slotName(onlineGame.currentPlayerId),
+    over: onlineGame.over && !statusText,
+    overTitle,
+    statusText,
+    youHint: myTurn ? " · 輪到你" : "",
+  });
+
+  const renjuHint = $("#gomoku-online-renju-hint");
+  if (renjuHint) {
+    if (statusText || onlineGame.over) {
+      renjuHint.classList.remove("is-visible");
+      renjuHint.setAttribute("aria-hidden", "true");
+    } else {
+      const isBlackTurn = onlineGame.currentPlayerId === onlineGame.blackPlayerId;
+      renjuHint.classList.toggle("is-visible", isBlackTurn);
+      renjuHint.setAttribute("aria-hidden", String(!isBlackTurn));
+    }
+  }
+}
+
 function renderOnlineBoard() {
   const grid = ensureOnlineBoardGrid();
   if (!grid || !onlineGame) return;
@@ -299,24 +350,7 @@ function renderOnlineBoard() {
   if ($("#gomoku-online-room-tag") && ctx.roomId) {
     $("#gomoku-online-room-tag").textContent = `房間 ${ctx.roomId}`;
   }
-  if ($("#gomoku-online-turn-label")) {
-    if (onlineGame.over) {
-      if (onlineGame.winner) {
-        const meWon = onlineGame.winner === ctx.slot;
-        $("#gomoku-online-turn-label").textContent = meWon
-          ? "你連五獲勝！"
-          : `${slotName(onlineGame.winner)} 連五獲勝`;
-      } else {
-        $("#gomoku-online-turn-label").textContent = "和棋！";
-      }
-    } else {
-      const me = ctx.slot === onlineGame.currentPlayerId;
-      $("#gomoku-online-turn-label").textContent = `輪到：${slotName(onlineGame.currentPlayerId)} · ${stoneLabel(onlineGame.currentPlayerId)}${me ? "（你）" : ""}`;
-    }
-  }
-  if ($("#gomoku-online-black-tag")) {
-    $("#gomoku-online-black-tag").textContent = `黑子：${slotName(onlineGame.blackPlayerId)}`;
-  }
+  renderOnlinePlayHeader();
 }
 
 async function onOnlineCellClick(row, col) {
@@ -468,13 +502,7 @@ function startOnlineReplay() {
       renderOnlineBoard();
     },
     onStatus: (text) => {
-      const el = $("#gomoku-online-turn-label");
-      if (el) el.textContent = text;
-      const hint = $("#gomoku-online-renju-hint");
-      if (hint) {
-        hint.classList.remove("is-visible");
-        hint.setAttribute("aria-hidden", "true");
-      }
+      renderOnlinePlayHeader(text);
     },
     onDone: ({ cells, winLine: wl, lastMove: lm }) => {
       onlineGame.cells = cells;
@@ -482,12 +510,11 @@ function startOnlineReplay() {
       onlineGame.winLine = wl;
       renderOnlineBoard();
       if (wl) renderGomokuWinLine($("#gomoku-online-board-stage"), wl, lm);
-      const el = $("#gomoku-online-turn-label");
-      if (el) {
-        el.textContent = onlineGame.winner
+      renderOnlinePlayHeader(
+        onlineGame.winner
           ? `${slotName(onlineGame.winner)} 連五獲勝！（重播完成）`
-          : "和棋！（重播完成）";
-      }
+          : "和棋！（重播完成）",
+      );
       syncOnlineReplayDock();
     },
   });

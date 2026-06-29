@@ -15,6 +15,7 @@ import {
   showGomokuWinOverlayImmediate,
 } from "./gomoku-win-ui.js";
 import { startGomokuReplay, stopGomokuReplay, isGomokuReplayRunning } from "./gomoku-replay.js?v=gomoku-v13";
+import { renderDuoTurnStatusBar } from "./game-turn-status.js?v=gomoku-v14";
 import { getChildName, otherDuoPlayer } from "./children.js";
 import { getSelectedChild } from "./store.js";
 import {
@@ -260,38 +261,58 @@ function isHumanTurn() {
   return game?.mode !== "ai" || game.currentPlayerId === game.humanPlayerId;
 }
 
-function renderPlayHeader() {
+function whitePlayerId() {
+  if (!game) return "";
+  return otherPlayer(game.blackPlayerId);
+}
+
+function currentTurnSide() {
+  if (!game) return null;
+  return game.currentPlayerId === game.blackPlayerId ? "black" : "white";
+}
+
+function renderPlayHeader(statusText = "") {
   if (!game) return;
-  const turn = $("#gomoku-turn-label");
-  const blackTag = $("#gomoku-black-tag");
   const renjuHint = $("#gomoku-renju-hint");
-  if (game.over) {
-    if (turn) {
-      turn.textContent = game.winner
-        ? `${playerName(game.winner)} 連五獲勝！`
-        : "和棋！";
-    }
-    if (renjuHint) {
+  const waitingAi = game.mode === "ai" && !game.over && aiMovePending;
+  const humanTurn = isHumanTurn();
+  const overTitle = game.over
+    ? game.winner
+      ? `${playerName(game.winner)} 連五獲勝！`
+      : "和棋！"
+    : "";
+
+  renderDuoTurnStatusBar({
+    theme: "gomoku",
+    leftCard: $("#gomoku-side-black"),
+    rightCard: $("#gomoku-side-white"),
+    banner: $("#gomoku-turn-banner"),
+    turnMain: $("#gomoku-turn-main"),
+    turnSub: $("#gomoku-turn-sub"),
+    leftName: playerName(game.blackPlayerId),
+    rightName: playerName(whitePlayerId()),
+    turn: game.over || statusText ? null : currentTurnSide(),
+    turnPlayerName: playerName(game.currentPlayerId),
+    over: game.over && !statusText,
+    overTitle,
+    waitingAi: waitingAi && !statusText,
+    statusText,
+    youHint: waitingAi
+      ? ` · ${stoneLabel(game.currentPlayerId)} · 請稍候…`
+      : humanTurn && !statusText
+        ? " · 輪到你"
+        : "",
+  });
+
+  if (renjuHint) {
+    if (statusText || game.over) {
       renjuHint.classList.remove("is-visible");
       renjuHint.setAttribute("aria-hidden", "true");
-    }
-    return;
-  }
-  if (turn) {
-    if (game.mode === "ai" && aiMovePending) {
-      const diff = game.aiDifficulty ?? aiDifficulty;
-      turn.textContent = diff >= 5 ? "電腦深度分析中（最長約 20 秒）…" : "電腦思考中…";
     } else {
-      turn.textContent = `輪到：${playerName(game.currentPlayerId)} · ${stoneLabel(game.currentPlayerId)}`;
+      const isBlackTurn = game.currentPlayerId === game.blackPlayerId;
+      renjuHint.classList.toggle("is-visible", isBlackTurn);
+      renjuHint.setAttribute("aria-hidden", String(!isBlackTurn));
     }
-  }
-  if (blackTag) {
-    blackTag.textContent = `黑子：${playerName(game.blackPlayerId)}`;
-  }
-  if (renjuHint) {
-    const isBlackTurn = game.currentPlayerId === game.blackPlayerId;
-    renjuHint.classList.toggle("is-visible", isBlackTurn);
-    renjuHint.setAttribute("aria-hidden", String(!isBlackTurn));
   }
 }
 
@@ -650,13 +671,7 @@ function startLocalReplay() {
       renderBoard();
     },
     onStatus: (text) => {
-      const el = $("#gomoku-turn-label");
-      if (el) el.textContent = text;
-      const hint = $("#gomoku-renju-hint");
-      if (hint) {
-        hint.classList.remove("is-visible");
-        hint.setAttribute("aria-hidden", "true");
-      }
+      renderPlayHeader(text);
     },
     onDone: ({ cells, winLine: wl, lastMove: lm }) => {
       game.cells = cells;
@@ -664,12 +679,11 @@ function startLocalReplay() {
       game.winLine = wl;
       renderBoard();
       if (wl) renderGomokuWinLine($("#gomoku-board-stage"), wl, lm);
-      const el = $("#gomoku-turn-label");
-      if (el) {
-        el.textContent = game.winner
+      renderPlayHeader(
+        game.winner
           ? `${playerName(game.winner)} 連五獲勝！（重播完成）`
-          : "和棋！（重播完成）";
-      }
+          : "和棋！（重播完成）",
+      );
       syncLocalReplayDock();
     },
   });

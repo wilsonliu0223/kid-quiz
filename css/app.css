@@ -3338,10 +3338,144 @@ body {
   min-height: 4.5rem;
   display: flex;
   flex-direction: column;
+  align-items: stretch;
+  justify-content: center;
+  gap: 4px;
+  padding: 0 8px;
+}
+
+.gomoku-room-tag {
+  margin: 0;
+  text-align: center;
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+.gomoku-turn-board {
+  display: grid;
+  grid-template-columns: 1fr minmax(0, 1.35fr) 1fr;
+  gap: 8px;
+  align-items: stretch;
+}
+
+.gomoku-side-card {
+  display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 2px;
-  padding: 0 8px;
+  min-height: 58px;
+  padding: 8px 6px;
+  border-radius: 10px;
+  border: 2px solid transparent;
+  background: rgba(255, 255, 255, 0.45);
+  opacity: 0.72;
+  transition: opacity 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+.gomoku-side-card-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.gomoku-side-card-name {
+  font-size: 0.86rem;
+  font-weight: 800;
+  line-height: 1.2;
+  text-align: center;
+  word-break: break-word;
+}
+
+.gomoku-side-black .gomoku-side-card-label,
+.gomoku-side-black .gomoku-side-card-name {
+  color: #1f2937;
+}
+
+.gomoku-side-white .gomoku-side-card-label,
+.gomoku-side-white .gomoku-side-card-name {
+  color: #4b5563;
+}
+
+.gomoku-side-black.is-active-turn {
+  opacity: 1;
+  border-color: #374151;
+  background: linear-gradient(180deg, #f3f4f6 0%, #d1d5db 100%);
+  box-shadow: 0 0 0 2px rgba(55, 65, 81, 0.16);
+}
+
+.gomoku-side-white.is-active-turn {
+  opacity: 1;
+  border-color: #9ca3af;
+  background: linear-gradient(180deg, #ffffff 0%, #f3f4f6 100%);
+  box-shadow: 0 0 0 2px rgba(156, 163, 175, 0.28);
+}
+
+.gomoku-turn-banner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-height: 58px;
+  padding: 8px 10px;
+  border-radius: 12px;
+  border: 2px solid transparent;
+  text-align: center;
+  animation: xiangqi-turn-pulse 1.4s ease-in-out infinite;
+}
+
+.gomoku-turn-banner-kicker {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  opacity: 0.9;
+}
+
+.gomoku-turn-banner-main {
+  font-size: clamp(1rem, 4.2vw, 1.2rem);
+  font-weight: 900;
+  line-height: 1.15;
+}
+
+.gomoku-turn-banner-sub {
+  font-size: 0.82rem;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.gomoku-turn-banner-black {
+  color: #fff;
+  background: linear-gradient(145deg, #4b5563 0%, #111827 100%);
+  border-color: #1f2937;
+  box-shadow: 0 4px 14px rgba(17, 24, 39, 0.28);
+}
+
+.gomoku-turn-banner-white {
+  color: #1f2937;
+  background: linear-gradient(145deg, #ffffff 0%, #e5e7eb 100%);
+  border-color: #9ca3af;
+  box-shadow: 0 4px 14px rgba(107, 114, 128, 0.22);
+}
+
+.gomoku-turn-banner.is-waiting-ai {
+  animation: xiangqi-turn-pulse 0.9s ease-in-out infinite;
+}
+
+.gomoku-turn-banner.is-over {
+  animation: none;
+  color: #fff;
+  background: linear-gradient(145deg, #6366f1 0%, #4338ca 100%);
+  border-color: #3730a3;
+  box-shadow: 0 4px 14px rgba(67, 56, 202, 0.28);
+}
+
+.gomoku-turn-banner.is-replay {
+  animation: none;
+  color: #fff;
+  background: linear-gradient(145deg, #6366f1 0%, #4338ca 100%);
+  border-color: #3730a3;
+  box-shadow: 0 4px 14px rgba(67, 56, 202, 0.28);
 }
 
 .gomoku-meta,
@@ -4285,23 +4419,218 @@ body {
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  padding: 8px 10px;
+  gap: 8px;
+  padding: 10px 12px;
   background: #faf3e8;
-  border-radius: 10px;
+  border-radius: 12px;
   border: 1px solid #d4b896;
 }
 
-.xiangqi-meta,
-.xiangqi-turn-label {
+.xiangqi-room-tag {
   margin: 0;
-  font-size: 0.88rem;
+  text-align: center;
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+.xiangqi-turn-board {
+  display: grid;
+  grid-template-columns: 1fr minmax(0, 1.35fr) 1fr;
+  gap: 8px;
+  align-items: stretch;
+}
+
+.xiangqi-side-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-height: 58px;
+  padding: 8px 6px;
+  border-radius: 10px;
+  border: 2px solid transparent;
+  background: rgba(255, 255, 255, 0.45);
+  opacity: 0.72;
+  transition: opacity 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+.xiangqi-side-card-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.xiangqi-side-card-name {
+  font-size: 0.86rem;
+  font-weight: 800;
+  line-height: 1.2;
+  text-align: center;
+  word-break: break-word;
+}
+
+.xiangqi-side-red .xiangqi-side-card-label,
+.xiangqi-side-red .xiangqi-side-card-name {
+  color: #b91c1c;
+}
+
+.xiangqi-side-black .xiangqi-side-card-label,
+.xiangqi-side-black .xiangqi-side-card-name {
+  color: #1f2937;
+}
+
+.xiangqi-side-red.is-active-turn {
+  opacity: 1;
+  border-color: #dc2626;
+  background: linear-gradient(180deg, #fff5f5 0%, #fecaca 100%);
+  box-shadow: 0 0 0 2px rgba(220, 38, 38, 0.18);
+}
+
+.xiangqi-side-black.is-active-turn {
+  opacity: 1;
+  border-color: #374151;
+  background: linear-gradient(180deg, #f9fafb 0%, #d1d5db 100%);
+  box-shadow: 0 0 0 2px rgba(55, 65, 81, 0.16);
+}
+
+.xiangqi-turn-banner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-height: 58px;
+  padding: 8px 10px;
+  border-radius: 12px;
+  border: 2px solid transparent;
+  text-align: center;
+  animation: xiangqi-turn-pulse 1.4s ease-in-out infinite;
+}
+
+.xiangqi-turn-banner-kicker {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  opacity: 0.9;
+}
+
+.xiangqi-turn-banner-main {
+  font-size: clamp(1rem, 4.2vw, 1.2rem);
+  font-weight: 900;
+  line-height: 1.15;
+}
+
+.xiangqi-turn-banner-sub {
+  font-size: 0.82rem;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.xiangqi-turn-banner-red {
+  color: #fff;
+  background: linear-gradient(145deg, #ef4444 0%, #b91c1c 100%);
+  border-color: #991b1b;
+  box-shadow: 0 4px 14px rgba(185, 28, 28, 0.35);
+}
+
+.xiangqi-turn-banner-black {
+  color: #fff;
+  background: linear-gradient(145deg, #4b5563 0%, #111827 100%);
+  border-color: #1f2937;
+  box-shadow: 0 4px 14px rgba(17, 24, 39, 0.28);
+}
+
+.xiangqi-turn-banner.is-waiting-ai {
+  animation: xiangqi-turn-pulse 0.9s ease-in-out infinite;
+}
+
+.xiangqi-turn-banner.is-over {
+  animation: none;
+  color: var(--xiangqi-dark);
+  background: #efe4d2;
+  border-color: #c9a66b;
+  box-shadow: none;
+}
+
+.xiangqi-turn-banner.is-replay {
+  animation: none;
+  color: #fff;
+  background: linear-gradient(145deg, #6366f1 0%, #4338ca 100%);
+  border-color: #3730a3;
+  box-shadow: 0 4px 14px rgba(67, 56, 202, 0.28);
+}
+
+@keyframes xiangqi-turn-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.03);
+  }
+}
+
+.xiangqi-check-alert {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 4px 0 0;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 2px solid #dc2626;
+  background: linear-gradient(180deg, #fff1f2 0%, #fecaca 100%);
+  box-shadow: 0 4px 16px rgba(220, 38, 38, 0.22);
+  animation: xiangqi-check-shake 0.55s ease-in-out infinite alternate;
+}
+
+.xiangqi-check-alert[hidden] {
+  display: none !important;
+}
+
+.xiangqi-check-alert-x {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  background: #dc2626;
+  color: #fff;
+  font-size: 1.15rem;
+  font-weight: 900;
+  line-height: 1;
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.2);
+}
+
+.xiangqi-check-alert-copy {
+  min-width: 0;
+  text-align: left;
+}
+
+.xiangqi-check-alert-title {
+  display: block;
+  font-size: 0.95rem;
+  font-weight: 900;
+  color: #991b1b;
+  line-height: 1.25;
+}
+
+.xiangqi-check-alert-detail {
+  margin: 2px 0 0;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #b91c1c;
   line-height: 1.35;
 }
 
-.xiangqi-turn-label {
-  font-weight: 700;
-  color: var(--xiangqi-dark);
+@keyframes xiangqi-check-shake {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(2px);
+  }
 }
 
 .xiangqi-check-hint {
@@ -4313,6 +4642,35 @@ body {
 
 .xiangqi-check-hint[hidden] {
   display: none;
+}
+
+.xiangqi-danger-ring {
+  stroke: #ef4444;
+  stroke-width: 0.1;
+  animation: xiangqi-danger-pulse 0.75s ease-in-out infinite alternate;
+}
+
+.xiangqi-danger-x {
+  stroke: #dc2626;
+  stroke-width: 0.11;
+  stroke-linecap: round;
+}
+
+.xiangqi-point.is-king-in-check .xiangqi-disc {
+  fill: #fecaca;
+  stroke: #dc2626;
+  stroke-width: 0.1;
+}
+
+@keyframes xiangqi-danger-pulse {
+  from {
+    stroke-opacity: 0.55;
+    stroke-width: 0.08;
+  }
+  to {
+    stroke-opacity: 1;
+    stroke-width: 0.14;
+  }
 }
 
 .xiangqi-board-wrap {
@@ -4330,6 +4688,33 @@ body {
   padding: 10px;
 }
 
+.xiangqi-replay-dock {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 10px;
+  z-index: 4;
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  padding: 0 12px;
+  pointer-events: none;
+}
+
+.xiangqi-replay-dock[hidden] {
+  display: none !important;
+}
+
+.xiangqi-replay-dock .btn-sm {
+  pointer-events: auto;
+  min-width: 7.5rem;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.22);
+}
+
+.xiangqi-replay-dock-primary {
+  font-weight: 800;
+}
+
 .xiangqi-svg {
   display: block;
   width: 100%;
@@ -4339,6 +4724,7 @@ body {
   user-select: none;
   -webkit-user-select: none;
   touch-action: manipulation;
+  pointer-events: auto;
 }
 
 .xiangqi-river-label {
@@ -4349,13 +4735,23 @@ body {
   pointer-events: none;
 }
 
+.xiangqi-lines-wrap,
+.xiangqi-lines,
+.xiangqi-river-label {
+  pointer-events: none;
+}
+
+.xiangqi-points {
+  pointer-events: all;
+}
+
 .xiangqi-point {
   cursor: pointer;
   pointer-events: all;
 }
 
 .xiangqi-hit {
-  fill: rgba(0, 0, 0, 0.01);
+  fill: rgba(0, 0, 0, 0.02);
   stroke: none;
   cursor: pointer;
   pointer-events: all;
@@ -4398,9 +4794,15 @@ body {
 }
 
 .xiangqi-point.is-target .xiangqi-hit {
-  fill: rgba(34, 197, 94, 0.55);
+  fill: rgba(34, 197, 94, 0.45);
   stroke: rgba(255, 255, 255, 0.9);
-  stroke-width: 0.04;
+  stroke-width: 0.05;
+}
+
+.xiangqi-point.is-resolve-check .xiangqi-disc {
+  stroke: #f59e0b;
+  stroke-width: 0.12;
+  filter: drop-shadow(0 0 0.08px rgba(245, 158, 11, 0.85));
 }
 
 .xiangqi-point.is-last .xiangqi-disc {
