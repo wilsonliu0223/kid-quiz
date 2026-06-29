@@ -140,6 +140,7 @@ function stopRoomListener() {
 const GAME_TITLES = {
   gomoku: "五子棋",
   xiangqi: "象棋",
+  anqi: "暗棋",
   "flip-zh": "國語翻字",
   "math-open": "數學攤牌",
   "math-flip": "數學翻牌",

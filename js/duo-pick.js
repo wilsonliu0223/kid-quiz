@@ -3,7 +3,22 @@ import {
   getChildren,
   getDuoOpponentCandidates,
 } from "./children.js";
-import { getDuoOpponent, getSelectedChild, setDuoOpponent } from "./store.js";
+import { getDuoOpponent, getSelectedChild, setDuoOpponent, setSelectedChild } from "./store.js";
+
+/**
+ * 確保「誰在練習」對應到現有使用者（家長區新增後若未回首頁會修正）
+ * @returns {string|null}
+ */
+export function normalizeSelectedChild() {
+  const children = getChildren();
+  if (!children.length) return null;
+  let selected = getSelectedChild();
+  if (!children.some((c) => c.id === selected)) {
+    selected = children[0].id;
+    setSelectedChild(selected);
+  }
+  return selected;
+}
 
 /**
  * @param {string} activeChildId
@@ -19,6 +34,7 @@ export function resolveDuoOpponent(activeChildId) {
 
 /** @returns {string[]} */
 export function getActiveDuoPlayerIds() {
+  normalizeSelectedChild();
   const active = getSelectedChild();
   const opponent = resolveDuoOpponent(active);
   if (!opponent) return [];
@@ -110,8 +126,22 @@ export function renderDuoPickButtons(container, opts) {
   return true;
 }
 
+/** @returns {string|null} 無法開局時的說明；可開局則 null */
+export function getDuoBattleBlockReason() {
+  normalizeSelectedChild();
+  const children = getChildren();
+  if (children.length < 2) {
+    return "至少需要兩位玩家（長按首頁標題 → 家長區 → 新增使用者）";
+  }
+  const ids = getActiveDuoPlayerIds();
+  if (ids.length < 2) {
+    return "請在首頁選「誰在練習」，並在上方挑選對戰對象";
+  }
+  return null;
+}
+
 export function canStartDuoBattle() {
-  return getChildren().length >= 2 && getActiveDuoPlayerIds().length === 2;
+  return getDuoBattleBlockReason() === null;
 }
 
 function updateDuoMatchupLabels() {
@@ -121,6 +151,7 @@ function updateDuoMatchupLabels() {
     ["#flip-duo-matchup-a", "#flip-duo-matchup-b"],
     ["#gomoku-duo-matchup-a", "#gomoku-duo-matchup-b"],
     ["#xiangqi-duo-matchup-a", "#xiangqi-duo-matchup-b"],
+    ["#anqi-duo-matchup-a", "#anqi-duo-matchup-b"],
     ["#flip-player-a-name", "#flip-player-b-name"],
     ["#mul-flip-player-a-name", "#mul-flip-player-b-name"],
   ];
@@ -134,8 +165,9 @@ function updateDuoMatchupLabels() {
 
 /** 依首頁「誰在練習」更新對戰名稱與對手選單 */
 export function refreshDuoBattleUI() {
+  normalizeSelectedChild();
   const activeName = getChildName(getSelectedChild());
-  for (const id of ["math-duo-active-name", "flip-duo-active-name", "gomoku-duo-active-name", "xiangqi-duo-active-name"]) {
+  for (const id of ["math-duo-active-name", "flip-duo-active-name", "gomoku-duo-active-name", "xiangqi-duo-active-name", "anqi-duo-active-name"]) {
     const el = document.getElementById(id);
     if (el) el.textContent = activeName;
   }
@@ -146,6 +178,7 @@ export function refreshDuoBattleUI() {
     "#flip-duo-opponent-chips",
     "#gomoku-duo-opponent-chips",
     "#xiangqi-duo-opponent-chips",
+    "#anqi-duo-opponent-chips",
   ]) {
     if (document.querySelector(sel)) {
       renderDuoOpponentPicker(sel, { onChange });

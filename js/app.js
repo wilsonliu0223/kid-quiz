@@ -72,13 +72,15 @@ import {
   renderMathHomePlayers,
 } from "./flip-math-deck30.js";
 import { initGomoku, renderGomokuHomePlayers } from "./gomoku.js?v=gomoku-v21";
-import { initXiangqi, renderXiangqiHomePlayers } from "./xiangqi.js?v=xiangqi-v7";
+import { initXiangqi, renderXiangqiHomePlayers } from "./xiangqi.js?v=xiangqi-v11";
+import { initAnqi, onAnqiFirstShown, renderAnqiHomePlayers } from "./anqi.js?v=anqi-v9";
 import { initOnlineDuo } from "./online-duo.js";
 import { initSkyOnline, openSkyDuoMenu } from "./sky-online.js?v=sky-duo-v43";
 import "./flip-zh-online.js";
 import "./flip-math-online.js";
 import "./gomoku-online.js?v=gomoku-v21";
-import "./xiangqi-online.js?v=xiangqi-v7";
+import "./xiangqi-online.js?v=xiangqi-v11";
+import "./anqi-online.js?v=anqi-v9";
 import {
   initRaceDuo,
   openZhRaceDuoMode,
@@ -192,6 +194,10 @@ const views = {
   xiangqiFirst: $("#view-xiangqi-first"),
   xiangqiPlay: $("#view-xiangqi-play"),
   xiangqiOnlinePlay: $("#view-xiangqi-online-play"),
+  xiangqiVariant: $("#view-xiangqi-variant"),
+  anqiFirst: $("#view-anqi-first"),
+  anqiPlay: $("#view-anqi-play"),
+  anqiOnlinePlay: $("#view-anqi-online-play"),
   skyDuoMenu: $("#view-sky-duo-menu"),
   skyOnlinePlay: $("#view-sky-online-play"),
   skyOnlineResult: $("#view-sky-online-result"),
@@ -216,6 +222,9 @@ function showView(name) {
   if (name === "quizZh") {
     requestAnimationFrame(() => handwriting?.resize());
   }
+  if (name === "anqiFirst") {
+    onAnqiFirstShown();
+  }
   if (name === "home") {
     renderHomeScoreHistory();
     renderResumeBanner();
@@ -223,6 +232,7 @@ function showView(name) {
     renderMathHomePlayers();
     renderGomokuHomePlayers();
     renderXiangqiHomePlayers();
+    renderAnqiHomePlayers();
   }
   if (name === "setupZh") {
     renderFlipHomePlayers();
@@ -2174,6 +2184,10 @@ async function init() {
     getChildNames,
   });
   initXiangqi({
+    showView,
+    getChildNames,
+  });
+  initAnqi({
     showView,
     getChildNames,
   });

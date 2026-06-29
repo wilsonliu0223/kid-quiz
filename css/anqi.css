@@ -1,0 +1,305 @@
+/* 暗棋 4×8 直向（8 行 × 4 列） */
+#view-anqi-play.view-active,
+#view-anqi-online-play.view-active {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  height: 100%;
+  max-height: 100dvh;
+  overscroll-behavior: none;
+}
+
+.anqi-play-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0 0.5rem 0.75rem;
+  flex: 1;
+  min-height: 0;
+  max-width: 420px;
+  margin: 0 auto;
+  width: 100%;
+  overflow: hidden;
+}
+
+.anqi-play-hint {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--muted);
+  text-align: center;
+  flex-shrink: 0;
+  line-height: 1.35;
+  min-height: 2.2rem;
+}
+
+.anqi-action-toast-slot {
+  flex-shrink: 0;
+  min-height: 2.1rem;
+  display: flex;
+  align-items: center;
+}
+
+.anqi-action-toast {
+  margin: 0;
+  width: 100%;
+  padding: 0.35rem 0.65rem;
+  font-size: 0.88rem;
+  font-weight: 600;
+  text-align: center;
+  color: #5c3d1e;
+  background: rgba(255, 243, 205, 0.95);
+  border: 1px solid rgba(255, 152, 0, 0.45);
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(101, 67, 33, 0.12);
+}
+
+.anqi-action-toast:empty {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.anqi-board-wrap.is-presenting {
+  pointer-events: none;
+}
+
+.anqi-board-wrap.is-presenting .anqi-hit {
+  cursor: default;
+}
+
+.anqi-board-wrap {
+  position: relative;
+  flex: 0 1 auto;
+  width: 100%;
+  min-height: 0;
+  max-height: calc(100dvh - 13.5rem);
+  margin: 0 auto;
+  aspect-ratio: 1 / 2;
+  background: linear-gradient(145deg, #e8c896 0%, #d4a96a 100%);
+  border-radius: 12px;
+  padding: 10px;
+  box-shadow: inset 0 0 0 2px rgba(101, 67, 33, 0.35);
+}
+
+#view-anqi-play .xiangqi-status-bar,
+#view-anqi-online-play .xiangqi-status-bar {
+  flex-shrink: 0;
+  min-height: 5.5rem;
+}
+
+.anqi-svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+
+.anqi-svg-flipped {
+  transform: rotate(180deg);
+}
+
+.anqi-svg-flipped .anqi-label {
+  transform: rotate(180deg);
+}
+
+.anqi-cell {
+  cursor: pointer;
+}
+
+.anqi-cell-bg {
+  fill: rgba(255, 248, 230, 0.45);
+  stroke: rgba(101, 67, 33, 0.35);
+  stroke-width: 0.04;
+}
+
+.anqi-piece-back {
+  fill: #6b4423;
+  stroke: #4a2f18;
+  stroke-width: 0.05;
+  pointer-events: none;
+  opacity: 0;
+}
+
+.anqi-disc {
+  fill: #f5e6c8;
+  stroke: #5c3d1e;
+  stroke-width: 0.05;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.anqi-label {
+  font-family: "Noto Serif TC", "Source Han Serif TC", serif;
+  font-size: 0.52px;
+  font-weight: 700;
+  pointer-events: none;
+  user-select: none;
+}
+
+.anqi-hit {
+  fill: rgba(255, 255, 255, 0.001);
+  cursor: pointer;
+}
+
+.anqi-cell.is-hidden .anqi-piece-back {
+  opacity: 1;
+}
+
+.anqi-cell.is-hidden .anqi-disc,
+.anqi-cell.is-hidden .anqi-label {
+  opacity: 0;
+}
+
+.anqi-cell:not(.is-hidden):not(.is-empty) .anqi-disc {
+  opacity: 1;
+}
+
+.anqi-cell.is-red:not(.is-hidden) .anqi-disc {
+  fill: #ffe8e0;
+  stroke: #b33;
+}
+
+.anqi-cell.is-red:not(.is-hidden) .anqi-label {
+  fill: #a20f0f;
+}
+
+.anqi-cell.is-black:not(.is-hidden) .anqi-disc {
+  fill: #e8edf5;
+  stroke: #333;
+}
+
+.anqi-cell.is-black:not(.is-hidden) .anqi-label {
+  fill: #1a1a1a;
+}
+
+.anqi-cell.is-selected .anqi-disc {
+  stroke: #1a73e8;
+  stroke-width: 0.09;
+}
+
+.anqi-cell.is-target .anqi-cell-bg {
+  fill: rgba(76, 175, 80, 0.4);
+}
+
+.anqi-cell.is-cannon-screen .anqi-disc,
+.anqi-cell.is-cannon-screen .anqi-piece-back {
+  stroke: #7b1fa2;
+  stroke-width: 0.1;
+}
+
+.anqi-cell.is-cannon-screen.is-hidden .anqi-piece-back {
+  fill: #8d5524;
+}
+
+.anqi-cell.is-target-jump .anqi-cell-bg {
+  fill: rgba(255, 152, 0, 0.38);
+  stroke: rgba(230, 81, 0, 0.75);
+  stroke-width: 0.07;
+}
+
+.anqi-cell.is-target-jump.is-target-capture .anqi-cell-bg {
+  fill: rgba(244, 67, 54, 0.42);
+  animation: anqi-capture-flash 0.7s ease-in-out infinite alternate;
+}
+
+.anqi-cell.is-target-capture:not(.is-target-jump) .anqi-cell-bg {
+  fill: rgba(76, 175, 80, 0.48);
+  stroke: rgba(46, 125, 50, 0.65);
+  stroke-width: 0.06;
+}
+
+.anqi-cell.is-flip-target .anqi-piece-back {
+  stroke: #1a73e8;
+  stroke-width: 0.08;
+}
+
+.anqi-cell.is-last-from .anqi-disc,
+.anqi-cell.is-last-to .anqi-disc {
+  stroke: #ff9800;
+  stroke-width: 0.08;
+}
+
+.anqi-cell.is-pres-from.is-hidden .anqi-piece-back {
+  stroke: #1a73e8;
+  stroke-width: 0.1;
+  animation: anqi-pres-pulse 0.85s ease-in-out infinite;
+}
+
+.anqi-cell.is-pres-from .anqi-disc {
+  stroke: #1a73e8;
+  stroke-width: 0.1;
+  animation: anqi-pres-pulse 0.85s ease-in-out infinite;
+}
+
+.anqi-cell.is-pres-to:not(.is-pres-capture) .anqi-cell-bg {
+  fill: rgba(26, 115, 232, 0.28);
+  animation: anqi-pres-pulse 0.85s ease-in-out infinite;
+}
+
+.anqi-cell.is-pres-capture .anqi-cell-bg {
+  fill: rgba(229, 57, 53, 0.42);
+  animation: anqi-capture-flash 0.55s ease-in-out infinite alternate;
+}
+
+.anqi-cell.is-pres-capture .anqi-disc {
+  stroke: #c62828;
+  stroke-width: 0.1;
+}
+
+.anqi-fly-layer {
+  pointer-events: none;
+}
+
+.anqi-fly-piece .anqi-disc {
+  opacity: 1;
+  stroke: #1a73e8;
+  stroke-width: 0.09;
+  filter: drop-shadow(0 0 0.12px rgba(0, 0, 0, 0.35));
+}
+
+.anqi-fly-piece.is-red .anqi-disc {
+  fill: #ffe8e0;
+  stroke: #b33;
+}
+
+.anqi-fly-piece.is-black .anqi-disc {
+  fill: #e8edf5;
+  stroke: #333;
+}
+
+.anqi-fly-piece.is-red .anqi-label {
+  fill: #a20f0f;
+}
+
+.anqi-fly-piece.is-black .anqi-label {
+  fill: #1a1a1a;
+}
+
+@keyframes anqi-pres-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.72;
+  }
+}
+
+@keyframes anqi-capture-flash {
+  from {
+    fill: rgba(229, 57, 53, 0.32);
+  }
+  to {
+    fill: rgba(229, 57, 53, 0.55);
+  }
+}
+
+.anqi-cell:active .anqi-cell-bg {
+  fill: rgba(26, 115, 232, 0.2);
+}
+
+.home-grid-tight {
+  display: grid;
+  gap: 0.75rem;
+}

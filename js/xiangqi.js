@@ -1,5 +1,5 @@
+import { beginAnqiFromHome } from "./anqi.js?v=anqi-v9";
 import { openDuoModePicker } from "./online-duo.js";
-import { AI_PLAYER_ID, GRANDMASTER_LEVEL, NIRVANA_LEVEL, requestXiangqiAiMove, terminateXiangqiAiWorker, pikafishLoadState } from "./xiangqi-ai.js";
 import {
   ensureXiangqiBoardSvg,
   renderXiangqiBoardSvg,
@@ -28,6 +28,7 @@ import {
   refreshDuoBattleUI,
   renderDuoPickButtons,
 } from "./duo-pick.js";
+import { AI_PLAYER_ID, GRANDMASTER_LEVEL, NIRVANA_LEVEL, requestXiangqiAiMove, terminateXiangqiAiWorker, pikafishLoadState } from "./xiangqi-ai.js";
 
 /** @typedef {"local"|"ai"} SetupMode */
 
@@ -210,9 +211,7 @@ function resolveViewFlipped(opts) {
     return shouldFlipBoardForSide(humanSide);
   }
   if (opts.mode === "local") {
-    const active = getSelectedChild();
-    if (active === opts.blackPlayerId) return true;
-    if (active === opts.redPlayerId) return false;
+    return false;
   }
   return false;
 }
@@ -554,17 +553,24 @@ async function runAiMove(token) {
 }
 
 export function beginXiangqiFromHome() {
+  deps?.showView("xiangqiVariant");
+}
+
+export function beginXiangqiFromHomeAfterVariant() {
   openDuoModePicker({
     game: "xiangqi",
-    title: "象棋",
-    backView: "home",
+    title: "象棋 · 明棋",
+    backView: "xiangqiVariant",
     localStart: beginXiangqiLocal,
     aiStart: beginXiangqiAi,
   });
 }
 
 export function beginXiangqiLocal() {
-  if (!canStartDuoBattle()) return;
+  if (!canStartDuoBattle()) {
+    alert("請在首頁選「誰在練習」，並在對戰設定中挑選對戰對象（至少需要兩位）");
+    return;
+  }
   setFirstScreenMode("local");
   renderLocalPick();
   deps?.showView("xiangqiFirst");
@@ -588,9 +594,20 @@ function bindXiangqiEvents() {
     e.preventDefault();
     beginXiangqiFromHome();
   });
+  $("#btn-xiangqi-variant-ming")?.addEventListener("click", (e) => {
+    e.preventDefault();
+    beginXiangqiFromHomeAfterVariant();
+  });
+  $("#btn-xiangqi-variant-anqi")?.addEventListener("click", (e) => {
+    e.preventDefault();
+    beginAnqiFromHome();
+  });
+  $("#btn-xiangqi-variant-back")?.addEventListener("click", () => {
+    deps?.showView("home");
+  });
   $("#btn-xiangqi-first-back")?.addEventListener("click", () => {
     if (setupMode === "ai") deps?.showView("duoMode");
-    else deps?.showView("home");
+    else deps?.showView("xiangqiVariant");
   });
   $("#btn-xiangqi-play-back")?.addEventListener("click", () => {
     if (confirm("離開棋局？目前進度不會儲存。")) {

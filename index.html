@@ -16,7 +16,8 @@
       })();
     </script>
     <link rel="manifest" href="manifest.json" />
-    <link rel="stylesheet" href="css/app.css?v=app-v37.9" />
+    <link rel="stylesheet" href="css/app.css?v=app-v39.2" />
+    <link rel="stylesheet" href="css/anqi.css?v=anqi-v9" />
     <script type="importmap">
       {
         "imports": {
@@ -44,7 +45,7 @@
         <header class="app-header">
           <div class="app-title-row">
             <h1 class="app-title" id="home-title">家裡練習</h1>
-            <span class="app-version" id="app-version" aria-label="版本">v37.9</span>
+            <span class="app-version" id="app-version" aria-label="版本">v39.2</span>
           </div>
           <p class="app-subtitle">長按標題可新增／管理使用者</p>
         </header>
@@ -125,7 +126,7 @@
             <button type="button" class="card card-xiangqi card-xiangqi-home" id="btn-start-xiangqi">
               <span class="card-xiangqi-head">
                 <span class="card-title">象棋</span>
-                <span class="card-xiangqi-note">9×10 · 紅先 · 台灣象棋規則 · 繁體棋子</span>
+                <span class="card-xiangqi-note">明棋 9×10 · 暗棋 4×8 · 台灣規則</span>
               </span>
             </button>
             <button type="button" class="card card-sky-shooter" id="btn-start-sky-shooter">
@@ -906,6 +907,28 @@
         </footer>
       </section>
 
+      <!-- 象棋：明棋／暗棋 -->
+      <section id="view-xiangqi-variant" class="view view-hidden" aria-label="象棋模式">
+        <header class="quiz-header quiz-header-xiangqi">
+          <button type="button" class="btn-text" id="btn-xiangqi-variant-back">← 返回</button>
+          <span class="quiz-subject">象棋</span>
+        </header>
+        <div class="flip-first-body">
+          <h2 class="flip-first-title">選擇玩法</h2>
+          <p class="flip-first-meta">明棋為傳統象棋；暗棋為 4×8 翻棋（台灣規則）</p>
+          <div class="home-grid home-grid-tight">
+            <button type="button" class="card card-xiangqi-home" id="btn-xiangqi-variant-ming">
+              <span class="card-title">明棋（象棋）</span>
+              <span class="card-xiangqi-note">9×10 · 紅先 · 將軍將死</span>
+            </button>
+            <button type="button" class="card card-xiangqi-home" id="btn-xiangqi-variant-anqi">
+              <span class="card-title">暗棋</span>
+              <span class="card-xiangqi-note">4×8 · 翻棋定色 · 吃完對方棋子</span>
+            </button>
+          </div>
+        </div>
+      </section>
+
       <!-- 象棋：誰執紅 -->
       <section id="view-xiangqi-first" class="view view-hidden" aria-label="象棋誰執紅">
         <header class="quiz-header quiz-header-xiangqi">
@@ -1044,6 +1067,134 @@
                   <button type="button" class="btn btn-secondary btn-block" id="btn-xiangqi-online-win-dismiss">繼續觀察棋局</button>
                   <button type="button" class="btn btn-secondary btn-block" id="btn-xiangqi-online-win-rematch">再來一局</button>
                   <button type="button" class="btn btn-secondary btn-block" id="btn-xiangqi-online-win-home">回首頁</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 暗棋：設定 -->
+      <section id="view-anqi-first" class="view view-hidden" aria-label="暗棋設定">
+        <header class="quiz-header quiz-header-xiangqi">
+          <button type="button" class="btn-text" id="btn-anqi-first-back">← 返回</button>
+          <span class="quiz-subject">暗棋</span>
+        </header>
+        <div class="flip-first-body">
+          <h2 class="flip-first-title" id="anqi-first-title">暗棋 · 誰先手？</h2>
+          <p class="flip-first-meta" id="anqi-first-meta">4×8 · 先手翻棋定色</p>
+          <div id="anqi-local-setup">
+            <p class="flip-first-hint">
+              誰在練習：<strong id="anqi-duo-active-name">—</strong>
+            </p>
+            <div class="home-zone">
+              <p class="home-zone-title">對戰對象</p>
+              <div class="lesson-chips" id="anqi-duo-opponent-chips"></div>
+            </div>
+            <div class="flip-players-vs" id="anqi-duo-matchup">
+              <span id="anqi-duo-matchup-a">—</span>
+              <span class="flip-vs">VS</span>
+              <span id="anqi-duo-matchup-b">—</span>
+            </div>
+            <div class="flip-pick-btns" id="anqi-pick-btns"></div>
+          </div>
+          <div id="anqi-ai-setup" class="xiangqi-ai-setup" hidden>
+            <p class="flip-first-hint">
+              練習者：<strong id="anqi-ai-active-name">—</strong>
+            </p>
+            <div class="home-zone xiangqi-ai-zone">
+              <p class="home-zone-title">電腦難度</p>
+              <div class="xiangqi-ai-difficulty-cards" id="anqi-ai-difficulty-chips"></div>
+              <p class="xiangqi-ai-start-hint">涅槃使用開源 banqi WASM（MCTS）引擎。</p>
+            </div>
+            <div class="home-zone xiangqi-ai-zone">
+              <p class="home-zone-title">先手</p>
+              <div class="xiangqi-ai-start-btns" id="anqi-ai-start-btns"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 暗棋：對局 -->
+      <section id="view-anqi-play" class="view view-hidden" aria-label="暗棋對局">
+        <header class="quiz-header quiz-header-xiangqi">
+          <button type="button" class="btn-text" id="btn-anqi-play-back">← 返回</button>
+          <span class="quiz-subject">暗棋</span>
+        </header>
+        <div class="anqi-play-body">
+          <div class="xiangqi-status-bar">
+            <div class="xiangqi-turn-board">
+              <div class="xiangqi-side-card xiangqi-side-red" id="anqi-side-red">
+                <span class="xiangqi-side-card-label">紅方</span>
+                <strong class="xiangqi-side-card-name">—</strong>
+              </div>
+              <div class="xiangqi-turn-banner xiangqi-turn-banner-red" id="anqi-turn-banner" role="status" aria-live="polite">
+                <span class="xiangqi-turn-banner-kicker">現在輪到</span>
+                <span class="xiangqi-turn-banner-main" id="anqi-turn-main">—</span>
+                <span class="xiangqi-turn-banner-sub" id="anqi-turn-sub">—</span>
+              </div>
+              <div class="xiangqi-side-card xiangqi-side-black" id="anqi-side-black">
+                <span class="xiangqi-side-card-label">黑方</span>
+                <strong class="xiangqi-side-card-name">—</strong>
+              </div>
+            </div>
+          </div>
+          <p class="anqi-play-hint" id="anqi-play-hint">點暗棋翻開 · 點己方棋子再點目標格 · 炮／包只能隔一子直線跳（炮架可明可暗）</p>
+          <div class="anqi-action-toast-slot">
+            <p class="anqi-action-toast" id="anqi-action-toast" aria-live="polite"></p>
+          </div>
+          <div class="anqi-board-wrap">
+            <svg class="anqi-svg" id="anqi-board" role="img" aria-label="暗棋棋盤"></svg>
+            <div class="xiangqi-win-overlay" id="anqi-win-overlay" hidden>
+              <div class="xiangqi-win-card">
+                <h2 class="xiangqi-win-title" id="anqi-win-title">獲勝</h2>
+                <p class="xiangqi-win-detail" id="anqi-win-detail"></p>
+                <div class="xiangqi-win-actions">
+                  <button type="button" class="btn btn-secondary btn-block" id="btn-anqi-win-dismiss">繼續觀察棋局</button>
+                  <button type="button" class="btn btn-primary btn-block" id="btn-anqi-win-replay">再玩一局</button>
+                  <button type="button" class="btn btn-secondary btn-block" id="btn-anqi-win-options">回首局選項</button>
+                  <button type="button" class="btn btn-secondary btn-block" id="btn-anqi-win-home">回首頁</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 暗棋：線上對局 -->
+      <section id="view-anqi-online-play" class="view view-hidden" aria-label="暗棋線上對局">
+        <header class="quiz-header quiz-header-xiangqi">
+          <button type="button" class="btn-text" id="btn-anqi-online-play-back">← 返回</button>
+          <span class="quiz-subject">暗棋 · 線上</span>
+        </header>
+        <div class="anqi-play-body">
+          <div class="xiangqi-status-bar">
+            <div class="xiangqi-turn-board">
+              <div class="xiangqi-side-card xiangqi-side-red" id="anqi-online-side-red">
+                <span class="xiangqi-side-card-label">紅方</span>
+                <strong class="xiangqi-side-card-name">—</strong>
+              </div>
+              <div class="xiangqi-turn-banner xiangqi-turn-banner-red" id="anqi-online-turn-banner" role="status" aria-live="polite">
+                <span class="xiangqi-turn-banner-kicker">現在輪到</span>
+                <span class="xiangqi-turn-banner-main" id="anqi-online-turn-main">—</span>
+                <span class="xiangqi-turn-banner-sub" id="anqi-online-turn-sub">—</span>
+              </div>
+              <div class="xiangqi-side-card xiangqi-side-black" id="anqi-online-side-black">
+                <span class="xiangqi-side-card-label">黑方</span>
+                <strong class="xiangqi-side-card-name">—</strong>
+              </div>
+            </div>
+          </div>
+          <p class="anqi-play-hint">點暗棋翻開 · 點己方棋子再點目標格移動或吃子</p>
+          <div class="anqi-board-wrap">
+            <svg class="anqi-svg" id="anqi-online-board" role="img" aria-label="暗棋棋盤"></svg>
+            <div class="xiangqi-win-overlay" id="anqi-online-win-overlay" hidden>
+              <div class="xiangqi-win-card">
+                <h2 class="xiangqi-win-title" id="anqi-online-win-title">獲勝</h2>
+                <div class="xiangqi-win-actions">
+                  <button type="button" class="btn btn-secondary btn-block" id="btn-anqi-online-win-dismiss">繼續觀察棋局</button>
+                  <button type="button" class="btn btn-secondary btn-block" id="btn-anqi-online-rematch">再來一局</button>
+                  <button type="button" class="btn btn-secondary btn-block" id="btn-anqi-online-home">回首頁</button>
                 </div>
               </div>
             </div>
@@ -1413,7 +1564,7 @@
         el.hidden = false;
         el.textContent = msg;
       };
-      import("./js/app.js?v=app-v37.9").catch((e) => {
+      import("./js/app.js?v=app-v39.2").catch((e) => {
         console.error(e);
         showLoadError(
           `程式載入失敗：${e.message || e}。請關閉分頁重開；若仍無效請到瀏覽器設定清除此網站快取。`,

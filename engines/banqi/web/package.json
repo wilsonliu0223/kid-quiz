@@ -1,0 +1,20 @@
+{
+  "name": "banqi",
+  "type": "module",
+  "collaborators": [
+    "JacobLinCool <jacoblincool@gmail.com>"
+  ],
+  "description": "",
+  "version": "0.1.0",
+  "license": "MIT",
+  "files": [
+    "banqi_bg.wasm",
+    "banqi.js",
+    "banqi.d.ts"
+  ],
+  "main": "banqi.js",
+  "types": "banqi.d.ts",
+  "sideEffects": [
+    "./snippets/*"
+  ]
+}
