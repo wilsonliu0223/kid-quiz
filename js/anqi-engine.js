@@ -86,7 +86,8 @@ export function cellsBetween(from, to) {
 }
 
 /**
- * 台灣暗棋：炮／包僅能隔恰好一子（炮架）直線跳吃或落空格，不可鄰格走。
+ * 台灣暗棋：炮／包遠距離吃子須隔恰好一子（炮架）直線跳吃。
+ * 鄰格移動（含走空格）與能否鄰格吃子由 WASM 階級規則決定。
  * @param {Int16Array|number[]} state
  * @param {number} from
  * @param {number} to
@@ -120,6 +121,15 @@ export function isTaiwanLegalAction(state, action) {
   if (dec.isFlip) return true;
   const code = state[dec.from];
   if (!isCannonCode(code)) return true;
+
+  const dist = cellManhattan(dec.from, dec.to);
+  if (dist === 1) return true;
+
+  if (cellsBetween(dec.from, dec.to) === null) return false;
+
+  const toCode = state[dec.to];
+  if (!toCode || toCode === HIDDEN) return false;
+
   return cannonLeapInfo(state, dec.from, dec.to).ok;
 }
 

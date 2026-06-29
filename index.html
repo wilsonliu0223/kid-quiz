@@ -16,8 +16,8 @@
       })();
     </script>
     <link rel="manifest" href="manifest.json" />
-    <link rel="stylesheet" href="css/app.css?v=app-v39.3" />
-    <link rel="stylesheet" href="css/anqi.css?v=anqi-v10" />
+    <link rel="stylesheet" href="css/app.css?v=app-v39.4" />
+    <link rel="stylesheet" href="css/anqi.css?v=anqi-v11" />
     <script type="importmap">
       {
         "imports": {
@@ -45,7 +45,7 @@
         <header class="app-header">
           <div class="app-title-row">
             <h1 class="app-title" id="home-title">家裡練習</h1>
-            <span class="app-version" id="app-version" aria-label="版本">v39.3</span>
+            <span class="app-version" id="app-version" aria-label="版本">v39.4</span>
           </div>
           <p class="app-subtitle">長按標題可新增／管理使用者</p>
         </header>
@@ -1139,7 +1139,7 @@
               </div>
             </div>
           </div>
-          <p class="anqi-play-hint" id="anqi-play-hint">點暗棋翻開 · 明子（除炮／包）每次直橫走一格 · 炮／包吃子須隔恰好一子直線跳（炮架可明可暗）</p>
+          <p class="anqi-play-hint" id="anqi-play-hint">點暗棋翻開 · 明子直橫走一格（炮／包遠距僅能隔一子跳吃）· 炮架可明可暗</p>
           <div class="anqi-action-toast-slot">
             <p class="anqi-action-toast" id="anqi-action-toast" aria-live="polite"></p>
           </div>
@@ -1185,7 +1185,7 @@
               </div>
             </div>
           </div>
-          <p class="anqi-play-hint">點暗棋翻開 · 明子（除炮／包）每次直橫走一格 · 炮／包吃子須隔恰好一子直線跳</p>
+          <p class="anqi-play-hint">點暗棋翻開 · 明子直橫走一格（炮／包遠距僅能隔一子跳吃）</p>
           <div class="anqi-board-wrap">
             <svg class="anqi-svg" id="anqi-online-board" role="img" aria-label="暗棋棋盤"></svg>
             <div class="xiangqi-win-overlay" id="anqi-online-win-overlay" hidden>
@@ -1564,7 +1564,7 @@
         el.hidden = false;
         el.textContent = msg;
       };
-      import("./js/app.js?v=app-v39.3").catch((e) => {
+      import("./js/app.js?v=app-v39.4").catch((e) => {
         console.error(e);
         showLoadError(
           `程式載入失敗：${e.message || e}。請關閉分頁重開；若仍無效請到瀏覽器設定清除此網站快取。`,

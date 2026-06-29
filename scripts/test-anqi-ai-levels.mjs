@@ -109,6 +109,13 @@ function isTaiwanLegalAction(state, action) {
   const dec = decodeAction(action);
   if (dec.isFlip) return true;
   if (!isCannonCode(state[dec.from])) return true;
+  const dist =
+    Math.abs(Math.floor(dec.from / 8) - Math.floor(dec.to / 8)) +
+    Math.abs((dec.from % 8) - (dec.to % 8));
+  if (dist === 1) return true;
+  if (cellsBetween(dec.from, dec.to) === null) return false;
+  const toCode = state[dec.to];
+  if (!toCode || toCode === 15) return false;
   return cannonLeapInfo(state, dec.from, dec.to).ok;
 }
 

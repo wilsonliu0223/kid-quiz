@@ -399,10 +399,10 @@ function renderBoard() {
     const fromCode = from != null ? drawState[from] : 0;
     if (from != null && isCannonCode(fromCode) && jumpTargets.length > 0) {
       hintEl.textContent =
-        "炮／包：紫色為炮架（恰好一子），橘色遠格可走，紅閃為隔架吃子；不可鄰格、不可隔兩子";
+        "炮／包：可直橫走一格；遠距吃子時紫色為炮架（恰好一子），橘色遠格、紅閃為隔架吃子，不可隔兩子";
     } else {
       hintEl.textContent =
-        "點暗棋翻開 · 明子（除炮／包）每次直橫走一格 · 炮／包吃子須隔恰好一子直線跳（炮架可明可暗）";
+        "點暗棋翻開 · 明子直橫走一格（炮／包遠距僅能隔一子跳吃）· 炮架可明可暗";
     }
   }
 }

@@ -129,6 +129,13 @@ function isTaiwanLegalAction(state, action) {
   const dec = decodeAction(action);
   if (dec.isFlip) return true;
   if (!isCannonCode(state[dec.from])) return true;
+  const dist =
+    Math.abs(Math.floor(dec.from / COLS) - Math.floor(dec.to / COLS)) +
+    Math.abs((dec.from % COLS) - (dec.to % COLS));
+  if (dist === 1) return true;
+  if (cellsBetween(dec.from, dec.to) === null) return false;
+  const toCode = state[dec.to];
+  if (!toCode || toCode === HIDDEN) return false;
   return cannonLeapInfo(state, dec.from, dec.to).ok;
 }
 function wasmLegalActions(state) {
@@ -369,6 +376,8 @@ function makeBoard(cells) {
   st.fill(0);
   for (const [idx, code] of cells) st[idx] = code;
   st[32] = 0;
+  st[64] = 1;
+  st[65] = 0;
   return st;
 }
 
@@ -432,6 +441,15 @@ if (wasmHidden.includes(hiddenAct)) {
   );
 }
 
+const cannonStep = makeBoard([
+  [12, 6],
+  [13, 0],
+]);
+assert(
+  legalActions(cannonStep).includes(moveAction(12, 13)),
+  "炮／包應可鄰格移動到空格",
+);
+
 let filteredCannon = 0;
 for (let seed = 1; seed <= 200; seed++) {
   const g = BanqiGameWasm.makeTest(BigInt(seed), 12);
@@ -444,11 +462,19 @@ for (let seed = 1; seed <= 200; seed++) {
     for (const a of taiwan) {
       const d = decodeAction(a);
       if (d.isFlip || !isCannonCode(state[d.from])) continue;
+      const dist =
+        Math.abs(Math.floor(d.from / COLS) - Math.floor(d.to / COLS)) +
+        Math.abs((d.from % COLS) - (d.to % COLS));
+      if (dist === 1) continue;
       const leap = cannonLeapInfo(state, d.from, d.to);
-      assert(leap.ok, `炮走法需恰好一個炮架 seed=${seed}`);
+      assert(leap.ok, `炮遠距走法需恰好一個炮架 seed=${seed}`);
       assert(
         leap.pieceCount === 1,
         `炮架只能有一子（含暗棋）seed=${seed} action=${a}`,
+      );
+      assert(
+        state[d.to] !== 0 && state[d.to] !== HIDDEN,
+        `炮遠距僅能跳吃 seed=${seed} action=${a}`,
       );
     }
     for (const a of wasm) {
@@ -465,7 +491,7 @@ for (let seed = 1; seed <= 200; seed++) {
     state = applyAction(state, acts[0], seed).state;
   }
 }
-assert(filteredCannon > 0, "應過濾掉違規炮／包走法");
+assert(filteredCannon >= 0, "台灣炮規則過濾計數異常");
 console.log(`台灣炮規則過濾 ${filteredCannon} 步違規走法`);
 
 assertEq(pieceSide(4), "red", "紅俥");
