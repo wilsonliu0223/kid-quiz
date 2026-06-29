@@ -156,19 +156,6 @@
   mix-blend-mode: soft-light;
 }
 
-.anqi-back-mark {
-  font-family: "KaiTi", "STKaiti", "PingFang TC", "Heiti TC", "Microsoft JhengHei", serif;
-  font-size: 0.34px;
-  font-weight: 800;
-  fill: rgba(255, 236, 190, 0.88);
-  stroke: rgba(62, 39, 20, 0.35);
-  stroke-width: 0.012;
-  paint-order: stroke fill;
-  pointer-events: none;
-  user-select: none;
-  text-anchor: middle;
-}
-
 .anqi-disc {
   fill: #f5e6c8;
   stroke: #5c3d1e;

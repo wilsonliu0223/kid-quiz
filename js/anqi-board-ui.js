@@ -139,12 +139,6 @@ export function ensureAnqiBoardSvg(svg, onCellClick) {
       backShine.setAttribute("fill", "url(#anqi-shine)");
       backLayer.appendChild(backShine);
 
-      const backMark = document.createElementNS(SVG_NS, "text");
-      backMark.classList.add("anqi-back-mark");
-      centerPieceText(backMark);
-      backMark.textContent = "棋";
-      backLayer.appendChild(backMark);
-
       g.appendChild(backLayer);
 
       const disc = document.createElementNS(SVG_NS, "circle");
