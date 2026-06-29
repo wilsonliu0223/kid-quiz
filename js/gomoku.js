@@ -9,9 +9,12 @@ import {
 import {
   celebrateGomokuWin,
   clearGomokuWinCelebration,
+  dismissGomokuWinOverlay,
+  isGomokuWinCelebrationPending,
   renderGomokuWinLine,
+  showGomokuWinOverlayImmediate,
 } from "./gomoku-win-ui.js";
-import { startGomokuReplay, stopGomokuReplay, isGomokuReplayRunning } from "./gomoku-replay.js?v=gomoku-v12";
+import { startGomokuReplay, stopGomokuReplay, isGomokuReplayRunning } from "./gomoku-replay.js?v=gomoku-v13";
 import { getChildName, otherDuoPlayer } from "./children.js";
 import { getSelectedChild } from "./store.js";
 import {
@@ -34,6 +37,7 @@ let aiMoveToken = 0;
 let deps = null;
 /** @type {GomokuState | null} */
 let game = null;
+let localWinUiDismissed = false;
 
 /**
  * @typedef {object} GomokuDeps
@@ -556,14 +560,60 @@ async function runAiMove() {
   }
 }
 
-function showWinOnBoard() {
-  if (!game) return;
-  const title = game.winner
-    ? `${playerName(game.winner)} 連五獲勝！`
-    : "和棋！";
+function getLocalWinTexts() {
+  if (!game) return { title: "", detail: "" };
+  const title = game.winner ? `${playerName(game.winner)} 連五獲勝！` : "和棋！";
   const detail = game.winner
     ? `${playerName(game.winner)} 的${stoneLabel(game.winner)}連成五子`
     : "棋盤已滿，沒有連五";
+  return { title, detail };
+}
+
+function syncLocalReplayDock() {
+  const dock = $("#gomoku-replay-dock");
+  if (!dock) return;
+  const overlay = $("#gomoku-win-overlay");
+  const show =
+    !!game?.over &&
+    (game.moveHistory?.length || 0) > 0 &&
+    !!overlay?.hidden &&
+    !isGomokuWinCelebrationPending() &&
+    (localWinUiDismissed || isGomokuReplayRunning());
+  dock.hidden = !show;
+}
+
+function dismissLocalWinOverlay() {
+  if (!game) return;
+  localWinUiDismissed = true;
+  dismissGomokuWinOverlay(
+    $("#gomoku-win-overlay"),
+    $("#gomoku-board-stage"),
+    game.winLine,
+    game.lastMove,
+  );
+  syncLocalReplayDock();
+}
+
+function showLocalWinOptions() {
+  if (!game) return;
+  const { title, detail } = getLocalWinTexts();
+  localWinUiDismissed = false;
+  showGomokuWinOverlayImmediate({
+    overlayEl: $("#gomoku-win-overlay"),
+    titleEl: $("#gomoku-win-title"),
+    detailEl: $("#gomoku-win-detail"),
+    title,
+    detail,
+  });
+  const reviewBtn = $("#btn-gomoku-win-moves");
+  if (reviewBtn) reviewBtn.hidden = !(game.moveHistory?.length > 0);
+  syncLocalReplayDock();
+}
+
+function showWinOnBoard() {
+  if (!game) return;
+  localWinUiDismissed = false;
+  const { title, detail } = getLocalWinTexts();
   celebrateGomokuWin({
     stageEl: $("#gomoku-board-stage"),
     overlayEl: $("#gomoku-win-overlay"),
@@ -576,12 +626,15 @@ function showWinOnBoard() {
   });
   const reviewBtn = $("#btn-gomoku-win-moves");
   if (reviewBtn) reviewBtn.hidden = !(game.moveHistory?.length > 0);
+  syncLocalReplayDock();
 }
 
 function startLocalReplay() {
   if (!game?.moveHistory?.length) return;
   stopGomokuReplay();
+  localWinUiDismissed = true;
   clearGomokuWinCelebration($("#gomoku-board-stage"), $("#gomoku-win-overlay"));
+  syncLocalReplayDock();
   const moves = game.moveHistory.map((m) => ({ ...m }));
   const winLine = game.winLine;
   const lastMove = game.lastMove;
@@ -617,6 +670,7 @@ function startLocalReplay() {
           ? `${playerName(game.winner)} 連五獲勝！（重播完成）`
           : "和棋！（重播完成）";
       }
+      syncLocalReplayDock();
     },
   });
 }
@@ -624,7 +678,9 @@ function startLocalReplay() {
 function resetBoardDom() {
   const grid = $("#gomoku-board");
   if (grid) delete grid.dataset.built;
+  localWinUiDismissed = false;
   clearGomokuWinCelebration($("#gomoku-board-stage"), $("#gomoku-win-overlay"));
+  syncLocalReplayDock();
   deps?.showView("gomokuPlay");
   rebindGomokuBoardZoom("#gomoku-board-viewport", "#gomoku-board-stage");
   resetGomokuBoardZoom();
@@ -741,6 +797,8 @@ export function bindGomokuEvents() {
       aiMoveToken += 1;
       aiMovePending = false;
       game = null;
+      localWinUiDismissed = false;
+      syncLocalReplayDock();
       terminateAiWorker();
       deps.showView("home");
     }
@@ -751,18 +809,28 @@ export function bindGomokuEvents() {
     aiMoveToken += 1;
     aiMovePending = false;
     game = null;
+    localWinUiDismissed = false;
+    syncLocalReplayDock();
     terminateAiWorker();
     deps.showView("home");
   });
+  $("#btn-gomoku-replay-moves")?.addEventListener("click", () => {
+    startLocalReplay();
+  });
+  $("#btn-gomoku-replay-options")?.addEventListener("click", () => {
+    showLocalWinOptions();
+  });
   $("#btn-gomoku-win-dismiss")?.addEventListener("click", () => {
-    clearGomokuWinCelebration($("#gomoku-board-stage"), $("#gomoku-win-overlay"));
+    dismissLocalWinOverlay();
   });
   $("#btn-gomoku-win-moves")?.addEventListener("click", () => {
     startLocalReplay();
   });
   $("#btn-gomoku-win-replay")?.addEventListener("click", () => {
     stopGomokuReplay();
+    localWinUiDismissed = false;
     clearGomokuWinCelebration($("#gomoku-board-stage"), $("#gomoku-win-overlay"));
+    syncLocalReplayDock();
     replayGomoku();
   });
   $("#btn-gomoku-win-home")?.addEventListener("click", () => {
@@ -771,6 +839,8 @@ export function bindGomokuEvents() {
     aiMoveToken += 1;
     aiMovePending = false;
     game = null;
+    localWinUiDismissed = false;
+    syncLocalReplayDock();
     terminateAiWorker();
     deps.showView("home");
   });

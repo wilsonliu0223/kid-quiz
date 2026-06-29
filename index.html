@@ -16,7 +16,7 @@
       })();
     </script>
     <link rel="manifest" href="manifest.json" />
-    <link rel="stylesheet" href="css/app.css?v=app-v35.8" />
+    <link rel="stylesheet" href="css/app.css?v=app-v35.9" />
     <script type="importmap">
       {
         "imports": {
@@ -44,7 +44,7 @@
         <header class="app-header">
           <div class="app-title-row">
             <h1 class="app-title" id="home-title">家裡練習</h1>
-            <span class="app-version" id="app-version" aria-label="版本">v35.7</span>
+            <span class="app-version" id="app-version" aria-label="版本">v35.9</span>
           </div>
           <p class="app-subtitle">長按標題可進入家長區</p>
         </header>
@@ -761,13 +761,19 @@
           <div class="gomoku-board-wrap" id="gomoku-board-viewport">
             <div class="gomoku-board-stage" id="gomoku-board-stage">
               <div class="gomoku-board" id="gomoku-board" role="grid" aria-label="五子棋棋盤"></div>
+              <div class="gomoku-replay-dock" id="gomoku-replay-dock" hidden>
+                <button type="button" class="btn btn-primary btn-sm gomoku-replay-dock-primary" id="btn-gomoku-replay-moves">
+                  重播棋局
+                </button>
+                <button type="button" class="btn btn-secondary btn-sm" id="btn-gomoku-replay-options">勝利選項</button>
+              </div>
               <div class="gomoku-win-overlay" id="gomoku-win-overlay" hidden>
                 <div class="gomoku-win-card">
                   <h2 class="gomoku-win-title" id="gomoku-win-title">獲勝</h2>
                   <p class="gomoku-win-detail" id="gomoku-win-detail"></p>
                   <div class="gomoku-win-actions">
                     <button type="button" class="btn btn-secondary btn-block" id="btn-gomoku-win-dismiss">
-                      知道了（繼續看棋盤）
+                      繼續觀察棋局
                     </button>
                     <button type="button" class="btn btn-primary btn-block btn-primary-gomoku" id="btn-gomoku-win-moves">
                       重播棋局
@@ -815,13 +821,25 @@
           <div class="gomoku-board-wrap" id="gomoku-online-board-viewport">
             <div class="gomoku-board-stage" id="gomoku-online-board-stage">
               <div class="gomoku-board" id="gomoku-online-board" role="grid" aria-label="五子棋棋盤"></div>
+              <div class="gomoku-replay-dock" id="gomoku-online-replay-dock" hidden>
+                <button
+                  type="button"
+                  class="btn btn-primary btn-sm gomoku-replay-dock-primary"
+                  id="btn-gomoku-online-replay-moves"
+                >
+                  重播棋局
+                </button>
+                <button type="button" class="btn btn-secondary btn-sm" id="btn-gomoku-online-replay-options">
+                  勝利選項
+                </button>
+              </div>
               <div class="gomoku-win-overlay" id="gomoku-online-win-overlay" hidden>
                 <div class="gomoku-win-card">
                   <h2 class="gomoku-win-title" id="gomoku-online-win-title">獲勝</h2>
                   <p class="gomoku-win-detail" id="gomoku-online-win-detail"></p>
                   <div class="gomoku-win-actions">
                     <button type="button" class="btn btn-secondary btn-block" id="btn-gomoku-online-win-dismiss">
-                      知道了（繼續看棋盤）
+                      繼續觀察棋局
                     </button>
                     <button type="button" class="btn btn-primary btn-block btn-primary-gomoku" id="btn-gomoku-online-win-moves">
                       重播棋局
@@ -1233,7 +1251,7 @@
         el.hidden = false;
         el.textContent = msg;
       };
-      import("./js/app.js?v=app-v35.7").catch((e) => {
+      import("./js/app.js?v=app-v35.9").catch((e) => {
         console.error(e);
         showLoadError(
           `程式載入失敗：${e.message || e}。請關閉分頁重開；若仍無效請到瀏覽器設定清除此網站快取。`,

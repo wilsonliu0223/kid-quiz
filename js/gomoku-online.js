@@ -7,9 +7,12 @@ import {
 import {
   celebrateGomokuWin,
   clearGomokuWinCelebration,
+  dismissGomokuWinOverlay,
+  isGomokuWinCelebrationPending,
   renderGomokuWinLine,
+  showGomokuWinOverlayImmediate,
 } from "./gomoku-win-ui.js";
-import { startGomokuReplay, stopGomokuReplay } from "./gomoku-replay.js?v=gomoku-v12";
+import { startGomokuReplay, stopGomokuReplay, isGomokuReplayRunning } from "./gomoku-replay.js?v=gomoku-v13";
 import {
   registerOnlineGame,
   getOnlineContext,
@@ -31,6 +34,7 @@ let celebratedWinKey = null;
 let onlineMoveHistory = [];
 /** @type {string | null} */
 let lastOnlineCellsKey = null;
+let onlineWinUiDismissed = false;
 
 const $ = (sel) => document.querySelector(sel);
 
@@ -198,9 +202,11 @@ function enterOnlinePlay(snapshot) {
   celebratedWinKey = null;
   onlineMoveHistory = [];
   lastOnlineCellsKey = null;
+  onlineWinUiDismissed = false;
   const grid = $("#gomoku-online-board");
   if (grid) delete grid.dataset.built;
   clearGomokuWinCelebration($("#gomoku-online-board-stage"), $("#gomoku-online-win-overlay"));
+  syncOnlineReplayDock();
   rebindGomokuBoardZoom("#gomoku-online-board-viewport", "#gomoku-online-board-stage");
   resetGomokuBoardZoom();
   applyRemoteGomoku(snapshot);
@@ -367,8 +373,8 @@ async function onOnlineCellClick(row, col) {
   if (!result) alert("這一步無法下（可能輪到對方或已被下過）");
 }
 
-function showOnlineWinOnBoard() {
-  if (!onlineGame) return;
+function getOnlineWinTexts() {
+  if (!onlineGame) return { title: "", detail: "" };
   const ctx = getOnlineContext();
   const title = onlineGame.winner
     ? onlineGame.winner === ctx.slot
@@ -378,6 +384,54 @@ function showOnlineWinOnBoard() {
   const detail = onlineGame.winner
     ? `${slotName(onlineGame.winner)} 的${stoneLabel(onlineGame.winner)}連成五子`
     : "棋盤已滿，沒有連五";
+  return { title, detail };
+}
+
+function syncOnlineReplayDock() {
+  const dock = $("#gomoku-online-replay-dock");
+  if (!dock) return;
+  const overlay = $("#gomoku-online-win-overlay");
+  const show =
+    !!onlineGame?.over &&
+    (onlineGame.moveHistory?.length || 0) > 0 &&
+    !!overlay?.hidden &&
+    !isGomokuWinCelebrationPending() &&
+    (onlineWinUiDismissed || isGomokuReplayRunning());
+  dock.hidden = !show;
+}
+
+function dismissOnlineWinOverlay() {
+  if (!onlineGame) return;
+  onlineWinUiDismissed = true;
+  dismissGomokuWinOverlay(
+    $("#gomoku-online-win-overlay"),
+    $("#gomoku-online-board-stage"),
+    onlineGame.winLine,
+    onlineGame.lastMove,
+  );
+  syncOnlineReplayDock();
+}
+
+function showOnlineWinOptions() {
+  if (!onlineGame) return;
+  const { title, detail } = getOnlineWinTexts();
+  onlineWinUiDismissed = false;
+  showGomokuWinOverlayImmediate({
+    overlayEl: $("#gomoku-online-win-overlay"),
+    titleEl: $("#gomoku-online-win-title"),
+    detailEl: $("#gomoku-online-win-detail"),
+    title,
+    detail,
+  });
+  const reviewBtn = $("#btn-gomoku-online-win-moves");
+  if (reviewBtn) reviewBtn.hidden = !(onlineGame.moveHistory?.length > 0);
+  syncOnlineReplayDock();
+}
+
+function showOnlineWinOnBoard() {
+  if (!onlineGame) return;
+  onlineWinUiDismissed = false;
+  const { title, detail } = getOnlineWinTexts();
   celebrateGomokuWin({
     stageEl: $("#gomoku-online-board-stage"),
     overlayEl: $("#gomoku-online-win-overlay"),
@@ -390,12 +444,15 @@ function showOnlineWinOnBoard() {
   });
   const reviewBtn = $("#btn-gomoku-online-win-moves");
   if (reviewBtn) reviewBtn.hidden = !(onlineGame.moveHistory?.length > 0);
+  syncOnlineReplayDock();
 }
 
 function startOnlineReplay() {
   if (!onlineGame?.moveHistory?.length) return;
   stopGomokuReplay();
+  onlineWinUiDismissed = true;
   clearGomokuWinCelebration($("#gomoku-online-board-stage"), $("#gomoku-online-win-overlay"));
+  syncOnlineReplayDock();
   const moves = onlineGame.moveHistory.map((m) => ({ ...m }));
   const winLine = onlineGame.winLine;
   const lastMove = onlineGame.lastMove;
@@ -431,6 +488,7 @@ function startOnlineReplay() {
           ? `${slotName(onlineGame.winner)} 連五獲勝！（重播完成）`
           : "和棋！（重播完成）";
       }
+      syncOnlineReplayDock();
     },
   });
 }
@@ -444,12 +502,20 @@ function bindGomokuOnlineOnly() {
       await leaveOnlineRoom();
       onlineGame = null;
       celebratedWinKey = null;
+      onlineWinUiDismissed = false;
       clearGomokuWinCelebration($("#gomoku-online-board-stage"), $("#gomoku-online-win-overlay"));
+      syncOnlineReplayDock();
       getOnlineContext().deps?.showView("home");
     }
   });
   $("#btn-gomoku-online-win-dismiss")?.addEventListener("click", () => {
-    clearGomokuWinCelebration($("#gomoku-online-board-stage"), $("#gomoku-online-win-overlay"));
+    dismissOnlineWinOverlay();
+  });
+  $("#btn-gomoku-online-replay-moves")?.addEventListener("click", () => {
+    startOnlineReplay();
+  });
+  $("#btn-gomoku-online-replay-options")?.addEventListener("click", () => {
+    showOnlineWinOptions();
   });
   $("#btn-gomoku-online-win-moves")?.addEventListener("click", () => {
     startOnlineReplay();
@@ -458,21 +524,27 @@ function bindGomokuOnlineOnly() {
     stopGomokuReplay();
     onlineGame = null;
     celebratedWinKey = null;
+    onlineWinUiDismissed = false;
     clearGomokuWinCelebration($("#gomoku-online-board-stage"), $("#gomoku-online-win-overlay"));
+    syncOnlineReplayDock();
     await rematchOnlineRoom();
   });
   $("#btn-gomoku-online-win-home")?.addEventListener("click", async () => {
     await leaveOnlineRoom();
     onlineGame = null;
     celebratedWinKey = null;
+    onlineWinUiDismissed = false;
     clearGomokuWinCelebration($("#gomoku-online-board-stage"), $("#gomoku-online-win-overlay"));
+    syncOnlineReplayDock();
     getOnlineContext().deps?.showView("home");
   });
   $("#btn-gomoku-online-home")?.addEventListener("click", async () => {
     await leaveOnlineRoom();
     onlineGame = null;
     celebratedWinKey = null;
+    onlineWinUiDismissed = false;
     clearGomokuWinCelebration($("#gomoku-online-board-stage"), $("#gomoku-online-win-overlay"));
+    syncOnlineReplayDock();
     getOnlineContext().deps?.showView("home");
   });
 }

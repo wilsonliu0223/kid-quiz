@@ -107,3 +107,41 @@ export function clearGomokuWinCelebration(stageEl, overlayEl) {
   clearGomokuWinLine(stageEl);
   if (overlayEl) overlayEl.hidden = true;
 }
+
+export function hideGomokuWinOverlay(overlayEl) {
+  if (overlayTimer) clearTimeout(overlayTimer);
+  overlayTimer = null;
+  if (overlayEl) overlayEl.hidden = true;
+}
+
+/**
+ * @param {Element | null} overlayEl
+ * @param {Element | null} stageEl
+ * @param {Set<number> | null} [winLine]
+ * @param {[number, number] | null} [lastMove]
+ */
+export function dismissGomokuWinOverlay(overlayEl, stageEl, winLine, lastMove) {
+  hideGomokuWinOverlay(overlayEl);
+  if (winLine && winLine.size >= 5) {
+    renderGomokuWinLine(stageEl, winLine, lastMove);
+  }
+}
+
+export function isGomokuWinCelebrationPending() {
+  return !!(lineTimer || overlayTimer);
+}
+
+/**
+ * @param {object} opts
+ * @param {Element | null} opts.overlayEl
+ * @param {Element | null} [opts.titleEl]
+ * @param {Element | null} [opts.detailEl]
+ * @param {string} opts.title
+ * @param {string} [opts.detail]
+ */
+export function showGomokuWinOverlayImmediate(opts) {
+  const { overlayEl, titleEl, detailEl, title, detail } = opts;
+  if (titleEl) titleEl.textContent = title;
+  if (detailEl) detailEl.textContent = detail || "";
+  if (overlayEl) overlayEl.hidden = false;
+}

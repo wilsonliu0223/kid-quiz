@@ -3307,6 +3307,33 @@ body {
   visibility: visible;
 }
 
+.gomoku-replay-dock {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 4;
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  padding: 10px 12px 12px;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.42), rgba(0, 0, 0, 0.08) 55%, transparent);
+  pointer-events: auto;
+}
+
+.gomoku-replay-dock[hidden] {
+  display: none !important;
+}
+
+.gomoku-replay-dock .btn-sm {
+  flex: 1;
+  max-width: 168px;
+  min-height: 2.35rem;
+  font-size: 0.85rem;
+  padding: 6px 10px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
+}
+
 .gomoku-zoom-hint {
   flex-shrink: 0;
   margin: 0;
