@@ -262,6 +262,35 @@ body {
   font-size: 0.82rem;
 }
 
+.home-zone-duo .card-math-head,
+.home-zone-duo .card-gomoku-head,
+.home-zone-duo .card-xiangqi-head,
+.home-zone-duo .card-sky-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 8px;
+  width: 100%;
+  text-align: left;
+}
+
+.home-zone-duo .card-math-head .card-title,
+.home-zone-duo .card-gomoku-head .card-title,
+.home-zone-duo .card-xiangqi-head .card-title,
+.home-zone-duo .card-sky-head .card-title {
+  flex-shrink: 0;
+}
+
+.home-zone-duo .card-math-note,
+.home-zone-duo .card-gomoku-note,
+.home-zone-duo .card-xiangqi-note,
+.home-zone-duo .card-sky-note {
+  font-size: 0.72rem;
+  font-weight: 600;
+  line-height: 1.35;
+  opacity: 0.88;
+}
+
 .duo-opponent-picker {
   margin-bottom: 12px;
 }
@@ -4224,23 +4253,12 @@ body {
   width: 100%;
 }
 
-.card-xiangqi-head {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 4px;
-  text-align: left;
-}
-
 .card-xiangqi-home .card-title {
   color: var(--xiangqi-dark);
 }
 
 .card-xiangqi-note {
-  font-size: 0.72rem;
-  line-height: 1.35;
   color: var(--xiangqi-dark);
-  opacity: 0.9;
 }
 
 .quiz-header-xiangqi .quiz-subject {
