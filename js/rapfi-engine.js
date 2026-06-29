@@ -1,3 +1,5 @@
+import { CONFIG } from "./config.site.js";
+
 export const NIRVANA_LEVEL = 6;
 
 /** @type {Worker | null} */
@@ -18,6 +20,12 @@ function siteRoot() {
 
 function fullEngineRoot() {
   return `${siteRoot()}engines/rapfi/full/`;
+}
+
+function fullDataUrl() {
+  const custom = String(CONFIG.RAPFI_NNUE_DATA_URL || "").trim();
+  if (custom) return custom;
+  return `${fullEngineRoot()}rapfi.data`;
 }
 
 function localFallbackRoot() {
@@ -75,7 +83,12 @@ function bindWorkerInit(w, mode) {
     w.addEventListener("error", onError);
 
     if (mode === "full") {
-      w.postMessage({ type: "init", mode: "full", fullEngineUrl: fullEngineRoot() });
+      w.postMessage({
+        type: "init",
+        mode: "full",
+        fullEngineUrl: fullEngineRoot(),
+        dataFileUrl: fullDataUrl(),
+      });
     } else {
       w.postMessage({ type: "init", mode: "lite", localFallbackUrl: localFallbackRoot() });
     }

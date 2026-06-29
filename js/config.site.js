@@ -1,7 +1,14 @@
 /** GitHub Pages 用設定（會提交到倉庫） */
 export const CONFIG = {
   /** 首頁標題旁小字版本（每次推送更新請遞增，例：34.0 → 34.1） */
-  APP_VERSION: "37.4",
+  APP_VERSION: "37.5",
+
+  /**
+   * 涅槃 Rapfi 完整 NNUE 權重（約 40 MB）公開下載網址。
+   * 留空則用站內 engines/rapfi/full/rapfi.data（與 GitHub Pages 同源）。
+   * 若改放 Firebase Storage 等雲端，貼上 https://... 公開連結即可。
+   */
+  RAPFI_NNUE_DATA_URL: "",
   SPREADSHEET_ID: "1CIkz0vH-Dp3xj9K3OUvXO_mfaFwq2-qzEJbQcIyWvPg",
   SHEETS_JSON_URL: "",
 
