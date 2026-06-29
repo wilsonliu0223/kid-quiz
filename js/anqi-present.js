@@ -8,7 +8,7 @@ import {
   isCannonCode,
   pieceLabel,
   pieceSide,
-} from "./anqi-engine.js";
+} from "./anqi-engine.js?v=anqi-v19";
 
 const NS = "http://www.w3.org/2000/svg";
 

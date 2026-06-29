@@ -2,7 +2,7 @@
   "name": "家裡練習",
   "short_name": "家裡練習",
   "description": "國語注音手寫測驗",
-  "start_url": "./",
+  "start_url": "./?app=39.13",
   "display": "standalone",
   "background_color": "#faf8f5",
   "theme_color": "#e85d2a",

@@ -6,7 +6,7 @@ import {
   pickBestAction,
   pickRandomAction,
   playerToMove,
-} from "./anqi-engine.js";
+} from "./anqi-engine.js?v=anqi-v19";
 
 export const AI_PLAYER_ID = "__anqi_ai__";
 

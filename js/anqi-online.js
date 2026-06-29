@@ -14,14 +14,14 @@ import {
   stateFromJson,
   stateToJson,
   turnColorSide,
-} from "./anqi-engine.js";
+} from "./anqi-engine.js?v=anqi-v19";
 import {
   applyAnqiViewFlip,
   ensureAnqiBoardSvg,
   renderAnqiBoardSvg,
   renderAnqiStatusBar,
   resetAnqiBoardSvg,
-} from "./anqi-board-ui.js";
+} from "./anqi-board-ui.js?v=anqi-v19";
 import {
   registerOnlineGame,
   getOnlineContext,

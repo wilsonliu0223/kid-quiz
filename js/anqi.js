@@ -20,7 +20,7 @@ import {
   playerToMove,
   sidePlayerIdx,
   turnColorSide,
-} from "./anqi-engine.js";
+} from "./anqi-engine.js?v=anqi-v19";
 import {
   applyAnqiViewFlip,
   ensureAnqiBoardSvg,
@@ -28,20 +28,20 @@ import {
   renderAnqiStatusBar,
   rebuildAnqiBoardSvg,
   resetAnqiBoardSvg,
-} from "./anqi-board-ui.js";
+} from "./anqi-board-ui.js?v=anqi-v19";
 import {
   AI_PLAYER_ID,
   ANQI_AI_LEVELS,
   anqiAiLevelLabel,
   requestAnqiAiMove,
-} from "./anqi-ai.js";
+} from "./anqi-ai.js?v=anqi-v19";
 import {
   ANQI_PRESENT,
   animateAnqiAction,
   describeAnqiAction,
   setAnqiActionToast,
   sleep,
-} from "./anqi-present.js";
+} from "./anqi-present.js?v=anqi-v19";
 import { getChildName, otherDuoPlayer } from "./children.js";
 import { getSelectedChild } from "./store.js";
 import {
