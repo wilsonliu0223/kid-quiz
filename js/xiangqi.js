@@ -79,9 +79,19 @@ const AI_LEVELS = [
   },
 ];
 
+function aiLevelLabel(level) {
+  return AI_LEVELS.find((d) => d.level === level)?.label || "";
+}
+
 function playerName(id) {
   if (!id) return "—";
-  if (id === AI_PLAYER_ID) return "電腦";
+  if (id === AI_PLAYER_ID) {
+    if (game?.mode === "ai") {
+      const label = aiLevelLabel(game.aiDifficulty ?? aiDifficulty);
+      return label ? `電腦（${label}）` : "電腦";
+    }
+    return "電腦";
+  }
   const names = deps?.getChildNames() || {};
   return names[id] || getChildName(id) || id;
 }
@@ -161,7 +171,8 @@ function renderAiSetup() {
   const aiRed = document.createElement("button");
   aiRed.type = "button";
   aiRed.className = "btn btn-secondary btn-block";
-  aiRed.textContent = `電腦執紅（先手）`;
+  const aiLabel = aiLevelLabel(aiDifficulty) || "電腦";
+  aiRed.textContent = `電腦執紅（${aiLabel}）`;
   aiRed.addEventListener("click", () => startAiGame(false));
   startBox.append(humanRed, aiRed);
 }

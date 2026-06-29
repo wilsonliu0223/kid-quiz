@@ -1,6 +1,6 @@
 import { forbiddenLabel, wouldBlackForbidden } from "./gomoku-renju.js?v=gomoku-v12";
 import { openDuoModePicker } from "./online-duo.js";
-import { AI_PLAYER_ID, requestAiMove, terminateAiWorker, rapfiLoadState, NIRVANA_LEVEL } from "./gomoku-ai.js?v=gomoku-v20";
+import { AI_PLAYER_ID, requestAiMove, terminateAiWorker, rapfiLoadState, NIRVANA_LEVEL } from "./gomoku-ai.js?v=gomoku-v21";
 import {
   resetGomokuBoardZoom,
   rebindGomokuBoardZoom,
@@ -104,8 +104,18 @@ const AI_DIFFICULTIES = [
   },
 ];
 
+function aiLevelLabel(level) {
+  return AI_DIFFICULTIES.find((d) => d.level === level)?.label || "";
+}
+
 function playerName(id) {
-  if (id === AI_PLAYER_ID) return "電腦";
+  if (id === AI_PLAYER_ID) {
+    if (game?.mode === "ai") {
+      const label = aiLevelLabel(game.aiDifficulty ?? aiDifficulty);
+      return label ? `電腦（${label}）` : "電腦";
+    }
+    return "電腦";
+  }
   const names = deps?.getChildNames() || { A: "A", B: "B" };
   return names[id] || getChildName(id) || id;
 }
@@ -197,8 +207,9 @@ function renderAiStartButtons() {
   const aiBlack = document.createElement("button");
   aiBlack.type = "button";
   aiBlack.className = "card gomoku-ai-start-card gomoku-ai-start-card-ai";
+  const aiLabel = aiLevelLabel(aiDifficulty) || "電腦";
   aiBlack.innerHTML = `
-    <span class="card-title">電腦拿黑子</span>
+    <span class="card-title">電腦拿黑子（${aiLabel}）</span>
     <span class="card-desc">電腦先手 · 適合練防守</span>
   `;
   aiBlack.addEventListener("click", () => startAiGame(false));
