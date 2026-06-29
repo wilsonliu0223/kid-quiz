@@ -4869,6 +4869,13 @@ body {
   margin-bottom: 8px;
 }
 
+.xiangqi-ai-start-hint {
+  margin: 4px 0 0;
+  font-size: 0.78rem;
+  color: var(--muted);
+  line-height: 1.4;
+}
+
 .xiangqi-ai-difficulty-cards,
 .xiangqi-ai-start-btns {
   display: flex;

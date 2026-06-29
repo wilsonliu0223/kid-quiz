@@ -1,5 +1,5 @@
 import { openDuoModePicker } from "./online-duo.js";
-import { AI_PLAYER_ID, chooseAiMove } from "./xiangqi-ai.js";
+import { AI_PLAYER_ID, GRANDMASTER_LEVEL, requestXiangqiAiMove, terminateXiangqiAiWorker } from "./xiangqi-ai.js";
 import {
   ensureXiangqiBoardSvg,
   renderXiangqiBoardSvg,
@@ -69,8 +69,9 @@ const $ = (sel) => document.querySelector(sel);
 const AI_LEVELS = [
   { level: 1, label: "入門", desc: "隨機合法走法，適合剛學規則。" },
   { level: 2, label: "普通", desc: "會吃子、會將軍，日常陪練。" },
-  { level: 3, label: "高手", desc: "簡短搜尋，中盤較難僥倖。" },
-  { level: 4, label: "大師", desc: "較深搜尋，棋力明顯提升。" },
+  { level: 3, label: "高手", desc: "兩層搜尋＋位置判斷，中盤較難僥倖。" },
+  { level: 4, label: "大師", desc: "深層搜尋與吃子延伸，棋力明顯提升。" },
+  { level: 5, label: "宗師", desc: "最強棋力，深度分析約 5 秒，極難戰勝。" },
 ];
 
 function playerName(id) {
@@ -376,6 +377,11 @@ function renderPlayHeader(checkAlert = buildCurrentCheckAlert()) {
     !game.over &&
     game.turn === playerSide(AI_PLAYER_ID) &&
     aiMovePending;
+  const deepAiThink =
+    waitingAi &&
+    !headerStatusText &&
+    (game.aiDifficulty || aiDifficulty) >= GRANDMASTER_LEVEL;
+  const bannerStatus = headerStatusText || (deepAiThink ? "電腦宗師深度分析中…" : "");
 
   renderXiangqiStatusBar({
     redCard: $("#xiangqi-side-red"),
@@ -391,8 +397,8 @@ function renderPlayHeader(checkAlert = buildCurrentCheckAlert()) {
     overTitle: game.winner
       ? `${playerName(sidePlayerId(game.winner))} 獲勝！`
       : "和棋",
-    waitingAi: waitingAi && !headerStatusText,
-    statusText: headerStatusText,
+    waitingAi: waitingAi && !bannerStatus,
+    statusText: bannerStatus,
     youHint: isHumanTurn ? " · 輪到你" : "",
     inCheck: !!checkAlert,
     checkEl: $("#xiangqi-check-hint"),
@@ -476,21 +482,39 @@ function maybeScheduleAiMove() {
   aiMovePending = true;
   renderPlayHeader();
   const token = ++aiMoveToken;
-  setTimeout(() => {
-    if (!game || token !== aiMoveToken || game.over) return;
-    const move = chooseAiMove({
+  window.setTimeout(() => void runAiMove(token), 40);
+}
+
+async function runAiMove(token) {
+  if (!game || token !== aiMoveToken || game.over) return;
+  const aiSide = playerSide(AI_PLAYER_ID);
+  if (game.turn !== aiSide) {
+    aiMovePending = false;
+    return;
+  }
+  try {
+    const move = await requestXiangqiAiMove({
       board: cloneBoard(game.board),
       turn: game.turn,
       aiSide,
-      level: game.aiDifficulty || 2,
+      level: game.aiDifficulty || aiDifficulty,
     });
-    if (!move) return;
+    if (token !== aiMoveToken || !game || game.over || game.turn !== aiSide) return;
+    aiMovePending = false;
+    if (!move) {
+      renderBoard();
+      return;
+    }
     if (!game.moveHistory) game.moveHistory = [];
     game.moveHistory.push({ from: move.from, to: move.to });
     game.board = applyMove(game.board, move);
-    aiMovePending = false;
     finishAfterMove(move);
-  }, 280);
+  } catch (err) {
+    console.error("xiangqi ai failed", err);
+    if (token !== aiMoveToken) return;
+    aiMovePending = false;
+    renderBoard();
+  }
 }
 
 export function beginXiangqiFromHome() {
@@ -535,6 +559,7 @@ function bindXiangqiEvents() {
   $("#btn-xiangqi-play-back")?.addEventListener("click", () => {
     if (confirm("離開棋局？目前進度不會儲存。")) {
       aiMoveToken += 1;
+      terminateXiangqiAiWorker();
       stopXiangqiReplay();
       game = null;
       deps?.showView("home");
