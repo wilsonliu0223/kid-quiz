@@ -127,8 +127,7 @@ function renderOnlineBoard() {
   const me = myPlayerIdx();
   const myColor = me != null ? playerSide(onlineGame.state, me) : null;
   const { targets, flipTargets } = computeTargets();
-  const flipped = myColor === "black";
-  applyAnqiViewFlip(svg, flipped);
+  applyAnqiViewFlip(svg, false);
   renderAnqiBoardSvg(svg, {
     state: onlineGame.state,
     selected,

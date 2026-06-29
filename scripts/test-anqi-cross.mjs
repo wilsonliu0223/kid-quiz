@@ -340,6 +340,21 @@ for (let seed = 1; seed <= 50; seed++) {
 }
 console.log("simulateClick 50 局完成");
 
+for (let seed = 1; seed <= 40; seed++) {
+  const g = BanqiGameWasm.makeTest(BigInt(seed), 0);
+  let state = g.state();
+  g.free();
+  const me = playerToMove(state);
+  for (let cell = 0; cell < 32; cell++) {
+    if (state[cell] !== HIDDEN) continue;
+    const c = simulateClick(state, null, cell, me);
+    assert(c.action != null, `seed=${seed} 點暗子 ${cell} 應翻牌`);
+    assertEq(decodeAction(c.action).from, cell, `seed=${seed} 翻牌格應等於點擊格 ${cell}`);
+    break;
+  }
+}
+console.log("開局點擊格=翻牌格 驗證完成");
+
 for (let seed = 1; seed <= 30; seed++) {
   const g = BanqiGameWasm.makeTest(BigInt(seed), 6);
   let state = g.state();

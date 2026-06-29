@@ -179,9 +179,8 @@ function isHumanTurn() {
 }
 
 function resolveViewFlipped() {
-  if (!game || game.mode !== "ai") return false;
-  const side = playerSide(game.state, game.humanPlayerIdx);
-  return side === "black";
+  // 棋盤固定方向：不在翻棋定色後旋轉，避免「點的位置」與「開的位置」視覺不一致
+  return false;
 }
 
 export function renderAnqiHomePlayers() {
