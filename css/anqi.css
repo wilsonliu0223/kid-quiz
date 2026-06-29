@@ -22,6 +22,20 @@
   overflow: hidden;
 }
 
+.anqi-play-meta {
+  margin: 0;
+  text-align: center;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #6d4c2d;
+  line-height: 1.35;
+  flex-shrink: 0;
+}
+
+.anqi-play-meta[hidden] {
+  display: none !important;
+}
+
 .anqi-play-hint {
   margin: 0;
   font-size: 0.8rem;

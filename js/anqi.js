@@ -25,6 +25,7 @@ import {
   ensureAnqiBoardSvg,
   renderAnqiBoardSvg,
   renderAnqiStatusBar,
+  rebuildAnqiBoardSvg,
   resetAnqiBoardSvg,
 } from "./anqi-board-ui.js";
 import {
@@ -59,6 +60,7 @@ let aiMoveToken = 0;
 let localWinUiDismissed = false;
 let actionPresenting = false;
 let presentToken = 0;
+let beginGameToken = 0;
 
 /** @type {{ showView: (v: string) => void, getChildNames: () => Record<string, string> } | null} */
 let deps = null;
@@ -112,16 +114,49 @@ function redBlackDisplayNames() {
   if (!game) return { redName: "—", blackName: "—" };
   const rIdx = sidePlayerIdx(game.state, "red");
   const bIdx = sidePlayerIdx(game.state, "black");
-  if (rIdx == null || bIdx == null) {
+  if (rIdx != null && bIdx != null) {
     return {
-      redName: "紅方待定",
-      blackName: "黑方待定",
+      redName: playerName(playerIdForIdx(rIdx)),
+      blackName: playerName(playerIdForIdx(bIdx)),
     };
   }
+
+  if (game.mode === "ai") {
+    const humanName = playerName(game.playerIds[game.humanPlayerIdx]);
+    const aiName = playerName(AI_PLAYER_ID);
+    const humanSide = playerSide(game.state, game.humanPlayerIdx);
+    const aiIdx = game.aiPlayerIdx ?? (game.humanPlayerIdx === 0 ? 1 : 0);
+    const aiSide = playerSide(game.state, aiIdx);
+    return {
+      redName:
+        rIdx != null
+          ? playerName(playerIdForIdx(rIdx))
+          : humanSide === "red"
+            ? humanName
+            : aiSide === "red"
+              ? aiName
+              : humanName,
+      blackName:
+        bIdx != null
+          ? playerName(playerIdForIdx(bIdx))
+          : humanSide === "black"
+            ? humanName
+            : aiSide === "black"
+              ? aiName
+              : aiName,
+    };
+  }
+
   return {
-    redName: playerName(playerIdForIdx(rIdx)),
-    blackName: playerName(playerIdForIdx(bIdx)),
+    redName: rIdx != null ? playerName(playerIdForIdx(rIdx)) : "翻棋定色",
+    blackName: bIdx != null ? playerName(playerIdForIdx(bIdx)) : "翻棋定色",
   };
+}
+
+function aiOpponentLabel() {
+  if (!game || game.mode !== "ai") return "";
+  const label = playerName(AI_PLAYER_ID);
+  return label ? `對手：${label}` : "對手：電腦";
 }
 
 function myPlayerIdx() {
@@ -269,6 +304,7 @@ function startAiGame(humanFirst) {
  * @param {object} opts
  */
 async function beginGame(opts) {
+  const token = ++beginGameToken;
   aiMoveToken += 1;
   aiMovePending = false;
   localWinUiDismissed = false;
@@ -279,6 +315,7 @@ async function beginGame(opts) {
     alert("暗棋引擎載入失敗，請重新整理頁面（Ctrl+Shift+R）後再試。");
     return;
   }
+  if (token !== beginGameToken) return;
   const seed = (Date.now() ^ (Math.random() * 0x7fffffff)) >>> 0;
   game = {
     mode: opts.mode,
@@ -301,6 +338,7 @@ async function beginGame(opts) {
   };
   game.viewFlipped = resolveViewFlipped();
   resetBoardDom();
+  if (token !== beginGameToken) return;
   renderBoard();
   maybeScheduleAiMove();
 }
@@ -308,20 +346,24 @@ async function beginGame(opts) {
 function resetBoardDom() {
   const svg = $("#anqi-board");
   if (svg) {
-    svg.replaceWith(svg.cloneNode(false));
-    resetAnqiBoardSvg($("#anqi-board"));
+    resetAnqiBoardSvg(svg);
+    svg.replaceChildren();
+    svg.setAttribute("class", "anqi-svg");
+    svg.classList.remove("anqi-svg-flipped");
   }
   $("#anqi-win-overlay")?.setAttribute("hidden", "");
   deps?.showView("anqiPlay");
 }
 
 function abandonAnqiGame() {
+  beginGameToken += 1;
   aiMoveToken += 1;
   presentToken += 1;
   actionPresenting = false;
   aiMovePending = false;
   game = null;
   setAnqiActionToast("");
+  $("#anqi-play-meta")?.setAttribute("hidden", "");
 }
 
 /**
@@ -356,7 +398,12 @@ function goToAnqiSetupFromResult() {
 }
 
 function ensureBoardSvg() {
-  return ensureAnqiBoardSvg($("#anqi-board"), onCellClick);
+  const svg = $("#anqi-board");
+  if (!svg) return null;
+  if (!svg.querySelector(".anqi-cell")) {
+    return rebuildAnqiBoardSvg(svg, onCellClick);
+  }
+  return ensureAnqiBoardSvg(svg, onCellClick);
 }
 
 function computeUiTargets() {
@@ -481,8 +528,9 @@ function renderStatusBar() {
       : "和棋",
     waitingAi,
     statusText,
-  });
-}
+    extraEl: $("#anqi-play-meta"),
+    extraText: aiOpponentLabel(),
+    extraVisible: game.mode === "ai",
 
 function syncWinOverlay() {
   const overlay = $("#anqi-win-overlay");

@@ -178,6 +178,19 @@ export function resetAnqiBoardSvg(svg) {
 }
 
 /**
+ * 強制重建棋盤格子（離開再開局時避免空白棋盤）
+ * @param {SVGSVGElement|null} svg
+ * @param {(index: number) => void} onCellClick
+ */
+export function rebuildAnqiBoardSvg(svg, onCellClick) {
+  if (!svg) return null;
+  resetAnqiBoardSvg(svg);
+  svg.replaceChildren();
+  svg.classList.remove("anqi-svg-flipped");
+  return ensureAnqiBoardSvg(svg, onCellClick);
+}
+
+/**
  * @param {SVGSVGElement|null} svg
  * @param {boolean} flipped
  */
@@ -266,5 +279,8 @@ export function renderAnqiStatusBar(opts) {
     overTitle: opts.overTitle,
     waitingAi: opts.waitingAi,
     statusText: opts.statusText,
+    extraEl: opts.extraEl,
+    extraText: opts.extraText,
+    extraVisible: opts.extraVisible,
   });
 }
