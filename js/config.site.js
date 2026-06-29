@@ -1,7 +1,7 @@
 /** GitHub Pages 用設定（會提交到倉庫） */
 export const CONFIG = {
   /** 首頁標題旁小字版本（每次推送更新請遞增，例：34.0 → 34.1） */
-  APP_VERSION: "39.2",
+  APP_VERSION: "39.3",
 
   /**
    * 涅槃 Rapfi 完整 NNUE 權重（約 40 MB）公開下載網址。

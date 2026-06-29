@@ -12,6 +12,63 @@ import {
 } from "./anqi-engine.js";
 import { renderDuoTurnStatusBar } from "./game-turn-status.js";
 
+const SVG_NS = "http://www.w3.org/2000/svg";
+
+/**
+ * @param {SVGSVGElement} svg
+ */
+function ensureAnqiDefs(svg) {
+  if (svg.querySelector("#anqi-defs")) return;
+  const defs = document.createElementNS(SVG_NS, "defs");
+  defs.setAttribute("id", "anqi-defs");
+
+  const wood = document.createElementNS(SVG_NS, "radialGradient");
+  wood.setAttribute("id", "anqi-wood");
+  wood.setAttribute("cx", "38%");
+  wood.setAttribute("cy", "32%");
+  wood.setAttribute("r", "68%");
+  wood.innerHTML = `
+    <stop offset="0%" stop-color="#d4a574"/>
+    <stop offset="45%" stop-color="#9c5c28"/>
+    <stop offset="100%" stop-color="#5c3218"/>
+  `;
+
+  const rim = document.createElementNS(SVG_NS, "linearGradient");
+  rim.setAttribute("id", "anqi-rim");
+  rim.setAttribute("x1", "0%");
+  rim.setAttribute("y1", "0%");
+  rim.setAttribute("x2", "100%");
+  rim.setAttribute("y2", "100%");
+  rim.innerHTML = `
+    <stop offset="0%" stop-color="#f0d78c"/>
+    <stop offset="50%" stop-color="#c9a227"/>
+    <stop offset="100%" stop-color="#8b6914"/>
+  `;
+
+  const shine = document.createElementNS(SVG_NS, "radialGradient");
+  shine.setAttribute("id", "anqi-shine");
+  shine.setAttribute("cx", "30%");
+  shine.setAttribute("cy", "25%");
+  shine.setAttribute("r", "55%");
+  shine.innerHTML = `
+    <stop offset="0%" stop-color="#fff" stop-opacity="0.35"/>
+    <stop offset="100%" stop-color="#fff" stop-opacity="0"/>
+  `;
+
+  const shadow = document.createElementNS(SVG_NS, "filter");
+  shadow.setAttribute("id", "anqi-piece-shadow");
+  shadow.setAttribute("x", "-30%");
+  shadow.setAttribute("y", "-30%");
+  shadow.setAttribute("width", "160%");
+  shadow.setAttribute("height", "160%");
+  shadow.innerHTML = `
+    <feDropShadow dx="0" dy="0.04" stdDeviation="0.05" flood-color="#3e2723" flood-opacity="0.45"/>
+  `;
+
+  defs.append(wood, rim, shine, shadow);
+  svg.appendChild(defs);
+}
+
 /**
  * @param {SVGSVGElement|null} svg
  * @param {(index: number) => void} onCellClick
@@ -30,16 +87,20 @@ export function ensureAnqiBoardSvg(svg, onCellClick) {
   };
 
   svg.innerHTML = "";
+  ensureAnqiDefs(svg);
+
   for (let r = 0; r < ROWS; r++) {
     for (let c = 0; c < COLS; c++) {
       const idx = cellIndex(r, c);
       const { dr, dc } = engineToDisplayPos(r, c);
-      const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
+      const g = document.createElementNS(SVG_NS, "g");
       g.classList.add("anqi-cell");
+      if ((dr + dc) % 2 === 0) g.classList.add("is-cell-lite");
+      else g.classList.add("is-cell-dark");
       g.dataset.index = String(idx);
       g.setAttribute("transform", `translate(${dc + 0.5} ${dr + 0.5})`);
 
-      const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+      const rect = document.createElementNS(SVG_NS, "rect");
       rect.classList.add("anqi-cell-bg");
       rect.setAttribute("x", "-0.48");
       rect.setAttribute("y", "-0.48");
@@ -48,28 +109,51 @@ export function ensureAnqiBoardSvg(svg, onCellClick) {
       rect.setAttribute("rx", "0.1");
       g.appendChild(rect);
 
-      const back = document.createElementNS("http://www.w3.org/2000/svg", "rect");
-      back.classList.add("anqi-piece-back");
-      back.setAttribute("x", "-0.4");
-      back.setAttribute("y", "-0.4");
-      back.setAttribute("width", "0.8");
-      back.setAttribute("height", "0.8");
-      back.setAttribute("rx", "0.08");
-      g.appendChild(back);
+      const backLayer = document.createElementNS(SVG_NS, "g");
+      backLayer.classList.add("anqi-back-layer");
+      backLayer.setAttribute("filter", "url(#anqi-piece-shadow)");
 
-      const disc = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+      const backDisc = document.createElementNS(SVG_NS, "circle");
+      backDisc.classList.add("anqi-piece-back");
+      backDisc.setAttribute("r", "0.38");
+      backDisc.setAttribute("fill", "url(#anqi-wood)");
+      backLayer.appendChild(backDisc);
+
+      const backRim = document.createElementNS(SVG_NS, "circle");
+      backRim.classList.add("anqi-back-rim");
+      backRim.setAttribute("r", "0.38");
+      backRim.setAttribute("fill", "none");
+      backLayer.appendChild(backRim);
+
+      const backShine = document.createElementNS(SVG_NS, "circle");
+      backShine.classList.add("anqi-back-shine");
+      backShine.setAttribute("r", "0.38");
+      backShine.setAttribute("fill", "url(#anqi-shine)");
+      backLayer.appendChild(backShine);
+
+      const backMark = document.createElementNS(SVG_NS, "text");
+      backMark.classList.add("anqi-back-mark");
+      backMark.setAttribute("text-anchor", "middle");
+      backMark.setAttribute("dominant-baseline", "central");
+      backMark.setAttribute("y", "0.04");
+      backMark.textContent = "棋";
+      backLayer.appendChild(backMark);
+
+      g.appendChild(backLayer);
+
+      const disc = document.createElementNS(SVG_NS, "circle");
       disc.classList.add("anqi-disc");
       disc.setAttribute("r", "0.38");
       g.appendChild(disc);
 
-      const label = document.createElementNS("http://www.w3.org/2000/svg", "text");
+      const label = document.createElementNS(SVG_NS, "text");
       label.classList.add("anqi-label");
       label.setAttribute("text-anchor", "middle");
       label.setAttribute("dominant-baseline", "central");
       label.setAttribute("y", "0.05");
       g.appendChild(label);
 
-      const hit = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+      const hit = document.createElementNS(SVG_NS, "rect");
       hit.classList.add("anqi-hit");
       hit.setAttribute("x", "-0.5");
       hit.setAttribute("y", "-0.5");
