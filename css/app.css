@@ -243,8 +243,8 @@ body {
 
 .home-zone-duo .card {
   width: 100%;
-  min-height: 64px;
-  padding: 14px 16px;
+  min-height: 52px;
+  padding: 12px 14px;
   margin-bottom: 0;
   display: flex;
   flex-direction: column;
@@ -267,7 +267,7 @@ body {
 .home-zone-duo .card-xiangqi-head,
 .home-zone-duo .card-sky-head {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: baseline;
   gap: 2px 8px;
   width: 100%;
@@ -289,6 +289,11 @@ body {
   font-weight: 600;
   line-height: 1.35;
   opacity: 0.88;
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .duo-opponent-picker {
@@ -2995,8 +3000,6 @@ body {
 .home-zone-duo .card-gomoku-home {
   align-items: stretch;
   justify-content: flex-start;
-  min-height: 52px;
-  padding: 12px 14px;
 }
 
 .card-gomoku-home .card-gomoku-head {
@@ -3033,8 +3036,6 @@ body {
 .home-zone-duo .card-sky-shooter {
   align-items: stretch;
   justify-content: flex-start;
-  min-height: 52px;
-  padding: 12px 14px;
   background: linear-gradient(135deg, #e8f4ff 0%, #d8e8ff 55%, #e0d8f8 100%);
   border: 2px solid #5a9fd4;
   width: 100%;
