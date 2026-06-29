@@ -1,5 +1,5 @@
 import { openDuoModePicker } from "./online-duo.js";
-import { AI_PLAYER_ID, GRANDMASTER_LEVEL, requestXiangqiAiMove, terminateXiangqiAiWorker } from "./xiangqi-ai.js";
+import { AI_PLAYER_ID, GRANDMASTER_LEVEL, NIRVANA_LEVEL, requestXiangqiAiMove, terminateXiangqiAiWorker, pikafishLoadState } from "./xiangqi-ai.js";
 import {
   ensureXiangqiBoardSvg,
   renderXiangqiBoardSvg,
@@ -71,7 +71,12 @@ const AI_LEVELS = [
   { level: 2, label: "普通", desc: "會吃子、會將軍，日常陪練。" },
   { level: 3, label: "高手", desc: "兩層搜尋＋位置判斷，中盤較難僥倖。" },
   { level: 4, label: "大師", desc: "深層搜尋與吃子延伸，棋力明顯提升。" },
-  { level: 5, label: "宗師", desc: "最強棋力，深度分析約 5 秒，極難戰勝。" },
+  { level: 5, label: "宗師", desc: "內建最強棋力，深度分析約 5 秒，極難戰勝。" },
+  {
+    level: 6,
+    label: "涅槃升華級",
+    desc: "首次需下載約 4.6 MB Pikafish 引擎；開源頂尖象棋 AI，職業級棋力。",
+  },
 ];
 
 function playerName(id) {
@@ -380,8 +385,15 @@ function renderPlayHeader(checkAlert = buildCurrentCheckAlert()) {
   const deepAiThink =
     waitingAi &&
     !headerStatusText &&
-    (game.aiDifficulty || aiDifficulty) >= GRANDMASTER_LEVEL;
-  const bannerStatus = headerStatusText || (deepAiThink ? "電腦宗師深度分析中…" : "");
+    (game.aiDifficulty || aiDifficulty) >= GRANDMASTER_LEVEL &&
+    (game.aiDifficulty || aiDifficulty) < NIRVANA_LEVEL;
+  const nirvanaThink =
+    waitingAi && !headerStatusText && (game.aiDifficulty || aiDifficulty) >= NIRVANA_LEVEL;
+  const bannerStatus =
+    headerStatusText ||
+    (pikafishLoadState.loading ? pikafishLoadState.label || "載入涅槃引擎…" : "") ||
+    (nirvanaThink ? "涅槃引擎深度分析中…" : "") ||
+    (deepAiThink ? "電腦宗師深度分析中…" : "");
 
   renderXiangqiStatusBar({
     redCard: $("#xiangqi-side-red"),
@@ -493,12 +505,25 @@ async function runAiMove(token) {
     return;
   }
   try {
+    const level = game.aiDifficulty || aiDifficulty;
+    let loadPoll = null;
+    if (level >= NIRVANA_LEVEL) {
+      loadPoll = window.setInterval(() => {
+        if (token !== aiMoveToken) {
+          window.clearInterval(loadPoll);
+          return;
+        }
+        renderPlayHeader();
+        if (!pikafishLoadState.loading) window.clearInterval(loadPoll);
+      }, 180);
+    }
     const move = await requestXiangqiAiMove({
       board: cloneBoard(game.board),
       turn: game.turn,
       aiSide,
-      level: game.aiDifficulty || aiDifficulty,
+      level,
     });
+    if (loadPoll) window.clearInterval(loadPoll);
     if (token !== aiMoveToken || !game || game.over || game.turn !== aiSide) return;
     aiMovePending = false;
     if (!move) {

@@ -1,8 +1,15 @@
-/** 五子棋 AI 介面：入門～高手同步運算，大師／宗師走 Web Worker */
+/** 五子棋 AI 介面：入門～高手同步運算，大師／宗師走 Web Worker，涅槃升華走 Rapfi WASM */
 import { computeAiMove, AI_LEVELS, GRANDMASTER_LEVEL } from "./gomoku-ai-core.js?v=gomoku-v8";
+import {
+  NIRVANA_LEVEL,
+  rapfiLoadState,
+  requestRapfiMove,
+  terminateRapfiEngine,
+} from "./rapfi-engine.js";
 
 export const AI_PLAYER_ID = "__ai__";
 export const AI_WORKER_LEVEL = 4;
+export { AI_LEVELS, GRANDMASTER_LEVEL, NIRVANA_LEVEL, rapfiLoadState };
 
 /** @type {Worker | null} */
 let aiWorker = null;
@@ -37,6 +44,13 @@ export function findAiMove(cells, opts) {
 export function requestAiMove(cells, opts) {
   const difficulty = opts.difficulty ?? 2;
   const board = cloneBoard(cells);
+
+  if (difficulty >= NIRVANA_LEVEL) {
+    return requestRapfiMove({
+      moveHistory: opts.moveHistory || [],
+      blackPlayerId: opts.blackId,
+    });
+  }
 
   if (difficulty < AI_WORKER_LEVEL) {
     return Promise.resolve(computeAiMove(board, opts));
@@ -83,10 +97,9 @@ export function requestAiMove(cells, opts) {
 }
 
 export function terminateAiWorker() {
+  terminateRapfiEngine();
   if (aiWorker) {
     aiWorker.terminate();
     aiWorker = null;
   }
 }
-
-export { AI_LEVELS, GRANDMASTER_LEVEL };

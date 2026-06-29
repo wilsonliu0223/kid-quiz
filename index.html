@@ -16,7 +16,7 @@
       })();
     </script>
     <link rel="manifest" href="manifest.json" />
-    <link rel="stylesheet" href="css/app.css?v=app-v37.0" />
+    <link rel="stylesheet" href="css/app.css?v=app-v37.1" />
     <script type="importmap">
       {
         "imports": {
@@ -44,7 +44,7 @@
         <header class="app-header">
           <div class="app-title-row">
             <h1 class="app-title" id="home-title">家裡練習</h1>
-            <span class="app-version" id="app-version" aria-label="版本">v36.9</span>
+            <span class="app-version" id="app-version" aria-label="版本">v37.1</span>
           </div>
           <p class="app-subtitle">長按標題可新增／管理使用者</p>
         </header>
@@ -744,7 +744,7 @@
             </div>
             <div class="home-zone gomoku-ai-zone">
               <h3 class="home-zone-title">誰拿黑子（先手）</h3>
-              <p class="gomoku-ai-start-hint">黑棋有禁手；挑戰宗師時建議執白</p>
+              <p class="gomoku-ai-start-hint">宗師為內建最強；涅槃升華級首次約下載 1.2 MB 引擎。挑戰高難度建議執白。</p>
               <div class="gomoku-ai-start-cards" id="gomoku-ai-start-btns"></div>
             </div>
           </div>
@@ -937,7 +937,7 @@
             <div class="home-zone xiangqi-ai-zone">
               <p class="home-zone-title">電腦難度</p>
               <div class="xiangqi-ai-difficulty-cards" id="xiangqi-ai-difficulty-chips"></div>
-              <p class="xiangqi-ai-start-hint">宗師每步約分析 5 秒；棋力最強，適合想認真練棋時挑戰</p>
+              <p class="xiangqi-ai-start-hint">宗師為內建最強；涅槃升華級首次約下載 4.6 MB Pikafish 引擎，棋力最強。</p>
             </div>
             <div class="home-zone xiangqi-ai-zone">
               <p class="home-zone-title">執棋顏色</p>
@@ -1413,7 +1413,7 @@
         el.hidden = false;
         el.textContent = msg;
       };
-      import("./js/app.js?v=app-v36.9").catch((e) => {
+      import("./js/app.js?v=app-v37.1").catch((e) => {
         console.error(e);
         showLoadError(
           `程式載入失敗：${e.message || e}。請關閉分頁重開；若仍無效請到瀏覽器設定清除此網站快取。`,

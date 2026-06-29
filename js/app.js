@@ -71,14 +71,14 @@ import {
   initFlipMath,
   renderMathHomePlayers,
 } from "./flip-math-deck30.js";
-import { initGomoku, renderGomokuHomePlayers } from "./gomoku.js?v=gomoku-v14";
-import { initXiangqi, renderXiangqiHomePlayers } from "./xiangqi.js?v=xiangqi-v4";
+import { initGomoku, renderGomokuHomePlayers } from "./gomoku.js?v=gomoku-v15";
+import { initXiangqi, renderXiangqiHomePlayers } from "./xiangqi.js?v=xiangqi-v5";
 import { initOnlineDuo } from "./online-duo.js";
 import { initSkyOnline, openSkyDuoMenu } from "./sky-online.js?v=sky-duo-v43";
 import "./flip-zh-online.js";
 import "./flip-math-online.js";
-import "./gomoku-online.js?v=gomoku-v14";
-import "./xiangqi-online.js?v=xiangqi-v4";
+import "./gomoku-online.js?v=gomoku-v15";
+import "./xiangqi-online.js?v=xiangqi-v5";
 import {
   initRaceDuo,
   openZhRaceDuoMode,

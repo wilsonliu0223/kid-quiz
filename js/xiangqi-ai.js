@@ -1,12 +1,18 @@
-/** 象棋 AI：入門～高手同步運算，大師／宗師走 Web Worker */
+/** 象棋 AI：入門～高手同步運算，大師／宗師走 Web Worker，涅槃升華走 Pikafish WASM */
 import {
   computeXiangqiAiMove,
   GRANDMASTER_LEVEL,
   MASTER_WORKER_LEVEL,
 } from "./xiangqi-ai-core.js";
+import {
+  NIRVANA_LEVEL,
+  pikafishLoadState,
+  requestPikafishMove,
+  terminatePikafishEngine,
+} from "./pikafish-engine.js";
 
 export const AI_PLAYER_ID = "__xiangqi_ai__";
-export { GRANDMASTER_LEVEL, MASTER_WORKER_LEVEL };
+export { GRANDMASTER_LEVEL, MASTER_WORKER_LEVEL, NIRVANA_LEVEL, pikafishLoadState };
 
 /** @type {Worker | null} */
 let aiWorker = null;
@@ -22,13 +28,6 @@ function getAiWorker() {
   return aiWorker;
 }
 
-/**
- * @param {object} opts
- * @param {string[][]} opts.board
- * @param {"red"|"black"} opts.turn
- * @param {"red"|"black"} opts.aiSide
- * @param {number} opts.level
- */
 export function chooseAiMove(opts) {
   return computeXiangqiAiMove({
     board: cloneBoard(opts.board),
@@ -44,9 +43,8 @@ export function chooseAiMove(opts) {
  * @param {"red"|"black"} opts.turn
  * @param {"red"|"black"} opts.aiSide
  * @param {number} opts.level
- * @returns {Promise<import('./xiangqi-core.js').XiangqiMove | null>}
  */
-export function requestXiangqiAiMove(opts) {
+export async function requestXiangqiAiMove(opts) {
   const level = opts.level ?? 2;
   const payload = {
     board: cloneBoard(opts.board),
@@ -55,12 +53,18 @@ export function requestXiangqiAiMove(opts) {
     level,
   };
 
+  if (level >= NIRVANA_LEVEL) {
+    const move = await requestPikafishMove({ board: payload.board, turn: payload.turn });
+    if (!move) return null;
+    return move;
+  }
+
   if (level < MASTER_WORKER_LEVEL) {
-    return Promise.resolve(computeXiangqiAiMove(payload));
+    return computeXiangqiAiMove(payload);
   }
 
   if (typeof Worker === "undefined") {
-    return Promise.resolve(computeXiangqiAiMove(payload));
+    return computeXiangqiAiMove(payload);
   }
 
   const requestId = ++aiRequestSeq;
@@ -89,6 +93,7 @@ export function requestXiangqiAiMove(opts) {
 }
 
 export function terminateXiangqiAiWorker() {
+  terminatePikafishEngine();
   if (aiWorker) {
     aiWorker.terminate();
     aiWorker = null;

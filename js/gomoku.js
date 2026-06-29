@@ -1,6 +1,6 @@
 import { forbiddenLabel, wouldBlackForbidden } from "./gomoku-renju.js?v=gomoku-v12";
 import { openDuoModePicker } from "./online-duo.js";
-import { AI_PLAYER_ID, requestAiMove, terminateAiWorker } from "./gomoku-ai.js?v=gomoku-v12";
+import { AI_PLAYER_ID, requestAiMove, terminateAiWorker, rapfiLoadState, NIRVANA_LEVEL } from "./gomoku-ai.js?v=gomoku-v15";
 import {
   resetGomokuBoardZoom,
   rebindGomokuBoardZoom,
@@ -95,6 +95,12 @@ const AI_DIFFICULTIES = [
     label: "宗師",
     tier: "內建最強",
     desc: "含 VCF/VCT 戰術與深度分析（每步最長約 20 秒），建議執白挑戰。",
+  },
+  {
+    level: 6,
+    label: "涅槃升華級",
+    tier: "WASM 世界級",
+    desc: "首次需下載約 1.2 MB Rapfi 引擎；開源頂尖五子棋 AI，連珠戰術極強，建議執白。",
   },
 ];
 
@@ -276,11 +282,17 @@ function renderPlayHeader(statusText = "") {
   const renjuHint = $("#gomoku-renju-hint");
   const waitingAi = game.mode === "ai" && !game.over && aiMovePending;
   const humanTurn = isHumanTurn();
+  const diff = game.aiDifficulty ?? aiDifficulty;
   const overTitle = game.over
     ? game.winner
       ? `${playerName(game.winner)} 連五獲勝！`
       : "和棋！"
     : "";
+
+  const displayStatus =
+    statusText ||
+    (rapfiLoadState.loading ? rapfiLoadState.label || "載入涅槃引擎…" : "") ||
+    (waitingAi && diff >= NIRVANA_LEVEL ? "涅槃引擎思考中…" : "");
 
   renderDuoTurnStatusBar({
     theme: "gomoku",
@@ -291,21 +303,21 @@ function renderPlayHeader(statusText = "") {
     turnSub: $("#gomoku-turn-sub"),
     leftName: playerName(game.blackPlayerId),
     rightName: playerName(whitePlayerId()),
-    turn: game.over || statusText ? null : currentTurnSide(),
+    turn: game.over || displayStatus ? null : currentTurnSide(),
     turnPlayerName: playerName(game.currentPlayerId),
-    over: game.over && !statusText,
+    over: game.over && !displayStatus,
     overTitle,
-    waitingAi: waitingAi && !statusText,
-    statusText,
-    youHint: waitingAi
+    waitingAi: waitingAi && !displayStatus,
+    statusText: displayStatus,
+    youHint: waitingAi && !displayStatus
       ? ` · ${stoneLabel(game.currentPlayerId)} · 請稍候…`
-      : humanTurn && !statusText
+      : humanTurn && !displayStatus
         ? " · 輪到你"
         : "",
   });
 
   if (renjuHint) {
-    if (statusText || game.over) {
+    if (displayStatus || game.over) {
       renjuHint.classList.remove("is-visible");
       renjuHint.setAttribute("aria-hidden", "true");
     } else {
@@ -550,12 +562,28 @@ async function runAiMove() {
   const whiteId = otherPlayer(blackId);
 
   try {
+    const diff = game.aiDifficulty ?? aiDifficulty;
+    let loadPoll = null;
+    if (diff >= NIRVANA_LEVEL) {
+      loadPoll = window.setInterval(() => {
+        if (token !== aiMoveToken) {
+          window.clearInterval(loadPoll);
+          return;
+        }
+        renderPlayHeader();
+        if (!rapfiLoadState.loading) window.clearInterval(loadPoll);
+      }, 180);
+    }
+
     const move = await requestAiMove(game.cells, {
       aiId: game.aiPlayerId,
       blackId,
       whiteId,
-      difficulty: game.aiDifficulty ?? aiDifficulty,
+      difficulty: diff,
+      moveHistory: game.moveHistory || [],
     });
+
+    if (loadPoll) window.clearInterval(loadPoll);
 
     if (token !== aiMoveToken) return;
     if (!game || game.mode !== "ai" || game.over || game.currentPlayerId !== game.aiPlayerId) {
