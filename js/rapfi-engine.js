@@ -2,6 +2,8 @@ import { CONFIG } from "./config.site.js";
 
 export const NIRVANA_LEVEL = 6;
 
+const WORKER_URL = new URL("./rapfi-engine-worker.js?v=3", import.meta.url);
+
 /** @type {Worker | null} */
 let worker = null;
 let ready = false;
@@ -10,8 +12,8 @@ let requestSeq = 0;
 /** @type {"full" | "lite" | ""} */
 let engineMode = "";
 
-/** @type {{ loading: boolean, progress: number, label: string, mode: string }} */
-export const rapfiLoadState = { loading: false, progress: 0, label: "", mode: "" };
+/** @type {{ loading: boolean, progress: number, label: string, mode: string, failReason: string }} */
+export const rapfiLoadState = { loading: false, progress: 0, label: "", mode: "", failReason: "" };
 
 function siteRoot() {
   const path = window.location.pathname.replace(/\/[^/]*$/, "/");
@@ -34,7 +36,7 @@ function localFallbackRoot() {
 
 function spawnWorker() {
   if (worker) worker.terminate();
-  worker = new Worker(new URL("./rapfi-engine-worker.js", import.meta.url));
+  worker = new Worker(WORKER_URL);
   return worker;
 }
 
@@ -50,6 +52,7 @@ export function terminateRapfiEngine() {
   rapfiLoadState.progress = 0;
   rapfiLoadState.label = "";
   rapfiLoadState.mode = "";
+  rapfiLoadState.failReason = "";
 }
 
 function bindWorkerInit(w, mode) {
@@ -67,6 +70,7 @@ function bindWorkerInit(w, mode) {
         w.removeEventListener("error", onError);
         engineMode = data.mode === "full" ? "full" : "lite";
         rapfiLoadState.mode = engineMode;
+        rapfiLoadState.failReason = "";
         resolve(engineMode);
       } else if (data.type === "initFailed") {
         w.removeEventListener("message", onMessage);
@@ -102,13 +106,16 @@ export function ensureRapfiReady() {
   rapfiLoadState.loading = true;
   rapfiLoadState.progress = 0;
   rapfiLoadState.label = "載入 Rapfi 完整引擎…";
+  rapfiLoadState.failReason = "";
 
   initPromise = (async () => {
-    const w = spawnWorker();
+    spawnWorker();
     try {
-      await bindWorkerInit(w, "full");
+      await bindWorkerInit(worker, "full");
     } catch (fullErr) {
+      const reason = fullErr instanceof Error ? fullErr.message : String(fullErr);
       console.warn("Rapfi full engine failed, using lite fallback", fullErr);
+      rapfiLoadState.failReason = reason;
       spawnWorker();
       rapfiLoadState.label = "完整版載入失敗，改用精簡引擎…";
       rapfiLoadState.progress = 0;

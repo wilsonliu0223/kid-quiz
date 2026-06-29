@@ -12,7 +12,7 @@ let engineMode = "lite";
 let pendingResolve = null;
 
 function locateFile(url) {
-  if (/^rapfi.*\.data$/.test(url)) {
+  if (/^rapfi.*\.data$/i.test(url)) {
     return dataFileUrl || engineDir + "rapfi.data";
   }
   return engineDir + url;
@@ -50,6 +50,8 @@ function postProgress(status) {
       loaded: Number(match[1]),
       total: Number(match[2]),
     });
+  } else if (/Downloading data/i.test(String(status || ""))) {
+    self.postMessage({ type: "progress", loaded: 0, total: 40306406 });
   } else if (status === "Running..." || status === "") {
     self.postMessage({ type: "progress", loaded: 1, total: 1 });
   }
@@ -63,11 +65,20 @@ async function bootEngine(baseUrl, scriptName, mode, nnueDataUrl) {
   engine = await Rapfi({
     locateFile,
     onReceiveStdout: onStdout,
-    onReceiveStderr: () => {},
+    onReceiveStderr: (line) => {
+      console.error("[rapfi]", line);
+    },
     onExit: () => {},
     setStatus: postProgress,
   });
   engine.sendCommand("START 15");
+}
+
+function fullScriptCandidates() {
+  const list = [];
+  if (simd128Supported()) list.push("rapfi-single-simd128.js");
+  list.push("rapfi-single.js");
+  return list;
 }
 
 self.onmessage = async (event) => {
@@ -76,15 +87,29 @@ self.onmessage = async (event) => {
     if (msg.type === "init") {
       const wantFull = msg.mode === "full";
       if (wantFull) {
-        if (!msg.fullEngineUrl || !msg.dataFileUrl || !simd128Supported()) {
-          throw new Error("full engine unavailable");
+        if (!msg.fullEngineUrl || !msg.dataFileUrl) {
+          throw new Error("full engine urls missing");
         }
-        await bootEngine(msg.fullEngineUrl, "rapfi-single-simd128.js", "full", msg.dataFileUrl);
-      } else {
-        if (!msg.localFallbackUrl) throw new Error("no fallback engine");
-        await bootEngine(msg.localFallbackUrl, "rapfi-single.js", "lite", msg.localFallbackUrl + "rapfi.data");
+        const scripts = msg.script ? [msg.script] : fullScriptCandidates();
+        let lastErr = null;
+        for (const scriptName of scripts) {
+          try {
+            await bootEngine(msg.fullEngineUrl, scriptName, "full", msg.dataFileUrl);
+            self.postMessage({ type: "ready", mode: engineMode, script: scriptName });
+            return;
+          } catch (err) {
+            lastErr = err;
+            engine = null;
+            engineDir = "";
+            dataFileUrl = "";
+          }
+        }
+        throw lastErr || new Error("full engine init failed");
       }
-      self.postMessage({ type: "ready", mode: engineMode });
+
+      if (!msg.localFallbackUrl) throw new Error("no fallback engine");
+      await bootEngine(msg.localFallbackUrl, "rapfi-single.js", "lite", msg.localFallbackUrl + "rapfi.data");
+      self.postMessage({ type: "ready", mode: engineMode, script: "fallback" });
       return;
     }
 
