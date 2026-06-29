@@ -25,6 +25,7 @@ import {
   ensureAnqiBoardSvg,
   renderAnqiBoardSvg,
   renderAnqiStatusBar,
+  resetAnqiBoardSvg,
 } from "./anqi-board-ui.js";
 import {
   AI_PLAYER_ID,
@@ -306,9 +307,52 @@ async function beginGame(opts) {
 
 function resetBoardDom() {
   const svg = $("#anqi-board");
-  if (svg) svg.replaceWith(svg.cloneNode(false));
+  if (svg) {
+    svg.replaceWith(svg.cloneNode(false));
+    resetAnqiBoardSvg($("#anqi-board"));
+  }
   $("#anqi-win-overlay")?.setAttribute("hidden", "");
   deps?.showView("anqiPlay");
+}
+
+function abandonAnqiGame() {
+  aiMoveToken += 1;
+  presentToken += 1;
+  actionPresenting = false;
+  aiMovePending = false;
+  game = null;
+  setAnqiActionToast("");
+}
+
+/**
+ * @param {{ toSetup?: boolean }} [opts]
+ */
+function requestLeaveAnqiPlay(opts = {}) {
+  if (!game) {
+    deps?.showView(setupMode === "ai" ? "anqiFirst" : "xiangqiVariant");
+    return;
+  }
+  const wasAi = game.mode === "ai";
+  const inProgress = !game.over;
+  const msg = inProgress
+    ? "離開棋局？這局將放棄，進度不會儲存。"
+    : "離開棋局？";
+  if (!confirm(msg)) return;
+  abandonAnqiGame();
+  if (opts.toSetup || wasAi) {
+    setFirstScreenMode(wasAi ? "ai" : "local");
+    deps?.showView("anqiFirst");
+  } else {
+    deps?.showView("xiangqiVariant");
+  }
+}
+
+function goToAnqiSetupFromResult() {
+  if (!game) return;
+  const wasAi = game.mode === "ai";
+  abandonAnqiGame();
+  setFirstScreenMode(wasAi ? "ai" : "local");
+  deps?.showView("anqiFirst");
 }
 
 function ensureBoardSvg() {
@@ -467,11 +511,6 @@ function syncWinOverlay() {
 function dismissWinOverlay() {
   localWinUiDismissed = true;
   $("#anqi-win-overlay")?.setAttribute("hidden", "");
-}
-
-function showWinOptions() {
-  localWinUiDismissed = false;
-  syncWinOverlay();
 }
 
 function applyCommit(action, result) {
@@ -682,15 +721,7 @@ function bindAnqiEvents() {
     if (setupMode === "ai") deps?.showView("duoMode");
     else deps?.showView("xiangqiVariant");
   });
-  $("#btn-anqi-play-back")?.addEventListener("click", () => {
-    if (confirm("離開棋局？目前進度不會儲存。")) {
-      aiMoveToken += 1;
-      presentToken += 1;
-      actionPresenting = false;
-      game = null;
-      deps?.showView("xiangqiVariant");
-    }
-  });
+  $("#btn-anqi-play-back")?.addEventListener("click", () => requestLeaveAnqiPlay());
   $("#btn-anqi-win-dismiss")?.addEventListener("click", dismissWinOverlay);
   $("#btn-anqi-win-replay")?.addEventListener("click", () => {
     if (!game) return;
@@ -703,8 +734,8 @@ function bindAnqiEvents() {
     });
   });
   $("#btn-anqi-win-home")?.addEventListener("click", () => {
-    game = null;
+    abandonAnqiGame();
     deps?.showView("home");
   });
-  $("#btn-anqi-win-options")?.addEventListener("click", showWinOptions);
+  $("#btn-anqi-win-options")?.addEventListener("click", goToAnqiSetupFromResult);
 }

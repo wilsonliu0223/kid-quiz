@@ -83,7 +83,8 @@ function ensureAnqiDefs(svg) {
  */
 export function ensureAnqiBoardSvg(svg, onCellClick) {
   if (!svg) return null;
-  if (svg.dataset.anqiBound === "1") return svg;
+  if (svg.dataset.anqiBound === "1" && svg.querySelector(".anqi-cell")) return svg;
+  if (svg.dataset.anqiBound === "1") delete svg.dataset.anqiBound;
   svg.dataset.anqiBound = "1";
   svg.setAttribute("viewBox", `0 0 ${DISPLAY_COLS} ${DISPLAY_ROWS}`);
   svg.setAttribute("class", "anqi-svg");
@@ -168,6 +169,12 @@ export function ensureAnqiBoardSvg(svg, onCellClick) {
     }
   }
   return svg;
+}
+
+/** 清空棋盤 DOM 後呼叫，讓下次可重新建立格子 */
+export function resetAnqiBoardSvg(svg) {
+  if (!svg) return;
+  delete svg.dataset.anqiBound;
 }
 
 /**

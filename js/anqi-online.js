@@ -20,6 +20,7 @@ import {
   ensureAnqiBoardSvg,
   renderAnqiBoardSvg,
   renderAnqiStatusBar,
+  resetAnqiBoardSvg,
 } from "./anqi-board-ui.js";
 import {
   registerOnlineGame,
@@ -286,7 +287,10 @@ function enterOnlinePlay(snap) {
   celebratedWinKey = null;
   selected = null;
   const svg = $("#anqi-online-board");
-  if (svg) svg.replaceWith(svg.cloneNode(false));
+  if (svg) {
+    svg.replaceWith(svg.cloneNode(false));
+    resetAnqiBoardSvg($("#anqi-online-board"));
+  }
   $("#anqi-online-win-overlay")?.setAttribute("hidden", "");
   getOnlineContext().deps?.showView("anqiOnlinePlay");
   applyRemoteAnqi(snap);
