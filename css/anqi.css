@@ -114,7 +114,7 @@
   transform: rotate(180deg);
 }
 
-.anqi-svg-flipped .anqi-label {
+.anqi-svg-flipped .anqi-label-wrap {
   transform: rotate(180deg);
 }
 
@@ -157,7 +157,7 @@
 }
 
 .anqi-back-mark {
-  font-family: "Noto Serif TC", "Source Han Serif TC", serif;
+  font-family: "KaiTi", "STKaiti", "PingFang TC", "Heiti TC", "Microsoft JhengHei", serif;
   font-size: 0.34px;
   font-weight: 800;
   fill: rgba(255, 236, 190, 0.88);
@@ -166,6 +166,7 @@
   paint-order: stroke fill;
   pointer-events: none;
   user-select: none;
+  text-anchor: middle;
 }
 
 .anqi-disc {
@@ -177,11 +178,12 @@
 }
 
 .anqi-label {
-  font-family: "Noto Serif TC", "Source Han Serif TC", serif;
+  font-family: "KaiTi", "STKaiti", "PingFang TC", "Heiti TC", "Microsoft JhengHei", serif;
   font-size: 0.52px;
   font-weight: 700;
   pointer-events: none;
   user-select: none;
+  text-anchor: middle;
 }
 
 .anqi-hit {

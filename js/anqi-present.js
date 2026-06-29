@@ -97,9 +97,10 @@ export function animateAnqiAction(svg, opts) {
 
     const label = document.createElementNS(NS, "text");
     label.setAttribute("class", "anqi-label");
+    label.setAttribute("x", "0");
+    label.setAttribute("y", "0");
     label.setAttribute("text-anchor", "middle");
-    label.setAttribute("dominant-baseline", "central");
-    label.setAttribute("y", "0.05");
+    label.setAttribute("dy", "0.38em");
     label.textContent = pieceLabel(fromCode);
     fly.appendChild(label);
 

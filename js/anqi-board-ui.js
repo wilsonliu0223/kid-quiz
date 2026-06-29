@@ -14,6 +14,14 @@ import { renderDuoTurnStatusBar } from "./game-turn-status.js";
 
 const SVG_NS = "http://www.w3.org/2000/svg";
 
+/** SVG 文字在圓心置中（iOS 不支援 dominant-baseline: central） */
+function centerPieceText(el, dyEm = "0.38") {
+  el.setAttribute("x", "0");
+  el.setAttribute("y", "0");
+  el.setAttribute("text-anchor", "middle");
+  el.setAttribute("dy", `${dyEm}em`);
+}
+
 /**
  * @param {SVGSVGElement} svg
  */
@@ -133,9 +141,7 @@ export function ensureAnqiBoardSvg(svg, onCellClick) {
 
       const backMark = document.createElementNS(SVG_NS, "text");
       backMark.classList.add("anqi-back-mark");
-      backMark.setAttribute("text-anchor", "middle");
-      backMark.setAttribute("dominant-baseline", "central");
-      backMark.setAttribute("y", "0.04");
+      centerPieceText(backMark);
       backMark.textContent = "棋";
       backLayer.appendChild(backMark);
 
@@ -146,12 +152,13 @@ export function ensureAnqiBoardSvg(svg, onCellClick) {
       disc.setAttribute("r", "0.38");
       g.appendChild(disc);
 
+      const labelWrap = document.createElementNS(SVG_NS, "g");
+      labelWrap.classList.add("anqi-label-wrap");
       const label = document.createElementNS(SVG_NS, "text");
       label.classList.add("anqi-label");
-      label.setAttribute("text-anchor", "middle");
-      label.setAttribute("dominant-baseline", "central");
-      label.setAttribute("y", "0.05");
-      g.appendChild(label);
+      centerPieceText(label);
+      labelWrap.appendChild(label);
+      g.appendChild(labelWrap);
 
       const hit = document.createElementNS(SVG_NS, "rect");
       hit.classList.add("anqi-hit");
