@@ -80,7 +80,7 @@ import "./flip-zh-online.js";
 import "./flip-math-online.js";
 import "./gomoku-online.js?v=gomoku-v21";
 import "./xiangqi-online.js?v=xiangqi-v11";
-import "./anqi-online.js?v=anqi-v11";
+import "./anqi-online.js?v=anqi-v12";
 import {
   initRaceDuo,
   openZhRaceDuoMode,
