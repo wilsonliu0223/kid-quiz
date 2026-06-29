@@ -4,6 +4,7 @@ import {
   cloneState,
   createInitialState,
   decodeAction,
+  detectTaiwanMaterialOutcome,
   ensureAnqiWasm,
   flipAction,
   HIDDEN,
@@ -442,8 +443,20 @@ function computeUiTargets() {
   };
 }
 
+function ensureGameOutcome() {
+  if (!game || game.over) return;
+  const outcome = detectTaiwanMaterialOutcome(game.state);
+  if (!outcome) return;
+  game.over = true;
+  game.winnerPlayerIdx = outcome.draw ? null : (outcome.winner ?? null);
+  aiMovePending = false;
+  actionPresenting = false;
+  game.presentation = null;
+}
+
 function renderBoard() {
   if (!game) return;
+  ensureGameOutcome();
   const svg = ensureBoardSvg();
   if (!svg) return;
   const { targets, jumpTargets, captureTargets, screenTargets, flipTargets } = computeUiTargets();

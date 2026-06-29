@@ -158,15 +158,59 @@ function legalFlipCells(state) {
     .filter((a) => decodeAction(a).isFlip)
     .map((a) => decodeAction(a).from);
 }
+function sidePlayerIdx(state, side) {
+  const want = side === "red" ? 1 : 0;
+  if (state[64] === want) return 0;
+  if (state[65] === want) return 1;
+  return null;
+}
+function detectTaiwanMaterialOutcome(state) {
+  let hasRed = false;
+  let hasBlack = false;
+  let hasHidden = false;
+  for (let i = 0; i < 32; i++) {
+    const c = state[i];
+    if (c === HIDDEN) hasHidden = true;
+    else if (c >= 1 && c <= 7) hasRed = true;
+    else if (c >= 8 && c <= 14) hasBlack = true;
+  }
+  if (hasHidden) return null;
+  if (!hasRed && !hasBlack) return { draw: true };
+  if (!hasRed && hasBlack) {
+    const w = sidePlayerIdx(state, "black");
+    if (w != null) return { draw: false, winner: w };
+    if (state[64] === 0) return { draw: false, winner: 0 };
+    if (state[65] === 0) return { draw: false, winner: 1 };
+    return null;
+  }
+  if (hasRed && !hasBlack) {
+    const w = sidePlayerIdx(state, "red");
+    if (w != null) return { draw: false, winner: w };
+    if (state[64] === 1) return { draw: false, winner: 0 };
+    if (state[65] === 1) return { draw: false, winner: 1 };
+    return null;
+  }
+  return null;
+}
+function mergeTaiwanOutcome(state, result) {
+  const material = detectTaiwanMaterialOutcome(state);
+  if (!material) return result;
+  return {
+    ...result,
+    done: true,
+    draw: material.draw,
+    winner: material.draw ? result.winner : material.winner,
+  };
+}
 function applyAction(state, action, seed) {
   const g = wrapGame(state);
   const step = g.applyStep(action, BigInt(seed));
-  const result = {
+  const result = mergeTaiwanOutcome(step.state, {
     state: cloneState(step.state),
     done: step.done,
     draw: step.draw,
     winner: step.winner,
-  };
+  });
   step.free();
   g.free();
   return result;
@@ -496,6 +540,30 @@ console.log(`台灣炮規則過濾 ${filteredCannon} 步違規走法`);
 
 assertEq(pieceSide(4), "red", "紅俥");
 assertEq(pieceSide(11), "black", "黑車");
+
+{
+  const st = new Int16Array(66);
+  st[0] = 8;
+  st[5] = 11;
+  st[64] = 0;
+  st[65] = 1;
+  const o = detectTaiwanMaterialOutcome(st);
+  assert(o && !o.draw && o.winner === 0, "僅剩黑子時黑方勝");
+}
+{
+  const st = new Int16Array(66);
+  st[0] = 1;
+  st[64] = 1;
+  st[65] = 0;
+  const o = detectTaiwanMaterialOutcome(st);
+  assert(o && !o.draw && o.winner === 0, "僅剩紅子時紅方勝");
+}
+{
+  const st = new Int16Array(66);
+  st[0] = 8;
+  st[1] = HIDDEN;
+  assert(detectTaiwanMaterialOutcome(st) === null, "仍有暗子時不判勝");
+}
 
 console.log("\n--- 結果 ---");
 console.log(`通過: ${passed}`);

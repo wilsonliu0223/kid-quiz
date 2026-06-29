@@ -255,6 +255,55 @@ export function legalActions(state) {
 }
 
 /**
+ * 台灣暗棋終局：棋盤上無暗子，且某一色明子全滅。
+ * @param {Int16Array|number[]} state
+ * @returns {{ draw: boolean, winner?: number } | null}
+ */
+export function detectTaiwanMaterialOutcome(state) {
+  let hasRed = false;
+  let hasBlack = false;
+  let hasHidden = false;
+  for (let i = 0; i < BOARD_CELLS; i++) {
+    const c = state[i];
+    if (c === HIDDEN) hasHidden = true;
+    else if (c >= 1 && c <= 7) hasRed = true;
+    else if (c >= 8 && c <= 14) hasBlack = true;
+  }
+  if (hasHidden) return null;
+  if (!hasRed && !hasBlack) return { draw: true };
+  if (!hasRed && hasBlack) {
+    const w = sidePlayerIdx(state, "black");
+    if (w != null) return { draw: false, winner: w };
+    if (state[64] === 0) return { draw: false, winner: 0 };
+    if (state[65] === 0) return { draw: false, winner: 1 };
+    return null;
+  }
+  if (hasRed && !hasBlack) {
+    const w = sidePlayerIdx(state, "red");
+    if (w != null) return { draw: false, winner: w };
+    if (state[64] === 1) return { draw: false, winner: 0 };
+    if (state[65] === 1) return { draw: false, winner: 1 };
+    return null;
+  }
+  return null;
+}
+
+/**
+ * @param {Int16Array|number[]} state
+ * @param {object} result
+ */
+function mergeTaiwanOutcome(state, result) {
+  const material = detectTaiwanMaterialOutcome(state);
+  if (!material) return result;
+  return {
+    ...result,
+    done: true,
+    draw: material.draw,
+    winner: material.draw ? result.winner : material.winner,
+  };
+}
+
+/**
  * @param {Int16Array|number[]} state
  * @param {number} action
  * @param {bigint|number} seed
@@ -275,7 +324,7 @@ export function applyAction(state, action, seed) {
   };
   step.free();
   g.free();
-  return result;
+  return mergeTaiwanOutcome(next, result);
 }
 
 /**
