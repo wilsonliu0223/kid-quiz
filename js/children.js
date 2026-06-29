@@ -1,13 +1,7 @@
-import { CONFIG } from "./config.site.js";
-
 const KEY_NAMES = "kid-quiz-child-names";
 
 function defaultChildren() {
-  const fromConfig = CONFIG.CHILD_NAMES || {};
-  return [
-    { id: "A", name: fromConfig.A || "思妘" },
-    { id: "B", name: fromConfig.B || "思妤" },
-  ];
+  return [{ id: "A", name: "User1" }];
 }
 
 function migrateStored(raw) {

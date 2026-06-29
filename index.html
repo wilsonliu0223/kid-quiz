@@ -99,21 +99,33 @@
           <h2 class="home-zone-title">雙人對戰</h2>
           <div class="home-duo-cards">
             <button type="button" class="card card-math-open" id="btn-start-math-open">
-              <span class="card-title">數學攤牌</span>
-              <span class="card-desc">全部攤開選牌</span>
+              <span class="card-math-head">
+                <span class="card-title">數學攤牌</span>
+                <span class="card-math-note">全部攤開選牌</span>
+              </span>
             </button>
             <button type="button" class="card card-math-flip" id="btn-start-math-flip">
-              <span class="card-title">數學翻牌</span>
-              <span class="card-desc">每回合翻 5 張</span>
+              <span class="card-math-head">
+                <span class="card-title">數學翻牌</span>
+                <span class="card-math-note">每回合翻 5 張</span>
+              </span>
             </button>
             <button type="button" class="card card-math-guess" id="btn-start-math-guess">
-              <span class="card-title">猜數字</span>
-              <span class="card-desc">比大小猜秘密數</span>
+              <span class="card-math-head">
+                <span class="card-title">猜數字</span>
+                <span class="card-math-note">比大小猜秘密數</span>
+              </span>
             </button>
             <button type="button" class="card card-gomoku card-gomoku-home" id="btn-start-gomoku">
               <span class="card-gomoku-head">
                 <span class="card-title">五子棋</span>
                 <span class="card-gomoku-note">15×15 · 連珠規則 · 黑先禁手（三三、四四、長連）</span>
+              </span>
+            </button>
+            <button type="button" class="card card-xiangqi card-xiangqi-home" id="btn-start-xiangqi">
+              <span class="card-xiangqi-head">
+                <span class="card-title">象棋</span>
+                <span class="card-xiangqi-note">9×10 · 紅先 · 台灣象棋規則 · 繁體棋子</span>
               </span>
             </button>
             <button type="button" class="card card-sky-shooter" id="btn-start-sky-shooter">
@@ -866,6 +878,105 @@
           <button type="button" class="btn btn-secondary btn-block" id="btn-gomoku-online-lobby">回房間列表</button>
           <button type="button" class="btn btn-secondary btn-block" id="btn-gomoku-online-home">回首頁</button>
         </footer>
+      </section>
+
+      <!-- 象棋：誰執紅 -->
+      <section id="view-xiangqi-first" class="view view-hidden" aria-label="象棋誰執紅">
+        <header class="quiz-header quiz-header-xiangqi">
+          <button type="button" class="btn-text" id="btn-xiangqi-first-back">← 返回</button>
+          <span class="quiz-subject">象棋</span>
+        </header>
+        <div class="flip-first-body">
+          <h2 class="flip-first-title" id="xiangqi-first-title">誰執紅（先手）？</h2>
+          <p class="flip-first-meta" id="xiangqi-first-meta">9×10 · 紅先 · 台灣象棋規則</p>
+          <div id="xiangqi-local-setup">
+            <p class="flip-first-hint">
+              誰在練習：<strong id="xiangqi-duo-active-name">思妘</strong>
+            </p>
+            <div class="home-zone">
+              <p class="home-zone-title">對戰對象</p>
+              <div class="lesson-chips" id="xiangqi-duo-opponent-chips"></div>
+            </div>
+            <div class="flip-players-vs" id="xiangqi-duo-matchup">
+              <span id="xiangqi-duo-matchup-a">思妘</span>
+              <span class="flip-vs">VS</span>
+              <span id="xiangqi-duo-matchup-b">思妤</span>
+            </div>
+            <div class="flip-pick-btns" id="xiangqi-pick-btns"></div>
+          </div>
+          <div id="xiangqi-ai-setup" class="xiangqi-ai-setup" hidden>
+            <p class="flip-first-hint">
+              練習者：<strong id="xiangqi-ai-active-name">思妘</strong>
+            </p>
+            <div class="home-zone xiangqi-ai-zone">
+              <p class="home-zone-title">電腦難度</p>
+              <div class="xiangqi-ai-difficulty-cards" id="xiangqi-ai-difficulty-chips"></div>
+            </div>
+            <div class="home-zone xiangqi-ai-zone">
+              <p class="home-zone-title">執棋顏色</p>
+              <div class="xiangqi-ai-start-btns" id="xiangqi-ai-start-btns"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 象棋：對局 -->
+      <section id="view-xiangqi-play" class="view view-hidden" aria-label="象棋對局">
+        <header class="quiz-header quiz-header-xiangqi">
+          <button type="button" class="btn-text" id="btn-xiangqi-play-back">← 返回</button>
+          <span class="quiz-subject">象棋</span>
+        </header>
+        <div class="xiangqi-play-body">
+          <div class="xiangqi-status-bar">
+            <p class="xiangqi-meta" id="xiangqi-red-tag">紅方</p>
+            <p class="xiangqi-turn-label" id="xiangqi-turn-label">輪到</p>
+            <p class="xiangqi-check-hint" id="xiangqi-check-hint" hidden>將軍！</p>
+          </div>
+          <div class="xiangqi-board-wrap">
+            <svg class="xiangqi-svg" id="xiangqi-board" role="img" aria-label="象棋棋盤"></svg>
+            <div class="xiangqi-win-overlay" id="xiangqi-win-overlay" hidden>
+              <div class="xiangqi-win-card">
+                <h2 class="xiangqi-win-title" id="xiangqi-win-title">獲勝</h2>
+                <p class="xiangqi-win-detail" id="xiangqi-win-detail"></p>
+                <div class="xiangqi-win-actions">
+                  <button type="button" class="btn btn-secondary btn-block" id="btn-xiangqi-win-dismiss">繼續觀察棋局</button>
+                  <button type="button" class="btn btn-primary btn-block btn-primary-xiangqi" id="btn-xiangqi-win-replay">再玩一局</button>
+                  <button type="button" class="btn btn-secondary btn-block" id="btn-xiangqi-win-home">回首頁</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 象棋：線上對局 -->
+      <section id="view-xiangqi-online-play" class="view view-hidden" aria-label="象棋線上對局">
+        <header class="quiz-header quiz-header-xiangqi">
+          <button type="button" class="btn-text" id="btn-xiangqi-online-play-back">← 返回</button>
+          <span class="quiz-subject">象棋 · 線上</span>
+        </header>
+        <div class="xiangqi-play-body">
+          <div class="xiangqi-status-bar">
+            <p class="xiangqi-meta" id="xiangqi-online-room-tag">房間</p>
+            <p class="xiangqi-meta" id="xiangqi-online-red-tag">紅方</p>
+            <p class="xiangqi-turn-label" id="xiangqi-online-turn-label">輪到</p>
+            <p class="xiangqi-check-hint" id="xiangqi-online-check-hint" hidden>將軍！</p>
+          </div>
+          <div class="xiangqi-board-wrap">
+            <svg class="xiangqi-svg" id="xiangqi-online-board" role="img" aria-label="象棋棋盤"></svg>
+            <div class="xiangqi-win-overlay" id="xiangqi-online-win-overlay" hidden>
+              <div class="xiangqi-win-card">
+                <h2 class="xiangqi-win-title" id="xiangqi-online-win-title">獲勝</h2>
+                <p class="xiangqi-win-detail" id="xiangqi-online-win-detail"></p>
+                <div class="xiangqi-win-actions">
+                  <button type="button" class="btn btn-secondary btn-block" id="btn-xiangqi-online-win-dismiss">繼續觀察棋局</button>
+                  <button type="button" class="btn btn-secondary btn-block" id="btn-xiangqi-online-win-rematch">再來一局</button>
+                  <button type="button" class="btn btn-secondary btn-block" id="btn-xiangqi-online-win-home">回首頁</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </section>
 
       <!-- 天空射擊：模式選單 -->

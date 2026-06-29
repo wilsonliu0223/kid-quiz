@@ -2046,6 +2046,42 @@ body {
   color: #5a4080;
 }
 
+.card-math-open .card-math-head,
+.card-math-flip .card-math-head,
+.card-math-guess .card-math-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 8px;
+  width: 100%;
+  text-align: left;
+}
+
+.card-math-open .card-title,
+.card-math-flip .card-title,
+.card-math-guess .card-title {
+  flex-shrink: 0;
+}
+
+.card-math-note {
+  font-size: 0.72rem;
+  font-weight: 600;
+  line-height: 1.35;
+  opacity: 0.88;
+}
+
+.card-math-open .card-math-note {
+  color: var(--math-dark);
+}
+
+.card-math-flip .card-math-note {
+  color: #4a5080;
+}
+
+.card-math-guess .card-math-note {
+  color: #5a4080;
+}
+
 .math-guess-panel {
   flex: 1;
   display: flex;
@@ -4172,4 +4208,284 @@ body {
 
 #view-mul-flip-play:has(#mul-flip-card-grid[data-pairs="50"]) .flip-card-back {
   font-size: min(42cqw, 42cqh);
+}
+
+/* ── 象棋 ── */
+:root {
+  --xiangqi: #8b4513;
+  --xiangqi-dark: #5c3310;
+  --xiangqi-board: #e8c88a;
+  --xiangqi-line: rgba(92, 51, 16, 0.75);
+}
+
+.card-xiangqi-home {
+  background: linear-gradient(135deg, #faf0e0 0%, #e8c88a 100%);
+  border: 2px solid var(--xiangqi);
+  width: 100%;
+}
+
+.card-xiangqi-head {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  text-align: left;
+}
+
+.card-xiangqi-home .card-title {
+  color: var(--xiangqi-dark);
+}
+
+.card-xiangqi-note {
+  font-size: 0.72rem;
+  line-height: 1.35;
+  color: var(--xiangqi-dark);
+  opacity: 0.9;
+}
+
+.quiz-header-xiangqi .quiz-subject {
+  color: var(--xiangqi-dark);
+}
+
+#view-xiangqi-play.view-active,
+#view-xiangqi-online-play.view-active {
+  display: flex;
+  flex-direction: column;
+}
+
+.xiangqi-play-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 8px 12px 16px;
+  min-height: 0;
+  gap: 10px;
+}
+
+.xiangqi-status-bar {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 10px;
+  background: #faf3e8;
+  border-radius: 10px;
+  border: 1px solid #d4b896;
+}
+
+.xiangqi-meta,
+.xiangqi-turn-label {
+  margin: 0;
+  font-size: 0.88rem;
+  line-height: 1.35;
+}
+
+.xiangqi-turn-label {
+  font-weight: 700;
+  color: var(--xiangqi-dark);
+}
+
+.xiangqi-check-hint {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: #c41e1e;
+}
+
+.xiangqi-check-hint[hidden] {
+  display: none;
+}
+
+.xiangqi-board-wrap {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  width: min(100%, 380px);
+  max-height: min(72vh, 520px);
+  margin: 0 auto;
+  aspect-ratio: 8 / 9;
+  background: var(--xiangqi-board);
+  border: 4px solid var(--xiangqi-dark);
+  border-radius: 6px;
+  box-shadow: inset 0 0 0 8px rgba(255, 248, 235, 0.35);
+  padding: 10px;
+}
+
+.xiangqi-svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  color: var(--xiangqi-line);
+  overflow: visible;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+}
+
+.xiangqi-river-label {
+  fill: rgba(92, 51, 16, 0.55);
+  font-family: "KaiTi", "STKaiti", "BiauKai", serif;
+  font-size: 0.42px;
+  font-weight: 700;
+  pointer-events: none;
+}
+
+.xiangqi-point {
+  cursor: pointer;
+  pointer-events: all;
+}
+
+.xiangqi-hit {
+  fill: rgba(0, 0, 0, 0.01);
+  stroke: none;
+  cursor: pointer;
+  pointer-events: all;
+}
+
+.xiangqi-disc {
+  stroke-width: 0.06;
+  filter: drop-shadow(0 0.04px 0.08px rgba(0, 0, 0, 0.25));
+  pointer-events: none;
+}
+
+.xiangqi-label {
+  font-family: "KaiTi", "STKaiti", "BiauKai", "AR PL UKai TW", serif;
+  font-size: 0.44px;
+  font-weight: 700;
+  pointer-events: none;
+}
+
+.xiangqi-piece-red .xiangqi-disc {
+  fill: #f5d9b0;
+  stroke: #a0522d;
+}
+
+.xiangqi-piece-red .xiangqi-label {
+  fill: #b91c1c;
+}
+
+.xiangqi-piece-black .xiangqi-disc {
+  fill: #e8dcc8;
+  stroke: #5c4a32;
+}
+
+.xiangqi-piece-black .xiangqi-label {
+  fill: #1a1a1a;
+}
+
+.xiangqi-point.is-selected .xiangqi-disc {
+  stroke: #f59e0b;
+  stroke-width: 0.1;
+}
+
+.xiangqi-point.is-target .xiangqi-hit {
+  fill: rgba(34, 197, 94, 0.55);
+  stroke: rgba(255, 255, 255, 0.9);
+  stroke-width: 0.04;
+}
+
+.xiangqi-point.is-last .xiangqi-disc {
+  stroke: #3b82f6;
+  stroke-width: 0.1;
+}
+
+.xiangqi-win-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.45);
+  padding: 16px;
+}
+
+.xiangqi-win-overlay[hidden] {
+  display: none !important;
+  pointer-events: none !important;
+}
+
+.xiangqi-win-card {
+  width: min(100%, 300px);
+  background: #fff;
+  border-radius: 14px;
+  padding: 20px 18px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
+}
+
+.xiangqi-win-title {
+  margin: 0 0 8px;
+  text-align: center;
+  color: var(--xiangqi-dark);
+  font-size: 1.35rem;
+}
+
+.xiangqi-win-detail {
+  margin: 0 0 16px;
+  text-align: center;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.xiangqi-win-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.btn-primary-xiangqi {
+  background: var(--xiangqi);
+  border-color: var(--xiangqi-dark);
+}
+
+.xiangqi-ai-setup {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.xiangqi-ai-zone .home-zone-title {
+  margin-bottom: 8px;
+}
+
+.xiangqi-ai-difficulty-cards,
+.xiangqi-ai-start-btns {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.xiangqi-ai-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  width: 100%;
+  padding: 12px 14px;
+  border: 2px solid #d4b896;
+  border-radius: 12px;
+  background: #fffaf3;
+  text-align: left;
+  cursor: pointer;
+}
+
+.xiangqi-ai-card strong {
+  font-size: 0.95rem;
+  color: var(--xiangqi-dark);
+}
+
+.xiangqi-ai-card span {
+  font-size: 0.78rem;
+  color: var(--muted);
+  line-height: 1.35;
+}
+
+.xiangqi-ai-card.is-selected {
+  border-color: var(--xiangqi);
+  background: linear-gradient(135deg, #faf0e0 0%, #f0d9b0 100%);
+  box-shadow: inset 0 0 0 1px rgba(139, 69, 19, 0.2);
+}
+
+.xiangqi-ai-start-btns .btn {
+  text-align: center;
 }
