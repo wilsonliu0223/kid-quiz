@@ -74,7 +74,7 @@ const AI_LEVELS = [
   { level: 5, label: "宗師", desc: "內建最強棋力，深度分析約 5 秒，極難戰勝。" },
   {
     level: 6,
-    label: "涅槃升華級",
+    label: "涅槃",
     desc: "首次需下載約 4.6 MB Pikafish 引擎；開源頂尖象棋 AI，職業級棋力。",
   },
 ];
@@ -392,7 +392,7 @@ function renderPlayHeader(checkAlert = buildCurrentCheckAlert()) {
   const bannerStatus =
     headerStatusText ||
     (pikafishLoadState.loading ? pikafishLoadState.label || "載入涅槃引擎…" : "") ||
-    (nirvanaThink ? "涅槃引擎深度分析中…" : "") ||
+    (nirvanaThink ? "涅槃思考中…" : "") ||
     (deepAiThink ? "電腦宗師深度分析中…" : "");
 
   renderXiangqiStatusBar({

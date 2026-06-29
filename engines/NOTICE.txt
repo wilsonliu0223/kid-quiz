@@ -1,10 +1,10 @@
-Third-party WASM engines (涅槃升華級)
+Third-party WASM engines
 
-五子棋 Rapfi (fallback build)
+五子棋 Rapfi（涅槃）
 - Source: https://github.com/dhbloo/rapfi
 - Bundled files under engines/rapfi/fallback/
 
-象棋 Pikafish
+象棋 Pikafish（涅槃）
 - Source: https://github.com/official-pikafish/Pikafish
 - Engine files under engines/pikafish/
 - License: GNU GPL v3

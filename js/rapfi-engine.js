@@ -5,11 +5,13 @@ let worker = null;
 let ready = false;
 let initPromise = null;
 let requestSeq = 0;
+/** @type {"full" | "lite" | ""} */
+let engineMode = "";
 
-/** @type {{ loading: boolean, progress: number, label: string }} */
-export const rapfiLoadState = { loading: false, progress: 0, label: "" };
+/** @type {{ loading: boolean, progress: number, label: string, mode: string }} */
+export const rapfiLoadState = { loading: false, progress: 0, label: "", mode: "" };
 
-function enginesRoot() {
+function localFallbackRoot() {
   const path = window.location.pathname.replace(/\/[^/]*$/, "/");
   return `${window.location.origin}${path}engines/rapfi/fallback/`;
 }
@@ -28,9 +30,11 @@ export function terminateRapfiEngine() {
   }
   ready = false;
   initPromise = null;
+  engineMode = "";
   rapfiLoadState.loading = false;
   rapfiLoadState.progress = 0;
   rapfiLoadState.label = "";
+  rapfiLoadState.mode = "";
 }
 
 export function ensureRapfiReady() {
@@ -39,7 +43,7 @@ export function ensureRapfiReady() {
 
   rapfiLoadState.loading = true;
   rapfiLoadState.progress = 0;
-  rapfiLoadState.label = "載入 Rapfi 引擎…";
+  rapfiLoadState.label = "載入 Rapfi 完整引擎…";
 
   const w = getWorker();
   initPromise = new Promise((resolve, reject) => {
@@ -47,13 +51,16 @@ export function ensureRapfiReady() {
       const data = event.data || {};
       if (data.type === "progress" && data.total > 0) {
         rapfiLoadState.progress = data.loaded / data.total;
-        rapfiLoadState.label = `載入 Rapfi 引擎… ${Math.round(rapfiLoadState.progress * 100)}%`;
+        const mb = data.total > 5_000_000 ? "（完整 NNUE，約 40 MB）" : "";
+        rapfiLoadState.label = `載入 Rapfi 引擎… ${Math.round(rapfiLoadState.progress * 100)}%${mb}`;
       } else if (data.type === "ready") {
         w.removeEventListener("message", onMessage);
         w.removeEventListener("error", onError);
         ready = true;
+        engineMode = data.mode === "full" ? "full" : "lite";
         rapfiLoadState.loading = false;
         rapfiLoadState.progress = 1;
+        rapfiLoadState.mode = engineMode;
         rapfiLoadState.label = "";
         resolve();
       } else if (data.type === "result" && data.error) {
@@ -73,7 +80,7 @@ export function ensureRapfiReady() {
     };
     w.addEventListener("message", onMessage);
     w.addEventListener("error", onError);
-    w.postMessage({ type: "init", baseUrl: enginesRoot() });
+    w.postMessage({ type: "init", localFallbackUrl: localFallbackRoot() });
   });
 
   return initPromise;

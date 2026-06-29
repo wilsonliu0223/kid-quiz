@@ -1,6 +1,6 @@
 import { forbiddenLabel, wouldBlackForbidden } from "./gomoku-renju.js?v=gomoku-v12";
 import { openDuoModePicker } from "./online-duo.js";
-import { AI_PLAYER_ID, requestAiMove, terminateAiWorker, rapfiLoadState, NIRVANA_LEVEL } from "./gomoku-ai.js?v=gomoku-v15";
+import { AI_PLAYER_ID, requestAiMove, terminateAiWorker, rapfiLoadState, NIRVANA_LEVEL } from "./gomoku-ai.js?v=gomoku-v16";
 import {
   resetGomokuBoardZoom,
   rebindGomokuBoardZoom,
@@ -98,9 +98,9 @@ const AI_DIFFICULTIES = [
   },
   {
     level: 6,
-    label: "涅槃升華級",
-    tier: "WASM 世界級",
-    desc: "首次需下載約 1.2 MB Rapfi 引擎；開源頂尖五子棋 AI，連珠戰術極強，建議執白。",
+    label: "涅槃",
+    tier: "Rapfi 滿血",
+    desc: "完整 Rapfi NNUE（首次約 40 MB）；單步最長 60 秒，棋力接近 Gomocalc。建議執白。",
   },
 ];
 
@@ -292,7 +292,11 @@ function renderPlayHeader(statusText = "") {
   const displayStatus =
     statusText ||
     (rapfiLoadState.loading ? rapfiLoadState.label || "載入涅槃引擎…" : "") ||
-    (waitingAi && diff >= NIRVANA_LEVEL ? "涅槃引擎思考中…" : "");
+    (waitingAi && diff >= NIRVANA_LEVEL
+      ? rapfiLoadState.mode === "lite"
+        ? "涅槃思考中（精簡引擎）…"
+        : "涅槃思考中…"
+      : "");
 
   renderDuoTurnStatusBar({
     theme: "gomoku",

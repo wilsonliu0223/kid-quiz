@@ -1,4 +1,4 @@
-/** 五子棋 AI 介面：入門～高手同步運算，大師／宗師走 Web Worker，涅槃升華走 Rapfi WASM */
+/** 五子棋 AI 介面：入門～高手同步運算，大師／宗師走 Web Worker，涅槃走 Rapfi 完整 WASM */
 import { computeAiMove, AI_LEVELS, GRANDMASTER_LEVEL } from "./gomoku-ai-core.js?v=gomoku-v8";
 import {
   NIRVANA_LEVEL,

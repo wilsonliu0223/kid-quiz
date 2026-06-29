@@ -1,4 +1,4 @@
-/** 象棋 AI：入門～高手同步運算，大師／宗師走 Web Worker，涅槃升華走 Pikafish WASM */
+/** 象棋 AI：入門～高手同步運算，大師／宗師走 Web Worker，涅槃走 Pikafish WASM */
 import {
   computeXiangqiAiMove,
   GRANDMASTER_LEVEL,
