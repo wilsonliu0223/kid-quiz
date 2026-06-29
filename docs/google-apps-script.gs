@@ -8,16 +8,20 @@
  * 產生的網址填到 js/config.site.js：
  *   SCORE_LOG_URL = "https://script.google.com/macros/s/...../exec"
  *
- * 第一次記錄成績會自動建立「成績」工作表。
+ * 第一次記錄成績會自動建立「成績」工作表；造訪會自動建立「造訪」工作表。
  */
 const SHEET_ZH = "國語";
 const SHEET_SCORES = "成績";
+const SHEET_VISITS = "造訪";
 const QUIZ_TYPES = ["生字"];
 
 function doGet(e) {
   const p = e && e.parameter ? e.parameter : {};
   if (p.action === "logScore") {
     return appendScoreRow(p);
+  }
+  if (p.action === "logVisit") {
+    return appendVisitRow(p);
   }
   return loadZhJson();
 }
@@ -27,6 +31,9 @@ function doPost(e) {
     const data = JSON.parse(e.postData.contents);
     if (data.action === "logScore") {
       return appendScoreRow(data);
+    }
+    if (data.action === "logVisit") {
+      return appendVisitRow(data);
     }
   } catch (err) {
     return jsonOut({ ok: false, error: String(err) });
@@ -69,6 +76,35 @@ function appendScoreRow(p) {
     Number(p.correct) || 0,
     Number(p.total) || 0,
     Number(p.pending) || 0,
+  ]);
+
+  return jsonOut({ ok: true });
+}
+
+function appendVisitRow(p) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sheet = ss.getSheetByName(SHEET_VISITS);
+  if (!sheet) {
+    sheet = ss.insertSheet(SHEET_VISITS);
+    sheet.appendRow(["時間", "IP", "訪客識別", "頁面", "版本", "裝置"]);
+    sheet.setFrozenRows(1);
+  }
+
+  const tz = Session.getScriptTimeZone();
+  let when = new Date();
+  if (p.at) {
+    const parsed = new Date(p.at);
+    if (!isNaN(parsed.getTime())) when = parsed;
+  }
+  const timeStr = Utilities.formatDate(when, tz, "yyyy-MM-dd HH:mm:ss");
+
+  sheet.appendRow([
+    timeStr,
+    String(p.ip || ""),
+    String(p.visitorId || ""),
+    String(p.page || ""),
+    String(p.version || ""),
+    String(p.device || ""),
   ]);
 
   return jsonOut({ ok: true });

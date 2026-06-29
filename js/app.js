@@ -58,6 +58,7 @@ import {
   formatScoreSummary,
   scoresForChild,
 } from "./score-log.js";
+import { logSiteVisit } from "./visit-log.js";
 import {
   initFlipZh,
   renderFlipHomePlayers,
@@ -2273,6 +2274,7 @@ async function init() {
   renderHomeScoreHistory();
   renderResumeBanner();
   renderMistakeBookHome();
+  void logSiteVisit();
 }
 
 window.startZhQuiz = startZhQuiz;
