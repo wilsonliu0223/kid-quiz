@@ -1,6 +1,6 @@
 import { forbiddenLabel, wouldBlackForbidden } from "./gomoku-renju.js?v=gomoku-v12";
 import { openDuoModePicker } from "./online-duo.js";
-import { AI_PLAYER_ID, requestAiMove, terminateAiWorker, rapfiLoadState, NIRVANA_LEVEL } from "./gomoku-ai.js?v=gomoku-v19";
+import { AI_PLAYER_ID, requestAiMove, terminateAiWorker, rapfiLoadState, NIRVANA_LEVEL } from "./gomoku-ai.js?v=gomoku-v20";
 import {
   resetGomokuBoardZoom,
   rebindGomokuBoardZoom,
@@ -285,7 +285,7 @@ function renderPlayHeader(statusText = "") {
   const diff = game.aiDifficulty ?? aiDifficulty;
   const overTitle = game.over
     ? game.winner
-      ? `${playerName(game.winner)} 連五獲勝！`
+      ? `${playerName(game.winner)} 獲勝！`
       : "和棋！"
     : "";
 
@@ -615,7 +615,7 @@ async function runAiMove() {
 
 function getLocalWinTexts() {
   if (!game) return { title: "", detail: "" };
-  const title = game.winner ? `${playerName(game.winner)} 連五獲勝！` : "和棋！";
+  const title = game.winner ? `${playerName(game.winner)} 獲勝！` : "和棋！";
   const detail = game.winner
     ? `${playerName(game.winner)} 的${stoneLabel(game.winner)}連成五子`
     : "棋盤已滿，沒有連五";
@@ -713,7 +713,7 @@ function startLocalReplay() {
       if (wl) renderGomokuWinLine($("#gomoku-board-stage"), wl, lm);
       renderPlayHeader(
         game.winner
-          ? `${playerName(game.winner)} 連五獲勝！（重播完成）`
+          ? `${playerName(game.winner)} 獲勝！（重播完成）`
           : "和棋！（重播完成）",
       );
       syncLocalReplayDock();
