@@ -19,7 +19,7 @@ import {
   leaveOnlineRoom,
   rematchOnlineRoom,
 } from "./online-duo.js";
-import { startXiangqiRoom, transactGameState } from "./room-service.js";
+import { startGameRoom, transactGameState } from "./room-service.js?v=room-v37";
 
 /** @typedef {'host' | 'guest'} RoomSlot */
 
@@ -31,6 +31,25 @@ let selected = null;
 let celebratedWinKey = null;
 
 const $ = (sel) => document.querySelector(sel);
+
+/**
+ * @param {string} roomId
+ * @param {'host' | 'guest'} redSlot
+ */
+async function startXiangqiRoom(roomId, redSlot) {
+  const blackSlot = redSlot === "host" ? "guest" : "host";
+  await startGameRoom(roomId, {
+    redPlayerId: redSlot,
+    blackPlayerId: blackSlot,
+    turn: "red",
+    fen: boardToFen(createBoard()),
+    lastMove: null,
+    over: false,
+    winner: null,
+    winnerSide: null,
+    endReason: "",
+  });
+}
 
 function otherSlot(slot) {
   return slot === "host" ? "guest" : "host";

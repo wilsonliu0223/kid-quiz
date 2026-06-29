@@ -9,7 +9,6 @@ import {
   update,
 } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
 import { ensureFirebase } from "./firebase-app.js";
-import { boardToFen, createBoard } from "./xiangqi-core.js";
 
 const KEY_ONLINE_SESSION = "kid-quiz-online-session";
 const ROOM_TTL_MS = 60 * 60 * 1000;
@@ -269,25 +268,6 @@ export async function startGomokuRoom(roomId, blackSlot) {
     over: false,
     winner: null,
     winLine: null,
-  });
-}
-
-/**
- * @param {string} roomId
- * @param {'host' | 'guest'} redSlot
- */
-export async function startXiangqiRoom(roomId, redSlot) {
-  const blackSlot = redSlot === "host" ? "guest" : "host";
-  await startGameRoom(roomId, {
-    redPlayerId: redSlot,
-    blackPlayerId: blackSlot,
-    turn: "red",
-    fen: boardToFen(createBoard()),
-    lastMove: null,
-    over: false,
-    winner: null,
-    winnerSide: null,
-    endReason: "",
   });
 }
 
