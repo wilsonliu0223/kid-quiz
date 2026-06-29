@@ -153,16 +153,8 @@ export function renderAnqiHomePlayers() {
 
 function setFirstScreenMode(mode) {
   setupMode = mode;
-  const localEl = $("#anqi-local-setup");
-  const aiEl = $("#anqi-ai-setup");
-  if (localEl) {
-    if (mode === "local") localEl.removeAttribute("hidden");
-    else localEl.setAttribute("hidden", "");
-  }
-  if (aiEl) {
-    if (mode === "ai") aiEl.removeAttribute("hidden");
-    else aiEl.setAttribute("hidden", "");
-  }
+  $("#anqi-local-setup")?.toggleAttribute("hidden", mode !== "local");
+  $("#anqi-ai-setup")?.toggleAttribute("hidden", mode !== "ai");
   const title = $("#anqi-first-title");
   const meta = $("#anqi-first-meta");
   if (mode === "ai") {
@@ -260,12 +252,15 @@ function startAiGame(humanFirst) {
     alert("請在首頁選「誰在練習」");
     return;
   }
-  beginGame({
+  void beginGame({
     mode: "ai",
     playerIds: [humanId, AI_PLAYER_ID],
     humanPlayerIdx: humanFirst ? 0 : 1,
     aiPlayerIdx: humanFirst ? 1 : 0,
     aiDifficulty,
+  }).catch((e) => {
+    console.error(e);
+    alert("開局失敗，請重新整理頁面（Ctrl+Shift+R）後再試。");
   });
 }
 
@@ -276,7 +271,13 @@ async function beginGame(opts) {
   aiMoveToken += 1;
   aiMovePending = false;
   localWinUiDismissed = false;
-  await ensureAnqiWasm();
+  try {
+    await ensureAnqiWasm();
+  } catch (e) {
+    console.error(e);
+    alert("暗棋引擎載入失敗，請重新整理頁面（Ctrl+Shift+R）後再試。");
+    return;
+  }
   const seed = (Date.now() ^ (Math.random() * 0x7fffffff)) >>> 0;
   game = {
     mode: opts.mode,
@@ -659,9 +660,12 @@ export function beginAnqiLocal() {
 }
 
 export function beginAnqiAi() {
-  void ensureAnqiWasm();
   setFirstScreenMode("ai");
   deps?.showView("anqiFirst");
+  void ensureAnqiWasm().catch((e) => {
+    console.error(e);
+    alert("暗棋引擎預載失敗，仍可選難度；若開局失敗請 Ctrl+Shift+R 重新整理。");
+  });
 }
 
 export function initAnqi(d) {

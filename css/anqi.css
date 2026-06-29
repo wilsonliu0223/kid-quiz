@@ -373,3 +373,23 @@
   display: grid;
   gap: 0.75rem;
 }
+
+/* 暗棋／對戰模式選單：內容較長時可捲動，避免 AI 難度與開局按鈕被裁切 */
+#view-anqi-first.view-active,
+#view-duo-mode.view-active {
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+#view-anqi-first .flip-first-body,
+#view-duo-mode .flip-first-body {
+  justify-content: flex-start;
+  flex: 1 0 auto;
+  width: 100%;
+  padding-bottom: 28px;
+}
+
+#anqi-local-setup[hidden],
+#anqi-ai-setup[hidden] {
+  display: none !important;
+}

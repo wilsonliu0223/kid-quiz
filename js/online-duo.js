@@ -176,7 +176,11 @@ export function openDuoModePicker(req) {
       ? "同一台對戰、線上連線，或單人挑戰電腦"
       : "同一台裝置，或兩台手機用房間碼連線";
   }
-  if (aiBtn) aiBtn.hidden = !req.aiStart;
+  if (aiBtn) {
+    aiBtn.hidden = !req.aiStart;
+    if (req.aiStart) aiBtn.removeAttribute("hidden");
+    else aiBtn.setAttribute("hidden", "");
+  }
   deps?.showView("duoMode");
 }
 
@@ -421,6 +425,9 @@ async function onKickGuest() {
 }
 
 function bindOnlineDuoEvents() {
+  if (bindOnlineDuoEvents.done) return;
+  bindOnlineDuoEvents.done = true;
+
   $("#btn-duo-mode-local")?.addEventListener("click", () => {
     pendingMode?.localStart?.();
   });

@@ -1,4 +1,4 @@
-import { beginAnqiFromHome } from "./anqi.js?v=anqi-v11";
+import { beginAnqiFromHome } from "./anqi.js?v=anqi-v12";
 import { openDuoModePicker } from "./online-duo.js";
 import {
   ensureXiangqiBoardSvg,
