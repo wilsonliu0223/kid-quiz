@@ -1,4 +1,4 @@
-/** 五子棋 AI 介面：入門～高手同步運算，大師／宗師走 Web Worker，涅槃走 Rapfi 完整 WASM */
+/** 五子棋 AI 介面：入門～高手同步運算，大師走 Web Worker，宗師走 Rapfi 快板，涅槃走 Rapfi 滿血 WASM */
 import { computeAiMove, AI_LEVELS, GRANDMASTER_LEVEL } from "./gomoku-ai-core.js?v=gomoku-v8";
 import {
   NIRVANA_LEVEL,
@@ -36,7 +36,7 @@ export function findAiMove(cells, opts) {
 }
 
 /**
- * 非同步求著；難度 4（大師）與 5（宗師）在 Worker 運算，其餘在主執行緒
+ * 非同步求著；難度 4（大師）在 Worker，5（宗師）Rapfi 快板，6（涅槃）Rapfi 滿血
  * @param {import('./gomoku-renju.js').Cell[][]} cells
  * @param {{ aiId: string, blackId: string, whiteId: string, difficulty?: number }} opts
  * @returns {Promise<[number, number]|null>}
@@ -45,11 +45,15 @@ export function requestAiMove(cells, opts) {
   const difficulty = opts.difficulty ?? 2;
   const board = cloneBoard(cells);
 
-  if (difficulty >= NIRVANA_LEVEL) {
-    return requestRapfiMove({
-      moveHistory: opts.moveHistory || [],
-      blackPlayerId: opts.blackId,
-    });
+  if (difficulty >= GRANDMASTER_LEVEL) {
+    const tier = difficulty >= NIRVANA_LEVEL ? "full" : "lite";
+    return requestRapfiMove(
+      {
+        moveHistory: opts.moveHistory || [],
+        blackPlayerId: opts.blackId,
+      },
+      tier,
+    );
   }
 
   if (difficulty < AI_WORKER_LEVEL) {

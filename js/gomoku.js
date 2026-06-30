@@ -1,6 +1,13 @@
 import { forbiddenLabel, wouldBlackForbidden } from "./gomoku-renju.js?v=gomoku-v12";
 import { openDuoModePicker } from "./online-duo.js";
-import { AI_PLAYER_ID, requestAiMove, terminateAiWorker, rapfiLoadState, NIRVANA_LEVEL } from "./gomoku-ai.js?v=gomoku-v21";
+import {
+  AI_PLAYER_ID,
+  requestAiMove,
+  terminateAiWorker,
+  rapfiLoadState,
+  GRANDMASTER_LEVEL,
+  NIRVANA_LEVEL,
+} from "./gomoku-ai.js?v=gomoku-v22";
 import {
   resetGomokuBoardZoom,
   rebindGomokuBoardZoom,
@@ -93,8 +100,8 @@ const AI_DIFFICULTIES = [
   {
     level: 5,
     label: "宗師",
-    tier: "內建最強",
-    desc: "含 VCF/VCT 戰術與深度分析（每步最長約 20 秒），建議執白挑戰。",
+    tier: "Rapfi 快板",
+    desc: "涅槃同款精簡 Rapfi（約 95 KB、載入快），每步最長 60 秒。建議執白。",
   },
   {
     level: 6,
@@ -300,14 +307,20 @@ function renderPlayHeader(statusText = "") {
       : "和棋！"
     : "";
 
+  const rapfiLoadingLabel =
+    rapfiLoadState.label ||
+    (diff >= NIRVANA_LEVEL ? "載入涅槃引擎…" : diff >= GRANDMASTER_LEVEL ? "載入宗師快板引擎…" : "");
+  const rapfiThinkingLabel =
+    diff >= NIRVANA_LEVEL
+      ? rapfiLoadState.mode === "lite"
+        ? `涅槃思考中（快板${rapfiLoadState.failReason ? "：" + rapfiLoadState.failReason : ""}）…`
+        : "涅槃思考中…"
+      : "宗師思考中（快板）…";
+
   const displayStatus =
     statusText ||
-    (rapfiLoadState.loading ? rapfiLoadState.label || "載入涅槃引擎…" : "") ||
-    (waitingAi && diff >= NIRVANA_LEVEL
-      ? rapfiLoadState.mode === "lite"
-        ? `涅槃思考中（精簡引擎${rapfiLoadState.failReason ? "：" + rapfiLoadState.failReason : ""}）…`
-        : "涅槃思考中…"
-      : "");
+    (rapfiLoadState.loading ? rapfiLoadingLabel : "") ||
+    (waitingAi && diff >= GRANDMASTER_LEVEL ? rapfiThinkingLabel : "");
 
   renderDuoTurnStatusBar({
     theme: "gomoku",
@@ -579,7 +592,7 @@ async function runAiMove() {
   try {
     const diff = game.aiDifficulty ?? aiDifficulty;
     let loadPoll = null;
-    if (diff >= NIRVANA_LEVEL) {
+    if (diff >= GRANDMASTER_LEVEL) {
       loadPoll = window.setInterval(() => {
         if (token !== aiMoveToken) {
           window.clearInterval(loadPoll);

@@ -2,7 +2,7 @@ import { CONFIG } from "./config.site.js";
 
 export const NIRVANA_LEVEL = 6;
 
-const WORKER_URL = new URL("./rapfi-engine-worker.js?v=3", import.meta.url);
+const WORKER_URL = new URL("./rapfi-engine-worker.js?v=4", import.meta.url);
 
 /** @type {Worker | null} */
 let worker = null;
@@ -11,6 +11,10 @@ let initPromise = null;
 let requestSeq = 0;
 /** @type {"full" | "lite" | ""} */
 let engineMode = "";
+/** @type {"lite" | "full" | null} */
+let loadedTier = null;
+/** @type {"lite" | "full" | null} */
+let initTargetTier = null;
 
 /** @type {{ loading: boolean, progress: number, label: string, mode: string, failReason: string }} */
 export const rapfiLoadState = { loading: false, progress: 0, label: "", mode: "", failReason: "" };
@@ -47,12 +51,20 @@ export function terminateRapfiEngine() {
   }
   ready = false;
   initPromise = null;
+  initTargetTier = null;
+  loadedTier = null;
   engineMode = "";
   rapfiLoadState.loading = false;
   rapfiLoadState.progress = 0;
   rapfiLoadState.label = "";
   rapfiLoadState.mode = "";
   rapfiLoadState.failReason = "";
+}
+
+function tierSatisfied(requested) {
+  if (!ready || !loadedTier) return false;
+  if (requested === "lite") return loadedTier === "lite" || loadedTier === "full";
+  return loadedTier === "full";
 }
 
 function bindWorkerInit(w, mode) {
@@ -99,34 +111,53 @@ function bindWorkerInit(w, mode) {
   });
 }
 
-export function ensureRapfiReady() {
-  if (ready) return Promise.resolve();
-  if (initPromise) return initPromise;
+/**
+ * @param {"lite" | "full"} [tier]
+ * - lite：宗師快板，只載入精簡 Rapfi（約 95 KB）
+ * - full：涅槃滿血，先試完整 NNUE，失敗再退回快板
+ */
+export function ensureRapfiReady(tier = "full") {
+  if (tierSatisfied(tier)) return Promise.resolve();
+  if (initPromise && initTargetTier === tier) return initPromise;
 
+  if (ready || initPromise) {
+    terminateRapfiEngine();
+  }
+
+  initTargetTier = tier;
   rapfiLoadState.loading = true;
   rapfiLoadState.progress = 0;
-  rapfiLoadState.label = "載入 Rapfi 完整引擎…";
+  rapfiLoadState.label = tier === "lite" ? "載入 Rapfi 快板引擎…" : "載入 Rapfi 完整引擎…";
   rapfiLoadState.failReason = "";
 
   initPromise = (async () => {
     spawnWorker();
-    try {
-      await bindWorkerInit(worker, "full");
-    } catch (fullErr) {
-      const reason = fullErr instanceof Error ? fullErr.message : String(fullErr);
-      console.warn("Rapfi full engine failed, using lite fallback", fullErr);
-      rapfiLoadState.failReason = reason;
-      spawnWorker();
-      rapfiLoadState.label = "完整版載入失敗，改用精簡引擎…";
-      rapfiLoadState.progress = 0;
+    if (tier === "lite") {
       await bindWorkerInit(worker, "lite");
+      loadedTier = "lite";
+    } else {
+      try {
+        await bindWorkerInit(worker, "full");
+        loadedTier = "full";
+      } catch (fullErr) {
+        const reason = fullErr instanceof Error ? fullErr.message : String(fullErr);
+        console.warn("Rapfi full engine failed, using lite fallback", fullErr);
+        rapfiLoadState.failReason = reason;
+        spawnWorker();
+        rapfiLoadState.label = "完整版載入失敗，改用快板引擎…";
+        rapfiLoadState.progress = 0;
+        await bindWorkerInit(worker, "lite");
+        loadedTier = "lite";
+      }
     }
     ready = true;
     rapfiLoadState.loading = false;
     rapfiLoadState.progress = 1;
     rapfiLoadState.label = "";
+    initTargetTier = null;
   })().catch((err) => {
     initPromise = null;
+    initTargetTier = null;
     rapfiLoadState.loading = false;
     throw err;
   });
@@ -140,8 +171,12 @@ export function ensureRapfiReady() {
  * @param {string} opts.blackPlayerId
  * @returns {Promise<[number, number] | null>}
  */
-export async function requestRapfiMove(opts) {
-  await ensureRapfiReady();
+/**
+ * @param {object} opts
+ * @param {"lite" | "full"} [tier]
+ */
+export async function requestRapfiMove(opts, tier = "full") {
+  await ensureRapfiReady(tier);
   const requestId = ++requestSeq;
   const w = worker;
   if (!w) throw new Error("Rapfi worker missing");
