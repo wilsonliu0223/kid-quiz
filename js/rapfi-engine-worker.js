@@ -1,7 +1,15 @@
 /** Rapfi WASM 引擎 Worker（Yixin 協定） */
-const TURN_TIMEOUT_MS = 60000;
-const MAX_DEPTH = 64;
-const SAFETY_TIMEOUT_MS = TURN_TIMEOUT_MS + 5000;
+const MAX_TURN_TIMEOUT_MS = 60000;
+const MAX_DEPTH_CAP = 64;
+
+/** @param {number} stoneCount */
+function searchLimits(stoneCount) {
+  if (stoneCount <= 1) return { timeout: 1000, depth: 8 };
+  if (stoneCount <= 4) return { timeout: 3000, depth: 14 };
+  if (stoneCount <= 8) return { timeout: 8000, depth: 22 };
+  if (stoneCount <= 16) return { timeout: 20000, depth: 40 };
+  return { timeout: MAX_TURN_TIMEOUT_MS, depth: MAX_DEPTH_CAP };
+}
 
 let engine = null;
 let engineDir = "";
@@ -118,7 +126,14 @@ self.onmessage = async (event) => {
         self.postMessage({ type: "result", requestId: msg.requestId, move: null, error: "engine not ready" });
         return;
       }
-      const { moveHistory, blackPlayerId } = msg;
+      const { moveHistory, blackPlayerId, stoneCount = 0 } = msg;
+      const stones =
+        stoneCount > 0
+          ? stoneCount
+          : (moveHistory || []).length;
+      const { timeout: turnTimeoutMs, depth: maxDepth } = searchLimits(stones);
+      const safetyTimeoutMs = turnTimeoutMs + 5000;
+
       let boardCmd = "YXBOARD";
       for (const m of moveHistory || []) {
         const side = m.player === blackPlayerId ? 1 : 2;
@@ -128,8 +143,8 @@ self.onmessage = async (event) => {
 
       engine.sendCommand("INFO RULE 4");
       engine.sendCommand("INFO THREAD_NUM 1");
-      engine.sendCommand(`INFO MAX_DEPTH ${MAX_DEPTH}`);
-      engine.sendCommand(`INFO TIMEOUT_TURN ${TURN_TIMEOUT_MS}`);
+      engine.sendCommand(`INFO MAX_DEPTH ${maxDepth}`);
+      engine.sendCommand(`INFO TIMEOUT_TURN ${turnTimeoutMs}`);
       engine.sendCommand(boardCmd);
 
       const move = await new Promise((resolve) => {
@@ -140,7 +155,7 @@ self.onmessage = async (event) => {
             pendingResolve(null);
             pendingResolve = null;
           }
-        }, SAFETY_TIMEOUT_MS);
+        }, safetyTimeoutMs);
       });
 
       self.postMessage({ type: "result", requestId: msg.requestId, move, mode: engineMode });

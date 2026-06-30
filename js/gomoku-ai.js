@@ -1,5 +1,6 @@
 /** 五子棋 AI 介面：入門～高手同步運算，大師走 Web Worker，宗師走 Rapfi 快板，涅槃走 Rapfi 滿血 WASM */
 import { computeAiMove, AI_LEVELS, GRANDMASTER_LEVEL } from "./gomoku-ai-core.js?v=gomoku-v8";
+import { pickOpeningMove } from "./gomoku-ai-threat.js?v=gomoku-v9";
 import {
   NIRVANA_LEVEL,
   rapfiLoadState,
@@ -17,6 +18,16 @@ let aiRequestSeq = 0;
 
 function cloneBoard(cells) {
   return cells.map((row) => [...row]);
+}
+
+function countStones(cells) {
+  let n = 0;
+  for (const row of cells) {
+    for (const cell of row) {
+      if (cell) n++;
+    }
+  }
+  return n;
 }
 
 function getAiWorker() {
@@ -46,11 +57,18 @@ export function requestAiMove(cells, opts) {
   const board = cloneBoard(cells);
 
   if (difficulty >= GRANDMASTER_LEVEL) {
+    const stones = countStones(board);
+    const opponent = opts.aiId === opts.blackId ? opts.whiteId : opts.blackId;
+    if (stones <= 1) {
+      const opening = pickOpeningMove(board, opts.aiId, opponent, stones);
+      if (opening) return Promise.resolve(opening);
+    }
     const tier = difficulty >= NIRVANA_LEVEL ? "full" : "lite";
     return requestRapfiMove(
       {
         moveHistory: opts.moveHistory || [],
         blackPlayerId: opts.blackId,
+        stoneCount: stones,
       },
       tier,
     );
