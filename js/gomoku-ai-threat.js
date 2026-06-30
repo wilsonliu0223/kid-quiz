@@ -560,5 +560,35 @@ export function pickOpeningMove(cells, aiId, opponent, stoneCount) {
       if (!cells[r][c]) return [r, c];
     }
   }
+  if (stoneCount >= 2 && stoneCount <= 3) {
+    return pickNearExistingMove(cells);
+  }
   return null;
+}
+
+/** @param {(''|string)[][]} cells */
+function pickNearExistingMove(cells) {
+  let best = null;
+  let bestScore = Infinity;
+  for (let r = 0; r < SIZE; r++) {
+    for (let c = 0; c < SIZE; c++) {
+      if (cells[r][c]) continue;
+      let near = false;
+      for (let dr = -2; dr <= 2; dr++) {
+        for (let dc = -2; dc <= 2; dc++) {
+          if (dr === 0 && dc === 0) continue;
+          const nr = r + dr;
+          const nc = c + dc;
+          if (nr >= 0 && nr < SIZE && nc >= 0 && nc < SIZE && cells[nr][nc]) near = true;
+        }
+      }
+      if (!near) continue;
+      const score = Math.abs(r - CENTER) + Math.abs(c - CENTER);
+      if (score < bestScore) {
+        bestScore = score;
+        best = [r, c];
+      }
+    }
+  }
+  return best;
 }

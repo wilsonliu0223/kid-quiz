@@ -1,7 +1,10 @@
 /** 五子棋 AI 思考時間：依盤面棋子數縮短（入門～涅槃共用） */
 
-/** 棋子數 ≤ 此值時走開局庫，不啟動深度搜尋 */
+/** 棋子數 ≤ 此值時走開局庫（入門～宗師） */
 export const OPENING_INSTANT_MAX_STONES = 1;
+
+/** 涅槃：盤面 ≤ 此棋子數時快應，之後滿血 60 秒 */
+export const NIRVANA_OPENING_FAST_MAX_STONES = 3;
 
 /**
  * 內建 AI（入門～大師）單步思考上限
@@ -24,8 +27,8 @@ export function adaptiveBuiltinTimeMs(baseTimeMs, stoneCount) {
  */
 export function adaptiveRapfiLimits(stoneCount, tier = "full") {
   if (tier === "full") {
-    // 涅槃滿血：維持每步 60 秒／深度 64（僅開局庫未命中時的極短後備）
-    if (stoneCount <= 1) return { timeout: 1000, depth: 8 };
+    // 涅槃：前 3 子快搜尋，第 4 子起滿血 60 秒／深度 64
+    if (stoneCount <= NIRVANA_OPENING_FAST_MAX_STONES) return { timeout: 4000, depth: 14 };
     return { timeout: 60000, depth: 64 };
   }
   if (stoneCount <= 1) return { timeout: 1000, depth: 8 };
