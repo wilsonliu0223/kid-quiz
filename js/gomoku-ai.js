@@ -8,7 +8,7 @@ import {
   requestRapfiMove,
   preloadNirvanaFullEngine,
   terminateRapfiEngine,
-} from "./rapfi-engine.js";
+} from "./rapfi-engine.js?v=rapfi-v11";
 
 export const AI_PLAYER_ID = "__ai__";
 export const AI_WORKER_LEVEL = 4;

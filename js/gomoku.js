@@ -8,7 +8,7 @@ import {
   preloadNirvanaFullEngine,
   GRANDMASTER_LEVEL,
   NIRVANA_LEVEL,
-} from "./gomoku-ai.js?v=gomoku-v29";
+} from "./gomoku-ai.js?v=gomoku-v30";
 import {
   resetGomokuBoardZoom,
   rebindGomokuBoardZoom,
