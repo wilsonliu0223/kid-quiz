@@ -7,7 +7,7 @@ import {
   rapfiLoadState,
   GRANDMASTER_LEVEL,
   NIRVANA_LEVEL,
-} from "./gomoku-ai.js?v=gomoku-v22";
+} from "./gomoku-ai.js?v=gomoku-v23";
 import {
   resetGomokuBoardZoom,
   rebindGomokuBoardZoom,
@@ -100,8 +100,8 @@ const AI_DIFFICULTIES = [
   {
     level: 5,
     label: "宗師",
-    tier: "Rapfi 快板",
-    desc: "涅槃同款精簡 Rapfi（約 95 KB、載入快），每步最長 60 秒。建議執白。",
+    tier: "強力 AI",
+    desc: "Rapfi 快板（精簡、載入快），棋力勝過舊版宗師、也明顯強於大師。每步最長 60 秒，建議執白。",
   },
   {
     level: 6,
