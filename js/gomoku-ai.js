@@ -1,17 +1,18 @@
 /** 五子棋 AI 介面：入門～高手同步運算，大師走 Web Worker，宗師走 Rapfi 快板，涅槃走 Rapfi 滿血 WASM */
 import { computeAiMove, AI_LEVELS, GRANDMASTER_LEVEL, findUrgentTacticalMove } from "./gomoku-ai-core.js?v=gomoku-v10";
-import { pickOpeningMove } from "./gomoku-ai-threat.js?v=gomoku-v10";
-import { OPENING_INSTANT_MAX_STONES, NIRVANA_OPENING_FAST_MAX_STONES } from "./gomoku-ai-timing.js?v=gomoku-v4";
+import { pickOpeningMove } from "./gomoku-ai-threat.js?v=gomoku-v11";
+import { OPENING_INSTANT_MAX_STONES, NIRVANA_OPENING_FAST_MAX_STONES, NIRVANA_FULL_LOAD_MIN_STONES } from "./gomoku-ai-timing.js?v=gomoku-v5";
 import {
   NIRVANA_LEVEL,
   rapfiLoadState,
   requestRapfiMove,
+  preloadNirvanaFullEngine,
   terminateRapfiEngine,
 } from "./rapfi-engine.js";
 
 export const AI_PLAYER_ID = "__ai__";
 export const AI_WORKER_LEVEL = 4;
-export { AI_LEVELS, GRANDMASTER_LEVEL, NIRVANA_LEVEL, rapfiLoadState };
+export { AI_LEVELS, GRANDMASTER_LEVEL, NIRVANA_LEVEL, rapfiLoadState, preloadNirvanaFullEngine };
 
 /** @type {Worker | null} */
 let aiWorker = null;
@@ -61,13 +62,24 @@ export function requestAiMove(cells, opts) {
     const stones = countStones(board);
     const opponent = opts.aiId === opts.blackId ? opts.whiteId : opts.blackId;
     const isNirvana = difficulty >= NIRVANA_LEVEL;
-    const openingFastMax = isNirvana ? NIRVANA_OPENING_FAST_MAX_STONES : OPENING_INSTANT_MAX_STONES;
-    if (stones <= openingFastMax) {
+
+    if (isNirvana && stones < NIRVANA_FULL_LOAD_MIN_STONES) {
+      const opening = pickOpeningMove(board, opts.aiId, opponent, stones);
+      if (opening) return Promise.resolve(opening);
+      const tactical = findUrgentTacticalMove(board, opts);
+      if (tactical) return Promise.resolve(tactical);
+      const near = pickOpeningMove(board, opts.aiId, opponent, NIRVANA_OPENING_FAST_MAX_STONES);
+      return Promise.resolve(near || [7, 6]);
+    }
+
+    if (!isNirvana && stones <= OPENING_INSTANT_MAX_STONES) {
       const opening = pickOpeningMove(board, opts.aiId, opponent, stones);
       if (opening) return Promise.resolve(opening);
     }
+
     const tactical = findUrgentTacticalMove(board, opts);
     if (tactical) return Promise.resolve(tactical);
+
     const tier = isNirvana ? "full" : "lite";
     return requestRapfiMove(
       {

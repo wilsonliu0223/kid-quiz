@@ -1,10 +1,10 @@
 import { CONFIG } from "./config.site.js";
 
-import { adaptiveRapfiLimits } from "./gomoku-ai-timing.js?v=gomoku-v4";
+import { adaptiveRapfiLimits } from "./gomoku-ai-timing.js?v=gomoku-v5";
 
 export const NIRVANA_LEVEL = 6;
 
-const WORKER_URL = new URL("./rapfi-engine-worker.js?v=9", import.meta.url);
+const WORKER_URL = new URL("./rapfi-engine-worker.js?v=10", import.meta.url);
 
 /** @type {Worker | null} */
 let worker = null;
@@ -165,6 +165,15 @@ export function ensureRapfiReady(tier = "full") {
   });
 
   return initPromise;
+}
+
+/** 涅槃滿血引擎背景預載（前兩子不下載，盤面第 3 子起呼叫） */
+export function preloadNirvanaFullEngine() {
+  if (tierSatisfied("full")) return Promise.resolve();
+  if (initPromise && initTargetTier === "full") return initPromise;
+  return ensureRapfiReady("full").catch((err) => {
+    console.warn("Nirvana full engine preload failed", err);
+  });
 }
 
 /**

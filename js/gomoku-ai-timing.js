@@ -3,8 +3,11 @@
 /** 棋子數 ≤ 此值時走開局庫（入門～宗師） */
 export const OPENING_INSTANT_MAX_STONES = 1;
 
-/** 涅槃：盤面 ≤ 此棋子數時快應，之後滿血 60 秒 */
-export const NIRVANA_OPENING_FAST_MAX_STONES = 3;
+/** 涅槃：前兩子不載入完整引擎，僅開局庫快應 */
+export const NIRVANA_OPENING_FAST_MAX_STONES = 2;
+
+/** 涅槃：盤面 ≥ 此棋子數時載入並使用滿血 Rapfi */
+export const NIRVANA_FULL_LOAD_MIN_STONES = 3;
 
 /**
  * 內建 AI（入門～大師）單步思考上限
@@ -27,8 +30,6 @@ export function adaptiveBuiltinTimeMs(baseTimeMs, stoneCount) {
  */
 export function adaptiveRapfiLimits(stoneCount, tier = "full") {
   if (tier === "full") {
-    // 涅槃：前 3 子快搜尋，第 4 子起滿血 60 秒／深度 64
-    if (stoneCount <= NIRVANA_OPENING_FAST_MAX_STONES) return { timeout: 4000, depth: 14 };
     return { timeout: 60000, depth: 64 };
   }
   if (stoneCount <= 1) return { timeout: 1000, depth: 8 };

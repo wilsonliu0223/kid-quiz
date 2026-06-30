@@ -5,9 +5,10 @@ import {
   requestAiMove,
   terminateAiWorker,
   rapfiLoadState,
+  preloadNirvanaFullEngine,
   GRANDMASTER_LEVEL,
   NIRVANA_LEVEL,
-} from "./gomoku-ai.js?v=gomoku-v28";
+} from "./gomoku-ai.js?v=gomoku-v29";
 import {
   resetGomokuBoardZoom,
   rebindGomokuBoardZoom,
@@ -480,6 +481,25 @@ function renderBoard() {
   renderPlayHeader();
 }
 
+function countBoardStones() {
+  if (!game) return 0;
+  let n = 0;
+  for (const row of game.cells) {
+    for (const cell of row) {
+      if (cell) n++;
+    }
+  }
+  return n;
+}
+
+function maybePreloadNirvanaEngine() {
+  if (!game || game.mode !== "ai" || game.over) return;
+  const diff = game.aiDifficulty ?? aiDifficulty;
+  if (diff < NIRVANA_LEVEL) return;
+  if (countBoardStones() !== 2) return;
+  void preloadNirvanaFullEngine();
+}
+
 function finishAfterMove(row, col, prevLastMove) {
   const player = game.cells[row][col];
   const winLine = checkWin(game.cells, row, col, player);
@@ -504,6 +524,7 @@ function finishAfterMove(row, col, prevLastMove) {
 
   game.currentPlayerId = otherPlayer(player);
   syncBoardAfterMove(row, col, prevLastMove);
+  maybePreloadNirvanaEngine();
   maybeScheduleAiMove();
 }
 

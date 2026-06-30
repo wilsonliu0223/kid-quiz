@@ -3,7 +3,7 @@ import { wouldBlackForbidden } from "./gomoku-renju.js?v=gomoku-v8";
 import {
   adaptiveBuiltinTimeMs,
   OPENING_INSTANT_MAX_STONES,
-} from "./gomoku-ai-timing.js?v=gomoku-v2";
+} from "./gomoku-ai-timing.js?v=gomoku-v5";
 import {
   createThreatContext,
   findImmediateWinMove,

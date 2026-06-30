@@ -1,4 +1,5 @@
 /** 五子棋威脅搜尋：必殺／必防、VCF、VCT（宗師級） */
+import { NIRVANA_OPENING_FAST_MAX_STONES } from "./gomoku-ai-timing.js?v=gomoku-v5";
 
 const SIZE = 15;
 const CENTER = 7;
@@ -560,7 +561,7 @@ export function pickOpeningMove(cells, aiId, opponent, stoneCount) {
       if (!cells[r][c]) return [r, c];
     }
   }
-  if (stoneCount >= 2 && stoneCount <= 3) {
+  if (stoneCount >= 2 && stoneCount <= NIRVANA_OPENING_FAST_MAX_STONES) {
     return pickNearExistingMove(cells);
   }
   return null;
