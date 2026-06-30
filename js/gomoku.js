@@ -10,7 +10,7 @@ import {
   isRapfiLiteReady,
   GRANDMASTER_LEVEL,
   NIRVANA_LEVEL,
-} from "./gomoku-ai.js?v=gomoku-v32";
+} from "./gomoku-ai.js?v=gomoku-v33";
 import { NIRVANA_FULL_LOAD_MIN_STONES } from "./gomoku-ai-timing.js?v=gomoku-v5";
 import {
   resetGomokuBoardZoom,

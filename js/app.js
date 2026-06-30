@@ -71,7 +71,7 @@ import {
   initFlipMath,
   renderMathHomePlayers,
 } from "./flip-math-deck30.js";
-import { initGomoku, renderGomokuHomePlayers } from "./gomoku.js?v=gomoku-v32";
+import { initGomoku, renderGomokuHomePlayers } from "./gomoku.js?v=gomoku-v33";
 import { initXiangqi, renderXiangqiHomePlayers } from "./xiangqi.js?v=xiangqi-v11";
 import { initAnqi, onAnqiFirstShown, renderAnqiHomePlayers } from "./anqi.js?v=anqi-v19";
 import { initOnlineDuo } from "./online-duo.js";
