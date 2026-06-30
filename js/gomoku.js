@@ -6,9 +6,12 @@ import {
   terminateAiWorker,
   rapfiLoadState,
   preloadNirvanaFullEngine,
+  isRapfiFullReady,
+  isRapfiLiteReady,
   GRANDMASTER_LEVEL,
   NIRVANA_LEVEL,
-} from "./gomoku-ai.js?v=gomoku-v30";
+} from "./gomoku-ai.js?v=gomoku-v32";
+import { NIRVANA_FULL_LOAD_MIN_STONES } from "./gomoku-ai-timing.js?v=gomoku-v5";
 import {
   resetGomokuBoardZoom,
   rebindGomokuBoardZoom,
@@ -330,6 +333,49 @@ function formatRapfiLoadingLabel(diff) {
   return "";
 }
 
+function syncNirvanaEngineBadge(diff) {
+  const badge = $("#gomoku-engine-badge");
+  if (!badge) return;
+  if (!game || game.mode !== "ai" || game.over || diff < NIRVANA_LEVEL) {
+    badge.hidden = true;
+    badge.textContent = "";
+    badge.className = "gomoku-engine-badge";
+    return;
+  }
+
+  const stones = countBoardStones();
+  badge.hidden = false;
+
+  if (rapfiLoadState.loading) {
+    badge.className = "gomoku-engine-badge gomoku-engine-badge-loading";
+    badge.textContent = "載入滿血中…";
+    return;
+  }
+
+  if (isRapfiFullReady()) {
+    badge.className = "gomoku-engine-badge gomoku-engine-badge-full";
+    badge.textContent = "滿血(涅槃)60秒";
+    return;
+  }
+
+  if (stones < NIRVANA_FULL_LOAD_MIN_STONES) {
+    badge.className = "gomoku-engine-badge gomoku-engine-badge-opening";
+    badge.textContent = "開局快應（滿血第3子起）";
+    return;
+  }
+
+  if (isRapfiLiteReady() || rapfiLoadState.mode === "lite") {
+    badge.className = "gomoku-engine-badge gomoku-engine-badge-lite";
+    badge.textContent = rapfiLoadState.failReason
+      ? "快板(涅槃) — 滿血載入失敗"
+      : "快板(涅槃)";
+    return;
+  }
+
+  badge.className = "gomoku-engine-badge gomoku-engine-badge-warn";
+  badge.textContent = "滿血未就緒";
+}
+
 function renderPlayHeader(statusText = "") {
   if (!game) return;
   const renjuHint = $("#gomoku-renju-hint");
@@ -390,6 +436,8 @@ function renderPlayHeader(statusText = "") {
       renjuHint.setAttribute("aria-hidden", String(!isBlackTurn));
     }
   }
+
+  syncNirvanaEngineBadge(diff);
 }
 
 function getCellBtn(row, col) {

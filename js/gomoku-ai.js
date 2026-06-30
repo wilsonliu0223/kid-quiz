@@ -8,11 +8,11 @@ import {
   requestRapfiMove,
   preloadNirvanaFullEngine,
   terminateRapfiEngine,
-} from "./rapfi-engine.js?v=rapfi-v11";
+} from "./rapfi-engine.js?v=rapfi-v12";
 
 export const AI_PLAYER_ID = "__ai__";
 export const AI_WORKER_LEVEL = 4;
-export { AI_LEVELS, GRANDMASTER_LEVEL, NIRVANA_LEVEL, rapfiLoadState, preloadNirvanaFullEngine };
+export { AI_LEVELS, GRANDMASTER_LEVEL, NIRVANA_LEVEL, rapfiLoadState, preloadNirvanaFullEngine, isRapfiFullReady, isRapfiLiteReady };
 
 /** @type {Worker | null} */
 let aiWorker = null;

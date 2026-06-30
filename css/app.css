@@ -3507,6 +3507,37 @@ body {
   visibility: visible;
 }
 
+.gomoku-engine-badge {
+  margin: 6px 0 0;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-align: center;
+  letter-spacing: 0.02em;
+}
+
+.gomoku-engine-badge-full {
+  background: #1b5e20;
+  color: #fff;
+}
+
+.gomoku-engine-badge-loading {
+  background: #e65100;
+  color: #fff;
+}
+
+.gomoku-engine-badge-opening {
+  background: #455a64;
+  color: #fff;
+}
+
+.gomoku-engine-badge-lite,
+.gomoku-engine-badge-warn {
+  background: #b71c1c;
+  color: #fff;
+}
+
 .gomoku-replay-dock {
   position: absolute;
   left: 0;

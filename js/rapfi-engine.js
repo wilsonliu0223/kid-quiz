@@ -167,6 +167,14 @@ export function ensureRapfiReady(tier = "full") {
   return initPromise;
 }
 
+export function isRapfiFullReady() {
+  return ready && loadedTier === "full";
+}
+
+export function isRapfiLiteReady() {
+  return ready && loadedTier === "lite";
+}
+
 /** 涅槃滿血引擎背景預載（前兩子不下載，盤面第 3 子起呼叫） */
 export function preloadNirvanaFullEngine() {
   if (tierSatisfied("full")) return Promise.resolve();
