@@ -10,7 +10,7 @@ import {
   isRapfiLiteReady,
   GRANDMASTER_LEVEL,
   NIRVANA_LEVEL,
-} from "./gomoku-ai.js?v=gomoku-v33";
+} from "./gomoku-ai.js?v=gomoku-v34";
 import { NIRVANA_FULL_LOAD_MIN_STONES } from "./gomoku-ai-timing.js?v=gomoku-v5";
 import {
   resetGomokuBoardZoom,
@@ -46,6 +46,8 @@ let aiMovePending = false;
 let aiMoveToken = 0;
 /** @type {number | null} */
 let rapfiLoadUiPoll = null;
+/** @type {number | null} */
+let aiThinkUiPoll = null;
 
 /** @type {GomokuDeps | null} */
 let deps = null;
@@ -74,6 +76,8 @@ let localWinUiDismissed = false;
  * @property {[number, number]|null} lastMove
  * @property {Set<number>|null} winLine
  * @property {{ row: number, col: number, player: string }[]} [moveHistory]
+ * @property {number} [lastAiThinkSec]
+ * @property {number} [aiThinkStartedAt]
  */
 
 const $ = (sel) => document.querySelector(sel);
@@ -113,7 +117,7 @@ const AI_DIFFICULTIES = [
     level: 6,
     label: "涅槃",
     tier: "Rapfi 滿血",
-    desc: "完整 Rapfi NNUE（首次約 40 MB）；單步最長 60 秒，棋力接近 Gomocalc。建議執白。",
+    desc: "完整 Rapfi NNUE（首次約 40 MB）；每步最長 60 秒（算完可提前落子），棋力最強。建議執白。",
   },
 ];
 
@@ -320,6 +324,24 @@ function startRapfiLoadUiPoll() {
   }, 180);
 }
 
+function stopAiThinkUiPoll() {
+  if (aiThinkUiPoll != null) {
+    window.clearInterval(aiThinkUiPoll);
+    aiThinkUiPoll = null;
+  }
+}
+
+function startAiThinkUiPoll(token) {
+  stopAiThinkUiPoll();
+  aiThinkUiPoll = window.setInterval(() => {
+    if (token !== aiMoveToken || !aiMovePending) {
+      stopAiThinkUiPoll();
+      return;
+    }
+    renderPlayHeader();
+  }, 200);
+}
+
 function formatRapfiLoadingLabel(diff) {
   if (rapfiLoadState.label) return rapfiLoadState.label;
   if (diff >= NIRVANA_LEVEL) {
@@ -354,7 +376,8 @@ function syncNirvanaEngineBadge(diff) {
 
   if (isRapfiFullReady()) {
     badge.className = "gomoku-engine-badge gomoku-engine-badge-full";
-    badge.textContent = "滿血(涅槃)60秒";
+    const last = game.lastAiThinkSec ? ` · 上一步 ${game.lastAiThinkSec}秒` : "";
+    badge.textContent = `滿血(涅槃)每步最長60秒${last}`;
     return;
   }
 
@@ -389,11 +412,17 @@ function renderPlayHeader(statusText = "") {
     : "";
 
   const rapfiLoadingLabel = formatRapfiLoadingLabel(diff);
+  const thinkElapsedSec =
+    waitingAi && game.aiThinkStartedAt
+      ? ((Date.now() - game.aiThinkStartedAt) / 1000).toFixed(1)
+      : "";
   const rapfiThinkingLabel =
     diff >= NIRVANA_LEVEL
       ? rapfiLoadState.mode === "lite"
         ? `涅槃思考中（快板${rapfiLoadState.failReason ? "：" + rapfiLoadState.failReason : ""}）…`
-        : "涅槃思考中…"
+        : isRapfiFullReady()
+          ? `涅槃滿血思考中…${thinkElapsedSec ? `（${thinkElapsedSec}秒）` : ""}`
+          : "涅槃思考中…"
       : "宗師思考中（快板）…";
 
   const displayStatus =
@@ -697,6 +726,9 @@ async function runAiMove() {
 
   try {
     const diff = game.aiDifficulty ?? aiDifficulty;
+    const thinkStart = Date.now();
+    game.aiThinkStartedAt = thinkStart;
+    startAiThinkUiPoll(token);
     if (diff >= GRANDMASTER_LEVEL) startRapfiLoadUiPoll();
 
     const move = await requestAiMove(game.cells, {
@@ -708,6 +740,9 @@ async function runAiMove() {
     });
 
     stopRapfiLoadUiPoll();
+    stopAiThinkUiPoll();
+    game.aiThinkStartedAt = 0;
+    game.lastAiThinkSec = Number(((Date.now() - thinkStart) / 1000).toFixed(1));
 
     if (token !== aiMoveToken) return;
     if (!game || game.mode !== "ai" || game.over || game.currentPlayerId !== game.aiPlayerId) {
@@ -728,6 +763,8 @@ async function runAiMove() {
   } catch (err) {
     console.error("gomoku ai failed", err);
     stopRapfiLoadUiPoll();
+    stopAiThinkUiPoll();
+    if (game) game.aiThinkStartedAt = 0;
     if (token !== aiMoveToken) return;
     aiMovePending = false;
     renderBoard();
@@ -967,6 +1004,7 @@ export function bindGomokuEvents() {
       localWinUiDismissed = false;
       syncLocalReplayDock();
       stopRapfiLoadUiPoll();
+      stopAiThinkUiPoll();
       terminateAiWorker();
       deps.showView("home");
     }
@@ -980,6 +1018,7 @@ export function bindGomokuEvents() {
     localWinUiDismissed = false;
     syncLocalReplayDock();
     stopRapfiLoadUiPoll();
+    stopAiThinkUiPoll();
     terminateAiWorker();
     deps.showView("home");
   });
@@ -1011,6 +1050,7 @@ export function bindGomokuEvents() {
     localWinUiDismissed = false;
     syncLocalReplayDock();
     stopRapfiLoadUiPoll();
+    stopAiThinkUiPoll();
     terminateAiWorker();
     deps.showView("home");
   });

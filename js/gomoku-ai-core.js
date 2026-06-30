@@ -293,6 +293,19 @@ export function findUrgentTacticalMove(cells, opts) {
   return findProactiveDefenseMove(cells, aiId, opponent, threatCtx, blackId, whiteId);
 }
 
+/**
+ * 涅槃滿血：僅必勝／必防才跳過 Rapfi，其餘交給引擎深度搜尋
+ */
+export function findNirvanaTacticalMove(cells, opts) {
+  const { aiId, blackId, whiteId } = opts;
+  const opponent = aiId === blackId ? whiteId : blackId;
+
+  const win = findImmediateWinMove(cells, aiId, threatCtx, blackId, whiteId);
+  if (win) return win;
+
+  return findMustBlockMove(cells, opponent, aiId, threatCtx, blackId, whiteId);
+}
+
 function countStones(cells) {
   let n = 0;
   for (let r = 0; r < SIZE; r++) {

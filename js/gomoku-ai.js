@@ -1,5 +1,5 @@
 /** 五子棋 AI 介面：入門～高手同步運算，大師走 Web Worker，宗師走 Rapfi 快板，涅槃走 Rapfi 滿血 WASM */
-import { computeAiMove, AI_LEVELS, GRANDMASTER_LEVEL, findUrgentTacticalMove } from "./gomoku-ai-core.js?v=gomoku-v10";
+import { computeAiMove, AI_LEVELS, GRANDMASTER_LEVEL, findUrgentTacticalMove, findNirvanaTacticalMove } from "./gomoku-ai-core.js?v=gomoku-v11";
 import { pickOpeningMove } from "./gomoku-ai-threat.js?v=gomoku-v11";
 import { OPENING_INSTANT_MAX_STONES, NIRVANA_OPENING_FAST_MAX_STONES, NIRVANA_FULL_LOAD_MIN_STONES } from "./gomoku-ai-timing.js?v=gomoku-v5";
 import {
@@ -79,7 +79,10 @@ export function requestAiMove(cells, opts) {
       if (opening) return Promise.resolve(opening);
     }
 
-    const tactical = findUrgentTacticalMove(board, opts);
+    const tactical =
+      isNirvana && stones >= NIRVANA_FULL_LOAD_MIN_STONES
+        ? findNirvanaTacticalMove(board, opts)
+        : findUrgentTacticalMove(board, opts);
     if (tactical) return Promise.resolve(tactical);
 
     const tier = isNirvana ? "full" : "lite";
