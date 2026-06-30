@@ -1,6 +1,10 @@
 /** 五子棋 AI 核心（主執行緒與 Worker 共用） */
 import { wouldBlackForbidden } from "./gomoku-renju.js?v=gomoku-v8";
 import {
+  adaptiveBuiltinTimeMs,
+  OPENING_INSTANT_MAX_STONES,
+} from "./gomoku-ai-timing.js?v=gomoku-v1";
+import {
   createThreatContext,
   findImmediateWinMove,
   findMustBlockMove,
@@ -11,7 +15,7 @@ import {
   pickOpeningMove,
   solveVcf,
   solveVct,
-} from "./gomoku-ai-threat.js?v=gomoku-v8";
+} from "./gomoku-ai-threat.js?v=gomoku-v9";
 
 const SIZE = 15;
 const CENTER = 7;
@@ -107,18 +111,20 @@ export function computeAiMove(cells, opts) {
   const { aiId, blackId, whiteId } = opts;
   const level = AI_LEVELS[opts.difficulty] || AI_LEVELS[2];
   const opponent = aiId === blackId ? whiteId : blackId;
-  const searchDeadline = Date.now() + level.timeMs;
-  const tacticalDeadline =
-    Date.now() + (level.useThreats ? Math.min(6000, level.timeMs * 0.3) : level.timeMs);
   const stones = countStones(cells);
 
   if (stones === 0) return [CENTER, CENTER];
 
+  const opening = pickOpeningMove(cells, aiId, opponent, stones);
+  if (opening && stones <= OPENING_INSTANT_MAX_STONES) return opening;
+
+  const timeMs = adaptiveBuiltinTimeMs(level.timeMs, stones);
+  const searchDeadline = Date.now() + timeMs;
+  const tacticalDeadline =
+    Date.now() + (level.useThreats ? Math.min(6000, timeMs * 0.3) : timeMs);
+
   if (level.useThreats) {
     transpositionTable = new Map();
-
-    const opening = pickOpeningMove(cells, aiId, opponent, stones);
-    if (opening && stones <= 1) return opening;
 
     const win = findImmediateWinMove(cells, aiId, threatCtx, blackId, whiteId);
     if (win) return win;

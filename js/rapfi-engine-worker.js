@@ -1,14 +1,14 @@
 /** Rapfi WASM 引擎 Worker（Yixin 協定） */
-const MAX_TURN_TIMEOUT_MS = 60000;
-const MAX_DEPTH_CAP = 64;
+const DEFAULT_TURN_TIMEOUT_MS = 60000;
+const DEFAULT_MAX_DEPTH = 64;
 
 /** @param {number} stoneCount */
-function searchLimits(stoneCount) {
+function fallbackLimits(stoneCount) {
   if (stoneCount <= 1) return { timeout: 1000, depth: 8 };
   if (stoneCount <= 4) return { timeout: 3000, depth: 14 };
   if (stoneCount <= 8) return { timeout: 8000, depth: 22 };
   if (stoneCount <= 16) return { timeout: 20000, depth: 40 };
-  return { timeout: MAX_TURN_TIMEOUT_MS, depth: MAX_DEPTH_CAP };
+  return { timeout: DEFAULT_TURN_TIMEOUT_MS, depth: DEFAULT_MAX_DEPTH };
 }
 
 let engine = null;
@@ -126,12 +126,14 @@ self.onmessage = async (event) => {
         self.postMessage({ type: "result", requestId: msg.requestId, move: null, error: "engine not ready" });
         return;
       }
-      const { moveHistory, blackPlayerId, stoneCount = 0 } = msg;
+      const { moveHistory, blackPlayerId, stoneCount = 0, timeout, depth } = msg;
       const stones =
         stoneCount > 0
           ? stoneCount
           : (moveHistory || []).length;
-      const { timeout: turnTimeoutMs, depth: maxDepth } = searchLimits(stones);
+      const limits = fallbackLimits(stones);
+      const turnTimeoutMs = timeout > 0 ? timeout : limits.timeout;
+      const maxDepth = depth > 0 ? depth : limits.depth;
       const safetyTimeoutMs = turnTimeoutMs + 5000;
 
       let boardCmd = "YXBOARD";

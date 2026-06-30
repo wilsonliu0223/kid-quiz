@@ -1,8 +1,10 @@
 import { CONFIG } from "./config.site.js";
 
+import { adaptiveRapfiLimits } from "./gomoku-ai-timing.js?v=gomoku-v1";
+
 export const NIRVANA_LEVEL = 6;
 
-const WORKER_URL = new URL("./rapfi-engine-worker.js?v=5", import.meta.url);
+const WORKER_URL = new URL("./rapfi-engine-worker.js?v=6", import.meta.url);
 
 /** @type {Worker | null} */
 let worker = null;
@@ -202,6 +204,7 @@ export async function requestRapfiMove(opts, tier = "full") {
       moveHistory: opts.moveHistory,
       blackPlayerId: opts.blackPlayerId,
       stoneCount: opts.stoneCount ?? (opts.moveHistory?.length || 0),
+      ...adaptiveRapfiLimits(opts.stoneCount ?? (opts.moveHistory?.length || 0)),
     });
   });
 }
