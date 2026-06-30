@@ -1,7 +1,7 @@
 /** 五子棋 AI 介面：入門～高手同步運算，大師走 Web Worker，宗師走 Rapfi 快板，涅槃走 Rapfi 滿血 WASM */
 import { computeAiMove, AI_LEVELS, GRANDMASTER_LEVEL, findUrgentTacticalMove } from "./gomoku-ai-core.js?v=gomoku-v10";
 import { pickOpeningMove } from "./gomoku-ai-threat.js?v=gomoku-v9";
-import { OPENING_INSTANT_MAX_STONES } from "./gomoku-ai-timing.js?v=gomoku-v2";
+import { OPENING_INSTANT_MAX_STONES } from "./gomoku-ai-timing.js?v=gomoku-v3";
 import {
   NIRVANA_LEVEL,
   rapfiLoadState,

@@ -23,16 +23,14 @@ export function adaptiveBuiltinTimeMs(baseTimeMs, stoneCount) {
  * @returns {{ timeout: number, depth: number }}
  */
 export function adaptiveRapfiLimits(stoneCount, tier = "full") {
-  if (tier === "lite") {
+  if (tier === "full") {
+    // 涅槃滿血：維持每步 60 秒／深度 64（僅開局庫未命中時的極短後備）
     if (stoneCount <= 1) return { timeout: 1000, depth: 8 };
-    if (stoneCount <= 4) return { timeout: 6000, depth: 20 };
-    if (stoneCount <= 8) return { timeout: 18000, depth: 30 };
-    if (stoneCount <= 16) return { timeout: 45000, depth: 52 };
     return { timeout: 60000, depth: 64 };
   }
   if (stoneCount <= 1) return { timeout: 1000, depth: 8 };
-  if (stoneCount <= 4) return { timeout: 4000, depth: 16 };
-  if (stoneCount <= 8) return { timeout: 12000, depth: 26 };
-  if (stoneCount <= 16) return { timeout: 30000, depth: 48 };
+  if (stoneCount <= 4) return { timeout: 6000, depth: 20 };
+  if (stoneCount <= 8) return { timeout: 18000, depth: 30 };
+  if (stoneCount <= 16) return { timeout: 45000, depth: 52 };
   return { timeout: 60000, depth: 64 };
 }
