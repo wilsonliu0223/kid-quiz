@@ -1,5 +1,5 @@
 /** 五子棋 AI Web Worker（大師背景運算） */
-import { computeAiMove } from "./gomoku-ai-core.js?v=gomoku-v9";
+import { computeAiMove } from "./gomoku-ai-core.js?v=gomoku-v10";
 
 self.onmessage = (event) => {
   const { requestId, payload } = event.data || {};

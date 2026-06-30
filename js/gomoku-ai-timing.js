@@ -19,12 +19,20 @@ export function adaptiveBuiltinTimeMs(baseTimeMs, stoneCount) {
 /**
  * Rapfi（宗師快板／涅槃滿血）單步 TIMEOUT_TURN 與 MAX_DEPTH
  * @param {number} stoneCount
+ * @param {"lite" | "full"} [tier]
  * @returns {{ timeout: number, depth: number }}
  */
-export function adaptiveRapfiLimits(stoneCount) {
+export function adaptiveRapfiLimits(stoneCount, tier = "full") {
+  if (tier === "lite") {
+    if (stoneCount <= 1) return { timeout: 1000, depth: 8 };
+    if (stoneCount <= 4) return { timeout: 6000, depth: 20 };
+    if (stoneCount <= 8) return { timeout: 18000, depth: 30 };
+    if (stoneCount <= 16) return { timeout: 45000, depth: 52 };
+    return { timeout: 60000, depth: 64 };
+  }
   if (stoneCount <= 1) return { timeout: 1000, depth: 8 };
-  if (stoneCount <= 4) return { timeout: 3000, depth: 14 };
-  if (stoneCount <= 8) return { timeout: 8000, depth: 22 };
-  if (stoneCount <= 16) return { timeout: 20000, depth: 40 };
+  if (stoneCount <= 4) return { timeout: 4000, depth: 16 };
+  if (stoneCount <= 8) return { timeout: 12000, depth: 26 };
+  if (stoneCount <= 16) return { timeout: 30000, depth: 48 };
   return { timeout: 60000, depth: 64 };
 }

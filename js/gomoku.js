@@ -7,7 +7,7 @@ import {
   rapfiLoadState,
   GRANDMASTER_LEVEL,
   NIRVANA_LEVEL,
-} from "./gomoku-ai.js?v=gomoku-v25";
+} from "./gomoku-ai.js?v=gomoku-v26";
 import {
   resetGomokuBoardZoom,
   rebindGomokuBoardZoom,

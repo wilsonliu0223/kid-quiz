@@ -1,10 +1,10 @@
 import { CONFIG } from "./config.site.js";
 
-import { adaptiveRapfiLimits } from "./gomoku-ai-timing.js?v=gomoku-v1";
+import { adaptiveRapfiLimits } from "./gomoku-ai-timing.js?v=gomoku-v2";
 
 export const NIRVANA_LEVEL = 6;
 
-const WORKER_URL = new URL("./rapfi-engine-worker.js?v=6", import.meta.url);
+const WORKER_URL = new URL("./rapfi-engine-worker.js?v=7", import.meta.url);
 
 /** @type {Worker | null} */
 let worker = null;
@@ -182,6 +182,7 @@ export async function requestRapfiMove(opts, tier = "full") {
   const requestId = ++requestSeq;
   const w = worker;
   if (!w) throw new Error("Rapfi worker missing");
+  const stoneCount = opts.stoneCount ?? (opts.moveHistory?.length || 0);
   return new Promise((resolve, reject) => {
     const onMessage = (event) => {
       const data = event.data || {};
@@ -203,8 +204,8 @@ export async function requestRapfiMove(opts, tier = "full") {
       requestId,
       moveHistory: opts.moveHistory,
       blackPlayerId: opts.blackPlayerId,
-      stoneCount: opts.stoneCount ?? (opts.moveHistory?.length || 0),
-      ...adaptiveRapfiLimits(opts.stoneCount ?? (opts.moveHistory?.length || 0)),
+      stoneCount,
+      ...adaptiveRapfiLimits(stoneCount, tier),
     });
   });
 }

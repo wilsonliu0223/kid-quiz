@@ -3,7 +3,7 @@ import { wouldBlackForbidden } from "./gomoku-renju.js?v=gomoku-v8";
 import {
   adaptiveBuiltinTimeMs,
   OPENING_INSTANT_MAX_STONES,
-} from "./gomoku-ai-timing.js?v=gomoku-v1";
+} from "./gomoku-ai-timing.js?v=gomoku-v2";
 import {
   createThreatContext,
   findImmediateWinMove,
@@ -272,6 +272,25 @@ export function computeAiMove(cells, opts) {
   }
 
   return bestMove;
+}
+
+/**
+ * 宗師／涅槃走 Rapfi 前的同步戰術層（必勝、必防、搶先防禦）
+ * @param {import('./gomoku-renju.js').Cell[][]} cells
+ * @param {{ aiId: string, blackId: string, whiteId: string }} opts
+ * @returns {[number, number]|null}
+ */
+export function findUrgentTacticalMove(cells, opts) {
+  const { aiId, blackId, whiteId } = opts;
+  const opponent = aiId === blackId ? whiteId : blackId;
+
+  const win = findImmediateWinMove(cells, aiId, threatCtx, blackId, whiteId);
+  if (win) return win;
+
+  const block = findMustBlockMove(cells, opponent, aiId, threatCtx, blackId, whiteId);
+  if (block) return block;
+
+  return findProactiveDefenseMove(cells, aiId, opponent, threatCtx, blackId, whiteId);
 }
 
 function countStones(cells) {
