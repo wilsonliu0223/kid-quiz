@@ -41,6 +41,8 @@ let setupMode = "local";
 let aiDifficulty = 2;
 let aiMovePending = false;
 let aiMoveToken = 0;
+/** @type {number | null} */
+let rapfiLoadUiPoll = null;
 
 /** @type {GomokuDeps | null} */
 let deps = null;
@@ -296,6 +298,38 @@ function currentTurnSide() {
   return game.currentPlayerId === game.blackPlayerId ? "black" : "white";
 }
 
+function stopRapfiLoadUiPoll() {
+  if (rapfiLoadUiPoll != null) {
+    window.clearInterval(rapfiLoadUiPoll);
+    rapfiLoadUiPoll = null;
+  }
+}
+
+function startRapfiLoadUiPoll() {
+  stopRapfiLoadUiPoll();
+  rapfiLoadUiPoll = window.setInterval(() => {
+    if (!game || game.mode !== "ai" || game.over) {
+      stopRapfiLoadUiPoll();
+      return;
+    }
+    renderPlayHeader();
+    if (!rapfiLoadState.loading) stopRapfiLoadUiPoll();
+  }, 180);
+}
+
+function formatRapfiLoadingLabel(diff) {
+  if (rapfiLoadState.label) return rapfiLoadState.label;
+  if (diff >= NIRVANA_LEVEL) {
+    const pct =
+      rapfiLoadState.progress > 0 && rapfiLoadState.progress < 1
+        ? ` ${Math.round(rapfiLoadState.progress * 100)}%`
+        : "";
+    return `載入涅槃滿血引擎…${pct}（約 40 MB，僅第一次）`;
+  }
+  if (diff >= GRANDMASTER_LEVEL) return "載入宗師快板引擎…";
+  return "";
+}
+
 function renderPlayHeader(statusText = "") {
   if (!game) return;
   const renjuHint = $("#gomoku-renju-hint");
@@ -308,9 +342,7 @@ function renderPlayHeader(statusText = "") {
       : "和棋！"
     : "";
 
-  const rapfiLoadingLabel =
-    rapfiLoadState.label ||
-    (diff >= NIRVANA_LEVEL ? "載入涅槃引擎…" : diff >= GRANDMASTER_LEVEL ? "載入宗師快板引擎…" : "");
+  const rapfiLoadingLabel = formatRapfiLoadingLabel(diff);
   const rapfiThinkingLabel =
     diff >= NIRVANA_LEVEL
       ? rapfiLoadState.mode === "lite"
@@ -338,11 +370,14 @@ function renderPlayHeader(statusText = "") {
     overTitle,
     waitingAi: waitingAi && !displayStatus,
     statusText: displayStatus,
-    youHint: waitingAi && !displayStatus
-      ? ` · ${stoneLabel(game.currentPlayerId)} · 請稍候…`
-      : humanTurn && !displayStatus
-        ? " · 輪到你"
-        : "",
+    youHint:
+      rapfiLoadState.loading && diff >= NIRVANA_LEVEL && humanTurn
+        ? " · 背景載入滿血引擎中…"
+        : waitingAi && !displayStatus
+          ? ` · ${stoneLabel(game.currentPlayerId)} · 請稍候…`
+          : humanTurn && !displayStatus
+            ? " · 輪到你"
+            : "",
   });
 
   if (renjuHint) {
@@ -497,6 +532,8 @@ function maybePreloadNirvanaEngine() {
   const diff = game.aiDifficulty ?? aiDifficulty;
   if (diff < NIRVANA_LEVEL) return;
   if (countBoardStones() !== 2) return;
+  startRapfiLoadUiPoll();
+  renderPlayHeader();
   void preloadNirvanaFullEngine();
 }
 
@@ -612,17 +649,7 @@ async function runAiMove() {
 
   try {
     const diff = game.aiDifficulty ?? aiDifficulty;
-    let loadPoll = null;
-    if (diff >= GRANDMASTER_LEVEL) {
-      loadPoll = window.setInterval(() => {
-        if (token !== aiMoveToken) {
-          window.clearInterval(loadPoll);
-          return;
-        }
-        renderPlayHeader();
-        if (!rapfiLoadState.loading) window.clearInterval(loadPoll);
-      }, 180);
-    }
+    if (diff >= GRANDMASTER_LEVEL) startRapfiLoadUiPoll();
 
     const move = await requestAiMove(game.cells, {
       aiId: game.aiPlayerId,
@@ -632,7 +659,7 @@ async function runAiMove() {
       moveHistory: game.moveHistory || [],
     });
 
-    if (loadPoll) window.clearInterval(loadPoll);
+    stopRapfiLoadUiPoll();
 
     if (token !== aiMoveToken) return;
     if (!game || game.mode !== "ai" || game.over || game.currentPlayerId !== game.aiPlayerId) {
@@ -652,6 +679,7 @@ async function runAiMove() {
     }
   } catch (err) {
     console.error("gomoku ai failed", err);
+    stopRapfiLoadUiPoll();
     if (token !== aiMoveToken) return;
     aiMovePending = false;
     renderBoard();
@@ -890,6 +918,7 @@ export function bindGomokuEvents() {
       game = null;
       localWinUiDismissed = false;
       syncLocalReplayDock();
+      stopRapfiLoadUiPoll();
       terminateAiWorker();
       deps.showView("home");
     }
@@ -902,6 +931,7 @@ export function bindGomokuEvents() {
     game = null;
     localWinUiDismissed = false;
     syncLocalReplayDock();
+    stopRapfiLoadUiPoll();
     terminateAiWorker();
     deps.showView("home");
   });
@@ -932,6 +962,7 @@ export function bindGomokuEvents() {
     game = null;
     localWinUiDismissed = false;
     syncLocalReplayDock();
+    stopRapfiLoadUiPoll();
     terminateAiWorker();
     deps.showView("home");
   });
