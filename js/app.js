@@ -78,7 +78,7 @@ import { initOnlineDuo } from "./online-duo.js";
 import { initSkyOnline, openSkyDuoMenu } from "./sky-online.js?v=sky-duo-v43";
 import "./flip-zh-online.js";
 import "./flip-math-online.js";
-import "./gomoku-online.js?v=gomoku-v24";
+import "./gomoku-online.js?v=gomoku-v25";
 import "./xiangqi-online.js?v=xiangqi-v11";
 import "./anqi-online.js?v=anqi-v19";
 import {
